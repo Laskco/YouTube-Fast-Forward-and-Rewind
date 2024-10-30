@@ -1,138 +1,299 @@
-let buttonsInjected = false;
+// Performance-optimized configuration with debouncing and caching
+const CONFIG = {
+  SELECTORS: {
+    VIDEO_PLAYERS: [
+      'video.html5-main-video',
+      '.html5-video-player video',
+      '.html5-video-player .html5-main-video',
+      '#movie_player video'
+    ],
+    CONTROLS: '.ytp-left-controls',
+    TIME_DISPLAY: '.ytp-time-display.notranslate',
+    MOVIE_PLAYER: '#movie_player'
+  },
+  RETRY: {
+    INTERVAL: 250,
+    MAX_ATTEMPTS: 20,
+    MOVIE_MAX_ATTEMPTS: 30 // More attempts for movie pages
+  },
+  DEBOUNCE: {
+    NAVIGATION: 150,
+    MUTATION: 100
+  }
+};
 
-// Function to inject buttons into the video player
+// State management
+const state = {
+  buttonsInjected: false,
+  retryAttempts: 0,
+  isMoviePage: false,
+  navigationObserver: null,
+  playerObserver: null,
+  lastVideoElement: null
+};
+
+// Utility functions
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+const isMoviePage = () => {
+  return window.location.pathname.includes('/watch') && 
+         document.querySelector('ytd-watch-flexy[is-two-columns_]') === null;
+};
+
+// Enhanced video player detection
+function findVideoPlayer() {
+  for (const selector of CONFIG.SELECTORS.VIDEO_PLAYERS) {
+    const player = document.querySelector(selector);
+    if (player && player.tagName === 'VIDEO') {
+      return player;
+    }
+  }
+  return null;
+}
+
+// Create and cache button elements
+const createButton = (id, iconPath) => {
+  const button = document.createElement('button');
+  button.id = id;
+  Object.assign(button.style, {
+    width: '50px',
+    height: '50px',
+    backgroundImage: `url(${browser.runtime.getURL(iconPath)})`,
+    backgroundSize: 'contain',
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '0',
+    marginTop: '0px',
+    transition: 'opacity 0.2s',
+    opacity: '1'
+  });
+  
+  button.addEventListener('mouseover', () => button.style.opacity = '0.8');
+  button.addEventListener('mouseout', () => button.style.opacity = '1');
+  
+  return button;
+};
+
+// Create buttons container with cached elements
+function createButtonsContainer() {
+  const container = document.createElement('div');
+  container.id = 'customButtonsContainer';
+  
+  Object.assign(container.style, {
+    position: 'relative',
+    left: '0',
+    top: '0',
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
+    zIndex: '1000'
+  });
+
+  const rewindButton = createButton('rewindButton', 'icons/rewind.png');
+  const forwardButton = createButton('fastForwardButton', 'icons/forward.png');
+  
+  rewindButton.style.marginRight = '-5px';
+  forwardButton.style.marginLeft = '-5px';
+  
+  container.appendChild(rewindButton);
+  container.appendChild(forwardButton);
+  
+  return container;
+}
+
+// Optimized button injection
 function injectButtons() {
-  const videoPlayer = document.querySelector("video.html5-main-video");
-  if (!videoPlayer) {
-    console.log("Video player not found.");
+  if (state.buttonsInjected) return;
+
+  const videoPlayer = findVideoPlayer();
+  const controlsContainer = document.querySelector(CONFIG.SELECTORS.CONTROLS);
+  
+  if (!videoPlayer || !controlsContainer) {
+    return false;
+  }
+
+  const buttonsContainer = createButtonsContainer();
+  const timeDisplay = controlsContainer.querySelector(CONFIG.SELECTORS.TIME_DISPLAY);
+  
+  if (timeDisplay) {
+    controlsContainer.insertBefore(buttonsContainer, timeDisplay.nextSibling);
+  } else {
+    controlsContainer.appendChild(buttonsContainer);
+  }
+
+  setupVideoControls(videoPlayer);
+  state.buttonsInjected = true;
+  state.lastVideoElement = videoPlayer;
+  
+  return true;
+}
+
+// Optimized event handling
+function setupVideoControls(videoPlayer) {
+  const container = document.getElementById('customButtonsContainer');
+  if (!container) return;
+
+  // Use event delegation for buttons
+  container.addEventListener('click', (event) => {
+    if (!videoPlayer.paused) { // Only process if video is playing
+      const timeChange = event.target.id === 'fastForwardButton' ? 10 : 
+                        event.target.id === 'rewindButton' ? -10 : 0;
+      if (timeChange) {
+        videoPlayer.currentTime += timeChange;
+      }
+    }
+  });
+}
+
+// Enhanced keyboard controls
+const handleKeyDown = (event) => {
+  const videoPlayer = state.lastVideoElement || findVideoPlayer();
+  if (!videoPlayer || videoPlayer.paused) return;
+
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
+
+  switch (event.key) {
+    case 'ArrowRight':
+      event.preventDefault();
+      videoPlayer.currentTime += 5;
+      break;
+    case 'ArrowLeft':
+      event.preventDefault();
+      videoPlayer.currentTime -= 5;
+      break;
+  }
+};
+
+// Cleanup function
+function removeButtons() {
+  const container = document.getElementById('customButtonsContainer');
+  if (container) {
+    container.remove();
+  }
+  state.buttonsInjected = false;
+}
+
+// Optimized initialization retry logic
+const tryInjectButtons = debounce(() => {
+  const maxAttempts = state.isMoviePage ? 
+    CONFIG.RETRY.MOVIE_MAX_ATTEMPTS : 
+    CONFIG.RETRY.MAX_ATTEMPTS;
+
+  if (state.retryAttempts >= maxAttempts) {
+    state.retryAttempts = 0;
     return;
   }
 
-  // Create container for custom buttons
-  const customButtonsContainer = document.createElement("div");
-  customButtonsContainer.id = "customButtonsContainer";
-  customButtonsContainer.style.position = "relative";
-  customButtonsContainer.style.left = "0";
-  customButtonsContainer.style.top = "0";
-  customButtonsContainer.style.display = "flex";
-  customButtonsContainer.style.alignItems = "center";
-  customButtonsContainer.style.height = "100%";
-  customButtonsContainer.style.zIndex = "1000";
-
-  // Create fast forward button
-  const fastForwardButton = document.createElement("button");
-  fastForwardButton.id = "fastForwardButton";
-  fastForwardButton.style.backgroundImage = `url(${browser.runtime.getURL("icons/forward.png")})`;
-  fastForwardButton.style.width = "50px"; // Set width
-  fastForwardButton.style.height = "50px"; // Set height
-  fastForwardButton.style.backgroundSize = "contain";
-  fastForwardButton.style.backgroundColor = "transparent"; // Remove default background
-  fastForwardButton.style.border = "none"; // Remove border
-  fastForwardButton.style.cursor = "pointer";
-  fastForwardButton.style.padding = "0"; // Remove padding
-  fastForwardButton.style.marginTop = "0px"; // Adjust vertical position
-  fastForwardButton.style.marginLeft = "-5px"; // Adjust to bring closer together
-  fastForwardButton.onclick = () => {
-    videoPlayer.currentTime += 10; // Fast forward 10 seconds
-  };
-
-  // Create rewind button
-  const rewindButton = document.createElement("button");
-  rewindButton.id = "rewindButton";
-  rewindButton.style.backgroundImage = `url(${browser.runtime.getURL("icons/rewind.png")})`;
-  rewindButton.style.width = "50px"; // Set width
-  rewindButton.style.height = "50px"; // Set height
-  rewindButton.style.backgroundSize = "contain";
-  rewindButton.style.backgroundColor = "transparent"; // Remove default background
-  rewindButton.style.border = "none"; // Remove border
-  rewindButton.style.cursor = "pointer";
-  rewindButton.style.padding = "0"; // Remove padding
-  rewindButton.style.marginTop = "0px"; // Adjust vertical position
-  rewindButton.style.marginRight = "-5px"; // Adjust to bring closer together
-  rewindButton.onclick = () => {
-    videoPlayer.currentTime -= 10; // Rewind 10 seconds
-  };
-
-  customButtonsContainer.appendChild(rewindButton);
-  customButtonsContainer.appendChild(fastForwardButton);
-
-  // Append buttons to the video player's controls container
-  const controlsContainer = document.querySelector(".ytp-left-controls");
-  if (controlsContainer) {
-    const timeDisplay = controlsContainer.querySelector(".ytp-time-display.notranslate");
-    if (timeDisplay) {
-      controlsContainer.insertBefore(customButtonsContainer, timeDisplay.nextSibling);
-    } else {
-      controlsContainer.appendChild(customButtonsContainer);
-    }
-    console.log("Buttons injected successfully!");
+  if (!injectButtons()) {
+    state.retryAttempts++;
+    setTimeout(tryInjectButtons, CONFIG.RETRY.INTERVAL);
   } else {
-    console.log("Controls container not found.");
+    state.retryAttempts = 0;
+  }
+}, CONFIG.DEBOUNCE.MUTATION);
+
+// Enhanced mutation observer for player changes
+function observePlayerChanges() {
+  if (state.playerObserver) {
+    state.playerObserver.disconnect();
   }
 
-  // Add keyboard event listener
-  // document.addEventListener("keydown", handleKeyDown);
+  const moviePlayer = document.querySelector(CONFIG.SELECTORS.MOVIE_PLAYER);
+  if (!moviePlayer) return;
 
-  buttonsInjected = true; // Set to true to avoid multiple injections
-}
-
-// Function to handle keydown events
-// function handleKeyDown(event) {
-//   const videoPlayer = document.querySelector("video.html5-main-video");
-//   if (!videoPlayer) return;
-
-//   switch (event.key) {
-//     case "ArrowRight":
-//       event.preventDefault();
-//       videoPlayer.currentTime += 5;
-//       break;
-//     case "ArrowLeft":
-//       event.preventDefault();
-//       videoPlayer.currentTime -= 5;
-//       break;
-//   }
-// }
-
-// Function to remove buttons from the video player
-function removeButtons() {
-  const fastForwardButton = document.getElementById("fastForwardButton");
-  const rewindButton = document.getElementById("rewindButton");
-
-  if (fastForwardButton) fastForwardButton.remove();
-  if (rewindButton) rewindButton.remove();
-
-  buttonsInjected = false; // Reset flag
-  console.log("Buttons removed successfully!");
-}
-
-// Function to check if the extension is enabled
-function checkExtensionState() {
-  return browser.storage.local.get("isEnabled").then(data => {
-    return data.isEnabled !== undefined ? data.isEnabled : true; // Default to enabled
-  });
-}
-
-// Observe changes in the DOM to inject buttons when the video player is loaded
-const observer = new MutationObserver(() => {
-  checkExtensionState().then(isEnabled => {
-    if (isEnabled && document.querySelector("video.html5-main-video") && !buttonsInjected) {
-      injectButtons();
-    } else if (!isEnabled && buttonsInjected) {
-      removeButtons(); // Remove buttons if the extension is disabled
+  state.playerObserver = new MutationObserver(debounce(() => {
+    if (!state.buttonsInjected || 
+        (state.lastVideoElement && !document.contains(state.lastVideoElement))) {
+      tryInjectButtons();
     }
+  }, CONFIG.DEBOUNCE.MUTATION));
+
+  state.playerObserver.observe(moviePlayer, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'style']
   });
-});
+}
 
-// Start observing the body for changes
-observer.observe(document.body, { childList: true, subtree: true });
+// Navigation handling
+function handleNavigation() {
+  removeButtons();
+  state.retryAttempts = 0;
+  state.isMoviePage = isMoviePage();
+  
+  // Wait for player to be ready
+  setTimeout(() => {
+    observePlayerChanges();
+    tryInjectButtons();
+  }, 500);
+}
 
-// Listen for messages to update the extension state
+// Initialize extension
+function initializeExtension() {
+  state.isMoviePage = isMoviePage();
+  
+  // Set up navigation observer
+  if (!state.navigationObserver) {
+    state.navigationObserver = new MutationObserver(debounce(() => {
+      if (window.location.href !== state.lastUrl) {
+        state.lastUrl = window.location.href;
+        handleNavigation();
+      }
+    }, CONFIG.DEBOUNCE.NAVIGATION));
+
+    state.navigationObserver.observe(document.querySelector('head'), {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  // Set up keyboard controls
+  document.addEventListener('keydown', handleKeyDown);
+  
+  // Initial setup
+  observePlayerChanges();
+  tryInjectButtons();
+}
+
+// Fullscreen handling
+document.addEventListener('fullscreenchange', debounce(() => {
+  if (document.fullscreenElement) {
+    if (!state.buttonsInjected) {
+      state.retryAttempts = 0;
+      tryInjectButtons();
+    }
+  } else {
+    removeButtons();
+    // Reinject after short delay
+    setTimeout(() => {
+      state.retryAttempts = 0;
+      tryInjectButtons();
+    }, 300);
+  }
+}, 150));
+
+// Extension state management
 browser.runtime.onMessage.addListener((message) => {
-  if (message.action === "updateState") {
+  if (message.action === 'updateState') {
     if (message.isEnabled) {
-      injectButtons(); // Re-inject buttons if enabled
+      initializeExtension();
     } else {
-      removeButtons(); // Remove buttons if disabled
+      removeButtons();
     }
   }
 });
+
+// Start the extension
+initializeExtension();
