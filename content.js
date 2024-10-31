@@ -151,7 +151,6 @@ function setupVideoControls(videoPlayer) {
 
   // Use event delegation for buttons
   container.addEventListener('click', (event) => {
-    // Removed paused check to allow controls while video is paused
     const timeChange = event.target.id === 'fastForwardButton' ? 10 : 
                       event.target.id === 'rewindButton' ? -10 : 0;
     if (timeChange) {
@@ -183,10 +182,8 @@ const handleKeyDown = (event) => {
 
 // Enhanced cleanup function
 function cleanup() {
-  // Remove buttons
   removeButtons();
   
-  // Disconnect observers
   if (state.navigationObserver) {
     state.navigationObserver.disconnect();
     state.navigationObserver = null;
@@ -197,11 +194,9 @@ function cleanup() {
     state.playerObserver = null;
   }
   
-  // Remove event listeners
   document.removeEventListener('keydown', handleKeyDown);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
   
-  // Reset state
   state.buttonsInjected = false;
   state.retryAttempts = 0;
   state.lastVideoElement = null;
@@ -218,18 +213,13 @@ function removeButtons() {
 // Extension state management functions
 async function enableExtension() {
   try {
-    // Update storage
     await browser.storage.local.set({
       [CONFIG.STORAGE_KEYS.ENABLED_STATE]: true
     });
     
-    // Update state
     state.isEnabled = true;
-    
-    // Reinitialize extension
     initializeExtension();
     
-    // Notify all tabs
     const tabs = await browser.tabs.query({url: '*://*.youtube.com/*'});
     tabs.forEach(tab => {
       browser.tabs.sendMessage(tab.id, {
@@ -247,18 +237,13 @@ async function enableExtension() {
 
 async function disableExtension() {
   try {
-    // Update storage
     await browser.storage.local.set({
       [CONFIG.STORAGE_KEYS.ENABLED_STATE]: false
     });
     
-    // Update state
     state.isEnabled = false;
-    
-    // Cleanup
     cleanup();
     
-    // Notify all tabs
     const tabs = await browser.tabs.query({url: '*://*.youtube.com/*'});
     tabs.forEach(tab => {
       browser.tabs.sendMessage(tab.id, {
@@ -329,17 +314,15 @@ function handleNavigation() {
   state.retryAttempts = 0;
   state.isMoviePage = isMoviePage();
   
-  // Wait for player to be ready
   setTimeout(() => {
     observePlayerChanges();
     tryInjectButtons();
   }, 500);
 }
 
-// Enhanced initialization
+// Enhanced initialization with immediate and delayed attempts
 async function initializeExtension() {
   try {
-    // Check stored state
     const stored = await browser.storage.local.get(CONFIG.STORAGE_KEYS.ENABLED_STATE);
     state.isEnabled = stored[CONFIG.STORAGE_KEYS.ENABLED_STATE] ?? true;
     
@@ -350,7 +333,6 @@ async function initializeExtension() {
     
     state.isMoviePage = isMoviePage();
     
-    // Set up navigation observer
     if (!state.navigationObserver) {
       state.navigationObserver = new MutationObserver(debounce(() => {
         if (window.location.href !== state.lastUrl) {
@@ -359,18 +341,27 @@ async function initializeExtension() {
         }
       }, CONFIG.DEBOUNCE.NAVIGATION));
 
-      state.navigationObserver.observe(document.querySelector('head'), {
+      state.navigationObserver.observe(document.documentElement, {
         childList: true,
         subtree: true
       });
     }
 
-    // Set up keyboard controls
+    document.removeEventListener('keydown', handleKeyDown);
     document.addEventListener('keydown', handleKeyDown);
     
-    // Initial setup
+    // Immediate attempt
     observePlayerChanges();
     tryInjectButtons();
+    
+    // Delayed attempt if first try fails
+    setTimeout(() => {
+      if (!state.buttonsInjected) {
+        observePlayerChanges();
+        tryInjectButtons();
+      }
+    }, 1000);
+    
   } catch (error) {
     console.error('Error initializing extension:', error);
   }
@@ -394,10 +385,9 @@ const handleFullscreenChange = debounce(() => {
   }
 }, 150);
 
-// Update event listener
 document.addEventListener('fullscreenchange', handleFullscreenChange);
 
-// Enhanced message listener
+// Message listener
 browser.runtime.onMessage.addListener(async (message) => {
   switch (message.action) {
     case 'updateState':
@@ -409,8 +399,20 @@ browser.runtime.onMessage.addListener(async (message) => {
       break;
     case 'getState':
       return Promise.resolve({ isEnabled: state.isEnabled });
+    case 'initializeExtension':
+      await initializeExtension();
+      break;
   }
 });
 
-// Start the extension
-document.addEventListener('DOMContentLoaded', initializeExtension);
+// Multiple initialization triggers
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeExtension);
+  window.addEventListener('load', () => {
+    if (!state.buttonsInjected) {
+      initializeExtension();
+    }
+  });
+} else {
+  initializeExtension();
+}
