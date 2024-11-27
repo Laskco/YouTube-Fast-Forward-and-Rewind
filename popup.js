@@ -1,79 +1,72 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const toggle = document.getElementById('enableToggle');
-  const toggleLabel = document.getElementById('toggleLabel');
+  const backwardTime = document.getElementById('backwardSkipTime');
+  const forwardTime = document.getElementById('forwardSkipTime');
 
-  function updateLabel(isEnabled) {
-    toggleLabel.textContent = isEnabled ? 'Disable Extension' : 'Enable Extension';
-  }
-
-  // Get initial state
-  try {
-    const tabs = await browser.tabs.query({
-      active: true,
-      currentWindow: true,
-      url: '*://*.youtube.com/*'
-    });
-
-    if (tabs.length > 0) {
-      try {
-        // Get state from content script
-        const response = await browser.tabs.sendMessage(tabs[0].id, {
-          action: 'getState'
-        });
-        
-        toggle.checked = response.isEnabled;
-        updateLabel(response.isEnabled);
-      } catch (error) {
-        // If content script hasn't loaded yet, fall back to storage
-        const stored = await browser.storage.local.get('extensionEnabled');
-        toggle.checked = stored.extensionEnabled ?? true;
-        updateLabel(toggle.checked);
-      }
-    } else {
-      // If not on YouTube, get state from storage
-      const stored = await browser.storage.local.get('extensionEnabled');
-      toggle.checked = stored.extensionEnabled ?? true;
-      updateLabel(toggle.checked);
+  function enforceMaxValue(event) {
+    if (parseInt(event.target.value, 10) > 99) {
+      event.target.value = 99;
     }
+  }
+  forwardTime.addEventListener('input', enforceMaxValue);
+  backwardTime.addEventListener('input', enforceMaxValue);
+  try {
+    const stored = await browser.storage.local.get([
+      'extensionEnabled',
+      'forwardSkipTime',
+      'backwardSkipTime'
+    ]);
+    
+    // Set initial toggle state - checked means enabled
+    toggle.checked = stored.extensionEnabled !== false;
+    backwardTime.value = stored.backwardSkipTime || 10;
+    forwardTime.value = stored.forwardSkipTime || 10;
   } catch (error) {
-    console.error('Error getting initial state:', error);
-    // Default to enabled if there's an error
-    toggle.checked = true;
-    updateLabel(true);
+    console.error('Error loading settings:', error);
+    toggle.checked = true; // Default to enabled
   }
 
-  // Handle toggle changes
+  const saveTimeValue = async (key, input) => {
+    // Constrain the value between 1 and 99 seconds
+    const value = Math.min(Math.max(parseInt(input.value) || 10, 1), 99);
+    input.value = value;
+    await browser.storage.local.set({ [key]: value });
+
+    const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
+    for (const tab of tabs) {
+      try {
+        await browser.tabs.sendMessage(tab.id, {
+          action: 'updateTimes',
+          times: { [key]: value }
+        });
+      } catch (err) {
+        console.log('Tab not ready:', err);
+      }
+    }
+  };
+
+  backwardTime.addEventListener('change', () => saveTimeValue('backwardSkipTime', backwardTime));
+  forwardTime.addEventListener('change', () => saveTimeValue('forwardSkipTime', forwardTime));
+
   toggle.addEventListener('change', async () => {
-    const newState = toggle.checked;
-    
     try {
-      // Update storage first
-      await browser.storage.local.set({
-        extensionEnabled: newState
-      });
-
-      // Update label
-      updateLabel(newState);
-
-      // Notify all YouTube tabs
-      const tabs = await browser.tabs.query({
-        url: '*://*.youtube.com/*'
-      });
-
-      await Promise.all(tabs.map(tab => 
-        browser.tabs.sendMessage(tab.id, {
-          action: 'updateState',
-          isEnabled: newState
-        }).catch(error => {
-          console.warn(`Could not update tab ${tab.id}:`, error);
-        })
-      ));
-
+      const newState = toggle.checked;
+      await browser.storage.local.set({ extensionEnabled: newState });
+      
+      const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
+      for (const tab of tabs) {
+        try {
+          await browser.tabs.sendMessage(tab.id, {
+            action: 'updateState',
+            isEnabled: newState
+          });
+        } catch (err) {
+          console.log('Tab not ready:', err);
+        }
+      }
     } catch (error) {
-      console.error('Error updating state:', error);
-      // Revert toggle and label if there's an error
-      toggle.checked = !newState;
-      updateLabel(!newState);
+      console.error('Error updating extension state:', error);
+      toggle.checked = !toggle.checked;
     }
   });
 });

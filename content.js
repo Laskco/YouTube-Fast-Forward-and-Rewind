@@ -14,18 +14,23 @@ const CONFIG = {
   RETRY: {
     INTERVAL: 250,
     MAX_ATTEMPTS: 20,
-    MOVIE_MAX_ATTEMPTS: 30 // More attempts for movie pages
+    MOVIE_MAX_ATTEMPTS: 30
   },
   DEBOUNCE: {
-    NAVIGATION: 150,
-    MUTATION: 100
+    NAVIGATION: 300,
+    MUTATION: 200
   },
   STORAGE_KEYS: {
-    ENABLED_STATE: 'extensionEnabled'
+    ENABLED_STATE: 'extensionEnabled',
+    FORWARD_SKIP_TIME: 'forwardSkipTime',
+    BACKWARD_SKIP_TIME: 'backwardSkipTime'
+  },
+  DEFAULT_SKIP_TIMES: {
+    FORWARD: 10,
+    BACKWARD: 10
   }
 };
 
-// Enhanced state management
 const state = {
   buttonsInjected: false,
   retryAttempts: 0,
@@ -34,10 +39,9 @@ const state = {
   playerObserver: null,
   lastVideoElement: null,
   lastUrl: null,
-  isEnabled: true  // Default to enabled
+  isEnabled: true
 };
 
-// Utility functions
 const debounce = (func, wait) => {
   let timeout;
   return function executedFunction(...args) {
@@ -55,7 +59,6 @@ const isMoviePage = () => {
          document.querySelector('ytd-watch-flexy[is-two-columns_]') === null;
 };
 
-// Enhanced video player detection
 function findVideoPlayer() {
   for (const selector of CONFIG.SELECTORS.VIDEO_PLAYERS) {
     const player = document.querySelector(selector);
@@ -66,35 +69,61 @@ function findVideoPlayer() {
   return null;
 }
 
-// Create and cache button elements
-const createButton = (id, iconPath) => {
+const createButton = (id, iconPath, skipTime) => {
   const button = document.createElement('button');
   button.id = id;
   Object.assign(button.style, {
-    width: '50px',
+    width: '40px',
     height: '50px',
     backgroundImage: `url(${browser.runtime.getURL(iconPath)})`,
-    backgroundSize: 'contain',
+    backgroundSize: '80%',
     backgroundColor: 'transparent',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center 17px',
     border: 'none',
     cursor: 'pointer',
     padding: '0',
     marginTop: '0px',
     transition: 'opacity 0.2s',
-    opacity: '1'
+    opacity: '1',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    zIndex: '999'
   });
-  
+  button.innerHTML = `<div style="
+  position: absolute;
+  bottom: 15px;
+  ${
+    id === 'fastForwardButton' 
+      ? 'left: calc(50% - 2px);' // Move the right number inward by 1 pixel
+      : 'left: 50%;' // Keep the left number centered
+  }
+  transform: translate(-50%, 0); /* Center text horizontally */
+  width: 100%;
+  text-align: center;
+  color: white;
+  pointer-events: none;
+  font-size: 15px;
+  font-family: 'Roboto', 'Arial', sans-serif;
+  font-weight: 500;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+">${skipTime}</div>`;
+
+
+
+
+
   button.addEventListener('mouseover', () => button.style.opacity = '0.8');
   button.addEventListener('mouseout', () => button.style.opacity = '1');
   
   return button;
 };
 
-// Create buttons container with cached elements
 function createButtonsContainer() {
   const container = document.createElement('div');
   container.id = 'customButtonsContainer';
-  
   Object.assign(container.style, {
     position: 'relative',
     left: '0',
@@ -102,22 +131,52 @@ function createButtonsContainer() {
     display: 'flex',
     alignItems: 'center',
     height: '100%',
-    zIndex: '1000'
+    zIndex: '1000',
   });
+  browser.storage.local.get([
+    CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME,
+    CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME
+  ]).then(result => {
+    const forwardSkipTime = result[CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.FORWARD;
+    const backwardSkipTime = result[CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.BACKWARD;
 
-  const rewindButton = createButton('rewindButton', 'icons/rewind.png');
-  const forwardButton = createButton('fastForwardButton', 'icons/forward.png');
-  
-  rewindButton.style.marginRight = '-5px';
-  forwardButton.style.marginLeft = '-5px';
-  
-  container.appendChild(rewindButton);
-  container.appendChild(forwardButton);
-  
+    const rewindButton = createButton('rewindButton', 'icons/alt-rewind.png', backwardSkipTime);
+    const forwardButton = createButton('fastForwardButton', 'icons/alt-forward.png', forwardSkipTime);
+    
+    // Adjust spacing between buttons
+    rewindButton.style.marginRight = '2px'; // Add space between buttons
+    forwardButton.style.marginLeft = '2px'; // Add space between buttons
+    
+    container.appendChild(rewindButton);
+    container.appendChild(forwardButton);
+  });
   return container;
 }
 
-// Optimized button injection
+// In content.js, update setupVideoControls function
+function setupVideoControls(videoPlayer) {
+  const container = document.getElementById('customButtonsContainer');
+  if (!container) return;
+
+  container.addEventListener('click', async (event) => {
+    const button = event.target.closest('button');
+    if (!button) return;
+    const storage = await browser.storage.local.get([
+      CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME,
+      CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME
+    ]);
+    
+    const forwardSkipTime = parseInt(storage[CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME]) || CONFIG.DEFAULT_SKIP_TIMES.FORWARD;
+    const backwardSkipTime = parseInt(storage[CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME]) || CONFIG.DEFAULT_SKIP_TIMES.BACKWARD;
+
+    if (event.target.id === 'fastForwardButton') {
+      videoPlayer.currentTime = videoPlayer.currentTime + forwardSkipTime;
+    } else if (event.target.id === 'rewindButton') {
+      videoPlayer.currentTime = videoPlayer.currentTime - backwardSkipTime;
+    }
+  });
+}
+
 function injectButtons() {
   if (state.buttonsInjected || !state.isEnabled) return false;
 
@@ -144,22 +203,6 @@ function injectButtons() {
   return true;
 }
 
-// Optimized event handling
-function setupVideoControls(videoPlayer) {
-  const container = document.getElementById('customButtonsContainer');
-  if (!container) return;
-
-  // Use event delegation for buttons
-  container.addEventListener('click', (event) => {
-    const timeChange = event.target.id === 'fastForwardButton' ? 10 : 
-                      event.target.id === 'rewindButton' ? -10 : 0;
-    if (timeChange) {
-      videoPlayer.currentTime += timeChange;
-    }
-  });
-}
-
-// Enhanced keyboard controls
 const handleKeyDown = (event) => {
   if (!state.isEnabled) return;
   
@@ -168,19 +211,26 @@ const handleKeyDown = (event) => {
 
   if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
 
-  switch (event.key) {
-    case 'ArrowRight':
-      event.preventDefault();
-      videoPlayer.currentTime += 5;
-      break;
-    case 'ArrowLeft':
-      event.preventDefault();
-      videoPlayer.currentTime -= 5;
-      break;
-  }
+  browser.storage.local.get([
+    CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME,
+    CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME
+  ]).then(result => {
+    const forwardSkipTime = result[CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.FORWARD;
+    const backwardSkipTime = result[CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.BACKWARD;
+
+    switch (event.key) {
+      case 'ArrowRight':
+        event.preventDefault();
+        videoPlayer.currentTime += forwardSkipTime;
+        break;
+      case 'ArrowLeft':
+        event.preventDefault();
+        videoPlayer.currentTime -= backwardSkipTime;
+        break;
+    }
+  });
 };
 
-// Enhanced cleanup function
 function cleanup() {
   removeButtons();
   
@@ -196,7 +246,13 @@ function cleanup() {
   
   document.removeEventListener('keydown', handleKeyDown);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  
+
+  // Remove all event listeners from container
+  const container = document.getElementById('customButtonsContainer');
+  if (container) {
+    container.replaceWith(container.cloneNode(true));
+  }
+
   state.buttonsInjected = false;
   state.retryAttempts = 0;
   state.lastVideoElement = null;
@@ -210,7 +266,6 @@ function removeButtons() {
   state.buttonsInjected = false;
 }
 
-// Extension state management functions
 async function enableExtension() {
   try {
     await browser.storage.local.set({
@@ -259,7 +314,6 @@ async function disableExtension() {
   }
 }
 
-// Optimized initialization retry logic
 const tryInjectButtons = debounce(() => {
   if (!state.isEnabled) return;
 
@@ -280,7 +334,6 @@ const tryInjectButtons = debounce(() => {
   }
 }, CONFIG.DEBOUNCE.MUTATION);
 
-// Enhanced mutation observer for player changes
 function observePlayerChanges() {
   if (!state.isEnabled) return;
 
@@ -300,13 +353,12 @@ function observePlayerChanges() {
 
   state.playerObserver.observe(moviePlayer, {
     childList: true,
-    subtree: true,
+    subtree: false,
     attributes: true,
-    attributeFilter: ['class', 'style']
+    attributeFilter: ['class']
   });
 }
 
-// Navigation handling
 function handleNavigation() {
   if (!state.isEnabled) return;
   
@@ -320,7 +372,6 @@ function handleNavigation() {
   }, 500);
 }
 
-// Enhanced initialization with immediate and delayed attempts
 async function initializeExtension() {
   try {
     const stored = await browser.storage.local.get(CONFIG.STORAGE_KEYS.ENABLED_STATE);
@@ -350,11 +401,9 @@ async function initializeExtension() {
     document.removeEventListener('keydown', handleKeyDown);
     document.addEventListener('keydown', handleKeyDown);
     
-    // Immediate attempt
     observePlayerChanges();
     tryInjectButtons();
     
-    // Delayed attempt if first try fails
     setTimeout(() => {
       if (!state.buttonsInjected) {
         observePlayerChanges();
@@ -367,7 +416,6 @@ async function initializeExtension() {
   }
 }
 
-// Fullscreen handling
 const handleFullscreenChange = debounce(() => {
   if (!state.isEnabled) return;
   
@@ -387,7 +435,6 @@ const handleFullscreenChange = debounce(() => {
 
 document.addEventListener('fullscreenchange', handleFullscreenChange);
 
-// Message listener
 browser.runtime.onMessage.addListener(async (message) => {
   switch (message.action) {
     case 'updateState':
@@ -397,6 +444,19 @@ browser.runtime.onMessage.addListener(async (message) => {
         await disableExtension();
       }
       break;
+    case 'updateTimes':
+      if (message.times) {
+        if (message.times.forwardSkipTime) {
+          await browser.storage.local.set({ forwardSkipTime: message.times.forwardSkipTime });
+        }
+        if (message.times.backwardSkipTime) {
+          await browser.storage.local.set({ backwardSkipTime: message.times.backwardSkipTime });
+        }
+        // Force button recreation with new times
+        removeButtons();
+        tryInjectButtons();
+      }
+      break;
     case 'getState':
       return Promise.resolve({ isEnabled: state.isEnabled });
     case 'initializeExtension':
@@ -404,15 +464,3 @@ browser.runtime.onMessage.addListener(async (message) => {
       break;
   }
 });
-
-// Multiple initialization triggers
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeExtension);
-  window.addEventListener('load', () => {
-    if (!state.buttonsInjected) {
-      initializeExtension();
-    }
-  });
-} else {
-  initializeExtension();
-}

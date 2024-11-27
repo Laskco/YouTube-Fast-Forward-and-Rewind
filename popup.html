@@ -1,132 +1,51 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <style>
-    body {
-      width: 300px;
-      padding: 12px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-      color: #e4e4e4;
-      background-color: #1a1a1a;
-    }
-    .container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .header img {
-      width: 48px;
-      height: 48px;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 220px;
-      color: #ffffff;
-    }
-    .toggle-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px;
-      background-color: #2d2d2d;
-      border-radius: 8px;
-    }
-    .toggle-label {
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 48px;
-      height: 24px;
-    }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #404040;
-      transition: .3s;
-      border-radius: 24px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: #e4e4e4;
-      transition: .3s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: #2196F3;
-    }
-    input:checked + .slider:before {
-      transform: translateX(24px);
-    }
-    .github-link {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      background-color: #2d2d2d;
-      border-radius: 8px;
-      text-decoration: none;
-      color: #e4e4e4;
-      font-size: 14px;
-      transition: background-color 0.2s;
-    }
-    .github-link:hover {
-      background-color: #404040;
-    }
-    .github-link svg {
-      margin-right: 8px;
-      width: 20px;
-      height: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <img src="images/icon48.png" alt="Extension Icon">
-      <h1>YouTube Fast Forward & Rewind</h1>
+    <div class="container">
+        <div class="header">
+            <img src="images/icon48.png" alt="Extension Icon">
+            <span>YouTube Fast Forward & Rewind</span>
+        </div>
+        <div class="controls">
+            <div class="toggle-row">
+                <span>Enable Extension</span>
+                <label class="switch">
+                    <input type="checkbox" id="enableToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="time-control">
+                <label for="forwardSkipTime">Forward Time (seconds)</label>
+                <input type="number" id="forwardSkipTime" min="1" max="300" value="10">
+            </div>
+            <div class="time-control">
+                <label for="backwardSkipTime">Rewind Time (seconds)</label>
+                <input type="number" id="backwardSkipTime" min="1" max="300" value="10">
+            </div>
+            <div class="button-group">
+                <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" class="github-button">
+                    <svg height="20" viewBox="0 0 16 16" width="20">
+                        <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                    </svg>
+                    View on GitHub
+                </a>
+                <a href="https://buymeacoffee.com/laskco" class="coffee-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                        <line x1="6" y1="1" x2="6" y2="4"></line>
+                        <line x1="10" y1="1" x2="10" y2="4"></line>
+                        <line x1="14" y1="1" x2="14" y2="4"></line>
+                    </svg>
+                    Buy me a coffee
+                </a>
+            </div>
+        </div>
     </div>
-    <div class="toggle-container">
-      <span id="toggleLabel" class="toggle-label">Enable Extension</span>
-      <label class="switch">
-        <input type="checkbox" id="enableToggle">
-        <span class="slider"></span>
-      </label>
-    </div>
-    <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" target="_blank" class="github-link">
-      <svg viewBox="0 0 16 16" fill="currentColor">
-        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-      </svg>
-      View on GitHub
-    </a>
-  </div>
-  <script src="popup.js"></script>
+    <script src="popup.js"></script>
 </body>
 </html>
