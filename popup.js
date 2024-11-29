@@ -1,37 +1,39 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const toggle = document.getElementById('enableToggle');
+  const toggleText = document.getElementById('toggleText');
   const backwardTime = document.getElementById('backwardSkipTime');
   const forwardTime = document.getElementById('forwardSkipTime');
-
+ 
   function enforceMaxValue(event) {
     if (parseInt(event.target.value, 10) > 99) {
       event.target.value = 99;
     }
   }
+ 
   forwardTime.addEventListener('input', enforceMaxValue);
   backwardTime.addEventListener('input', enforceMaxValue);
+ 
   try {
     const stored = await browser.storage.local.get([
       'extensionEnabled',
       'forwardSkipTime',
       'backwardSkipTime'
     ]);
-    
-    // Set initial toggle state - checked means enabled
+   
     toggle.checked = stored.extensionEnabled !== false;
+    toggleText.textContent = toggle.checked ? 'Extension Enabled' : 'Extension Disabled';
     backwardTime.value = stored.backwardSkipTime || 10;
     forwardTime.value = stored.forwardSkipTime || 10;
   } catch (error) {
     console.error('Error loading settings:', error);
-    toggle.checked = true; // Default to enabled
+    toggle.checked = true;
+    toggleText.textContent = 'Extension Enabled';
   }
-
+ 
   const saveTimeValue = async (key, input) => {
-    // Constrain the value between 1 and 99 seconds
     const value = Math.min(Math.max(parseInt(input.value) || 10, 1), 99);
     input.value = value;
     await browser.storage.local.set({ [key]: value });
-
     const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
     for (const tab of tabs) {
       try {
@@ -44,15 +46,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   };
-
+ 
   backwardTime.addEventListener('change', () => saveTimeValue('backwardSkipTime', backwardTime));
   forwardTime.addEventListener('change', () => saveTimeValue('forwardSkipTime', forwardTime));
-
+ 
   toggle.addEventListener('change', async () => {
     try {
       const newState = toggle.checked;
+      toggleText.textContent = newState ? 'Extension Enabled' : 'Extension Disabled';
       await browser.storage.local.set({ extensionEnabled: newState });
-      
+     
       const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
       for (const tab of tabs) {
         try {
@@ -69,4 +72,4 @@ document.addEventListener('DOMContentLoaded', async () => {
       toggle.checked = !toggle.checked;
     }
   });
-});
+ });

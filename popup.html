@@ -1,51 +1,288 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <style>
+      @property --border-angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+      }
+
+      body {
+          width: 350px;
+          margin: 0;
+          min-height: 100vh;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: #202124;
+      }
+
+      .popup-wrapper {
+          position: relative;
+          width: 350px;
+          border-radius: 8px;
+      }
+
+      .popup-wrapper::before {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          background: conic-gradient(
+              from var(--border-angle),
+              #202124,
+              #ffffff 30deg,
+              rgba(255, 255, 255, 0.8) 60deg,
+              #202124 90deg
+          );
+          border-radius: 8px;
+          animation: borderRotate 8s linear infinite;
+      }
+
+      .container {
+          background: #202124;
+          color: #fff;
+          border-radius: 8px;
+          position: relative;
+          z-index: 1;
+          margin: 2px;
+          padding: 20px;
+      }
+
+      @keyframes borderRotate {
+          from {
+              --border-angle: 0deg;
+          }
+          to {
+              --border-angle: 360deg;
+          }
+      }
+
+      .header {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 22px;
+      }
+
+      .header img {
+          width: 30px;
+          height: 30px;
+      }
+
+      .header span {
+          font-size: 16px;
+          font-weight: 500;
+      }
+
+      .controls {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+      }
+
+      .toggle-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #303134;
+          padding: 12px 16px;
+          border-radius: 6px;
+          height: 36px;
+      }
+
+      .time-control {
+          background: #303134;
+          padding: 12px 16px;
+          border-radius: 6px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          height: 36px;
+      }
+
+      .toggle-row span {
+          font-size: 15px;
+          color: #e8eaed;
+      }
+
+      .time-control label {
+          font-size: 15px;
+          color: #e8eaed;
+      }
+
+      .time-control input {
+          width: 90px;
+          padding: 8px 12px;
+          background: #202124;
+          border: 1px solid #5f6368;
+          border-radius: 4px;
+          color: #e8eaed;
+          font-size: 14px;
+      }
+
+      .time-control input:focus {
+          outline: none;
+          border-color: #1a73e8;
+      }
+
+      .switch {
+          position: relative;
+          display: inline-block;
+          width: 48px;
+          height: 26px;
+      }
+
+      .switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+      }
+
+      .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #5f6368;
+          transition: .3s;
+          border-radius: 24px;
+      }
+
+      input:checked + .slider {
+          background: linear-gradient(135deg, 
+              #03254c,
+              #03254c,
+              #1a73e8,
+              #64b5f6,
+              #1a73e8,
+              #03254c,
+              #03254c
+          );
+          background-size: 500% 500%;
+          animation: waveMove 8s linear infinite;
+      }
+
+      .slider:before {
+          position: absolute;
+          content: "";
+          height: 20px;
+          width: 20px;
+          left: 3px;
+          bottom: 3px;
+          background-color: white;
+          transition: .3s;
+          border-radius: 50%;
+      }
+
+      input:checked + .slider:before {
+          transform: translateX(22px);
+      }
+
+      .button-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+      }
+
+      .github-button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          background: #303134;
+          color: #e8eaed;
+          text-decoration: none;
+          padding: 12px;
+          border-radius: 6px;
+          font-size: 15px;
+          height: 36px;
+      }
+
+      .coffee-button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          background: linear-gradient(135deg, 
+              #03254c,
+              #03254c,
+              #1a73e8,
+              #64b5f6,
+              #1a73e8,
+              #03254c,
+              #03254c
+          );
+          background-size: 500% 500%;
+          animation: waveMove 8s linear infinite;
+          color: white;
+          text-decoration: none;
+          padding: 12px;
+          border-radius: 6px;
+          font-size: 15px;
+          height: 36px;
+          position: relative;
+          overflow: hidden;
+      }
+
+      @keyframes waveMove {
+          0% {
+              background-position: 100% 100%;
+          }
+          100% {
+              background-position: 0% 0%;
+          }
+      }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <img src="images/icon48.png" alt="Extension Icon">
-            <span>YouTube Fast Forward & Rewind</span>
-        </div>
-        <div class="controls">
-            <div class="toggle-row">
-                <span>Enable Extension</span>
-                <label class="switch">
-                    <input type="checkbox" id="enableToggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="time-control">
-                <label for="forwardSkipTime">Forward Time (seconds)</label>
-                <input type="number" id="forwardSkipTime" min="1" max="300" value="10">
-            </div>
-            <div class="time-control">
-                <label for="backwardSkipTime">Rewind Time (seconds)</label>
-                <input type="number" id="backwardSkipTime" min="1" max="300" value="10">
-            </div>
-            <div class="button-group">
-                <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" class="github-button">
-                    <svg height="20" viewBox="0 0 16 16" width="20">
-                        <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-                    </svg>
-                    View on GitHub
-                </a>
-                <a href="https://buymeacoffee.com/laskco" class="coffee-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                        <line x1="6" y1="1" x2="6" y2="4"></line>
-                        <line x1="10" y1="1" x2="10" y2="4"></line>
-                        <line x1="14" y1="1" x2="14" y2="4"></line>
-                    </svg>
-                    Buy me a coffee
-                </a>
-            </div>
-        </div>
-    </div>
-    <script src="popup.js"></script>
+  <div class="popup-wrapper">
+      <div class="container">
+          <div class="header">
+              <img src="images/icon48.png" alt="Extension Icon">
+              <span>YouTube Fast Forward & Rewind</span>
+          </div>
+          <div class="controls">
+              <div class="toggle-row">
+                  <span id="toggleText">Extension Enabled</span>
+                  <label class="switch">
+                      <input type="checkbox" id="enableToggle" checked>
+                      <span class="slider"></span>
+                  </label>
+              </div>
+              <div class="time-control">
+                  <label for="forwardSkipTime">Forward Time (seconds)</label>
+                  <input type="number" id="forwardSkipTime" min="1" max="300" value="10">
+              </div>
+              <div class="time-control">
+                  <label for="backwardSkipTime">Rewind Time (seconds)</label>
+                  <input type="number" id="backwardSkipTime" min="1" max="300" value="10">
+              </div>
+              <div class="button-group">
+                  <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" class="github-button">
+                      <svg height="20" viewBox="0 0 16 16" width="20">
+                          <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                      </svg>
+                      View on GitHub
+                  </a>
+                  <a href="https://buymeacoffee.com/laskco" class="coffee-button">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                          <line x1="6" y1="1" x2="6" y2="4"></line>
+                          <line x1="10" y1="1" x2="10" y2="4"></line>
+                          <line x1="14" y1="1" x2="14" y2="4"></line>
+                      </svg>
+                      Buy me a coffee
+                  </a>
+              </div>
+          </div>
+      </div>
+  </div>
+  <script src="popup.js"></script>
 </body>
 </html>

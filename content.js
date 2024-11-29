@@ -79,11 +79,11 @@ const createButton = (id, iconPath, skipTime) => {
     backgroundSize: '80%',
     backgroundColor: 'transparent',
     backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center 17px',
+    backgroundPosition: 'center 15px',
     border: 'none',
     cursor: 'pointer',
     padding: '0',
-    marginTop: '0px',
+    marginTop: '-3px', // Move the button up by 3px
     transition: 'opacity 0.2s',
     opacity: '1',
     position: 'relative',
@@ -92,34 +92,34 @@ const createButton = (id, iconPath, skipTime) => {
     alignItems: 'center',
     zIndex: '999'
   });
+
+  // Adjust the positioning of the number text
   button.innerHTML = `<div style="
-  position: absolute;
-  bottom: 15px;
-  ${
-    id === 'fastForwardButton' 
-      ? 'left: calc(50% - 2px);' // Move the right number inward by 1 pixel
-      : 'left: 50%;' // Keep the left number centered
-  }
-  transform: translate(-50%, 0); /* Center text horizontally */
-  width: 100%;
-  text-align: center;
-  color: white;
-  pointer-events: none;
-  font-size: 15px;
-  font-family: 'Roboto', 'Arial', sans-serif;
-  font-weight: 500;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-">${skipTime}</div>`;
-
-
-
-
+    position: absolute;
+    bottom: 16px; /* Move the number up by 5px (from 15px to 10px) */
+    ${
+      id === 'fastForwardButton' 
+        ? 'left: calc(50% - 2px);' 
+        : 'left: 50%;' 
+    }
+    transform: translate(-50%, 0); /* Center text horizontally */
+    width: 100%;
+    text-align: center;
+    color: white;
+    pointer-events: none;
+    font-size: 15px;
+    font-family: 'Roboto', 'Arial', sans-serif;
+    font-weight: 500;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  ">${skipTime}</div>`;
 
   button.addEventListener('mouseover', () => button.style.opacity = '0.8');
   button.addEventListener('mouseout', () => button.style.opacity = '1');
   
   return button;
 };
+
+
 
 function createButtonsContainer() {
   const container = document.createElement('div');
