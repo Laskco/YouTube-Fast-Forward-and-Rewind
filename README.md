@@ -1,10 +1,14 @@
-This extension is exclusive to Firefox only, since there is a plethora of extensions like this on Chrome.
+# YouTube Fast Forward & Rewind
+A YouTube extension that adds custom skip and rewind buttons to the player, so you can choose how much time you want to jump forward or backward.
 
-
-
-![image](https://github.com/user-attachments/assets/2cddd49b-5509-4ef9-9967-b2426edb92c1)
-
-![Screenshot 2024-10-19 035850](https://github.com/user-attachments/assets/52fa800f-47dc-4fc2-ab52-938cd06d4280)
-
-# Known Issue
-There's a small quirk with YouTube's free movies: you'll need to enter and exit full screen mode once to get the buttons working properly. This doesn't affect paid movies. I'm still investigating the cause - if you have any insights, please share them on my GitHub page!
+Plans to add to the chrome store in the future.
+#
+- Custom Buttons: Set your own fast forward and rewind times for better control.
+- Easy Navigation: The buttons are built right into the YouTube player for quick access.
+- Auto Save: Your settings are saved automatically, so you don't have to reset them every time.
+#
+![](<Screenshot 2024-11-27 185640.png>)
+#
+![](<Screenshot 2024-11-29 093408.png>)
+#
+![](<Screenshot 2024-11-27 190154.png>)
