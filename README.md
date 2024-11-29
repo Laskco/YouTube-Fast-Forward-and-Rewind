@@ -7,8 +7,8 @@ Plans to add to the chrome store in the future.
 - Easy Navigation: The buttons are built right into the YouTube player for quick access.
 - Auto Save: Your settings are saved automatically, so you don't have to reset them every time.
 #
-![](<Screenshot 2024-11-27 185640.png>)
+![](<images/Screenshot 2024-11-27 185640.png>)
 #
-![](<Screenshot 2024-11-29 093408.png>)
+![](<images/Screenshot 2024-11-29 093408.png>)
 #
-![](<Screenshot 2024-11-27 190154.png>)
+![](<images/Screenshot 2024-11-27 190154.png>)
