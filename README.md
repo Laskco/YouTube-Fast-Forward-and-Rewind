@@ -1,7 +1,7 @@
 # YouTube Fast Forward & Rewind
 A YouTube extension that adds custom skip and rewind buttons to the player, so you can choose how much time you want to jump forward or backward.
 
-Plans to add to the chrome store in the future.
+Chrome Version has been added to the Chrome Store you can view it here [Click here for Chrome Version](https://chromewebstore.google.com/detail/youtube-fast-forward/bkhjomondpmkjohilihdldfjmhpgkhcm?authuser=0&hl=en)
 #
 - Custom Buttons: Set your own fast forward and rewind times for better control.
 - Easy Navigation: The buttons are built right into the YouTube player for quick access.
