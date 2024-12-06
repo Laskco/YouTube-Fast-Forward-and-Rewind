@@ -1,6 +1,6 @@
 browser.runtime.onInstalled.addListener(function (details) {
     if (details.reason === "update") {
-        // Handle update-specific logic if needed
+        
     }
 });
 
