@@ -1,4 +1,3 @@
-// Performance-optimized configuration with debouncing and caching
 const CONFIG = {
   SELECTORS: {
     VIDEO_PLAYERS: [
@@ -83,7 +82,7 @@ const createButton = (id, iconPath, skipTime) => {
     border: 'none',
     cursor: 'pointer',
     padding: '0',
-    marginTop: '-3px', // Move the button up by 3px
+    marginTop: '-3px',
     transition: 'opacity 0.2s',
     opacity: '1',
     position: 'relative',
@@ -93,7 +92,6 @@ const createButton = (id, iconPath, skipTime) => {
     zIndex: '999'
   });
 
-  // Adjust the positioning of the number text
   button.innerHTML = `<div style="
     position: absolute;
     bottom: 16px; /* Move the number up by 5px (from 15px to 10px) */
@@ -143,9 +141,8 @@ function createButtonsContainer() {
     const rewindButton = createButton('rewindButton', 'icons/alt-rewind.png', backwardSkipTime);
     const forwardButton = createButton('fastForwardButton', 'icons/alt-forward.png', forwardSkipTime);
     
-    // Adjust spacing between buttons
-    rewindButton.style.marginRight = '2px'; // Add space between buttons
-    forwardButton.style.marginLeft = '2px'; // Add space between buttons
+    rewindButton.style.marginRight = '2px'; 
+    forwardButton.style.marginLeft = '2px'; 
     
     container.appendChild(rewindButton);
     container.appendChild(forwardButton);
@@ -153,7 +150,6 @@ function createButtonsContainer() {
   return container;
 }
 
-// In content.js, update setupVideoControls function
 function setupVideoControls(videoPlayer) {
   const container = document.getElementById('customButtonsContainer');
   if (!container) return;
@@ -247,7 +243,6 @@ function cleanup() {
   document.removeEventListener('keydown', handleKeyDown);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
 
-  // Remove all event listeners from container
   const container = document.getElementById('customButtonsContainer');
   if (container) {
     container.replaceWith(container.cloneNode(true));
@@ -452,7 +447,6 @@ browser.runtime.onMessage.addListener(async (message) => {
         if (message.times.backwardSkipTime) {
           await browser.storage.local.set({ backwardSkipTime: message.times.backwardSkipTime });
         }
-        // Force button recreation with new times
         removeButtons();
         tryInjectButtons();
       }
