@@ -1,75 +1,126 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const toggle = document.getElementById('enableToggle');
-  const toggleText = document.getElementById('toggleText');
-  const backwardTime = document.getElementById('backwardSkipTime');
+  const toggleStatus = document.getElementById('toggleStatus');
   const forwardTime = document.getElementById('forwardSkipTime');
- 
-  function enforceMaxValue(event) {
-    if (parseInt(event.target.value, 10) > 99) {
-      event.target.value = 99;
-    }
-  }
- 
-  forwardTime.addEventListener('input', enforceMaxValue);
-  backwardTime.addEventListener('input', enforceMaxValue);
- 
-  try {
-    const stored = await browser.storage.local.get([
-      'extensionEnabled',
-      'forwardSkipTime',
-      'backwardSkipTime'
-    ]);
-   
-    toggle.checked = stored.extensionEnabled !== false;
-    toggleText.textContent = toggle.checked ? 'Extension Enabled' : 'Extension Disabled';
-    backwardTime.value = stored.backwardSkipTime || 10;
-    forwardTime.value = stored.forwardSkipTime || 10;
-  } catch (error) {
-    console.error('Error loading settings:', error);
-    toggle.checked = true;
-    toggleText.textContent = 'Extension Enabled';
-  }
- 
-  const saveTimeValue = async (key, input) => {
-    const value = Math.min(Math.max(parseInt(input.value) || 10, 1), 99);
-    input.value = value;
-    await browser.storage.local.set({ [key]: value });
-    const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
-    for (const tab of tabs) {
-      try {
-        await browser.tabs.sendMessage(tab.id, {
-          action: 'updateTimes',
-          times: { [key]: value }
-        });
-      } catch (err) {
-        console.log('Tab not ready:', err);
-      }
-    }
+  const backwardTime = document.getElementById('backwardSkipTime');
+  const keyboardForward = document.getElementById('keyboardForward');
+  const keyboardBackward = document.getElementById('keyboardBackward');
+
+  let currentSettings = {
+    extensionEnabled: true,
+    forwardSkipTime: 10,
+    backwardSkipTime: 10,
+    keyboardForward: 5,
+    keyboardBackward: 5
   };
- 
-  backwardTime.addEventListener('change', () => saveTimeValue('backwardSkipTime', backwardTime));
-  forwardTime.addEventListener('change', () => saveTimeValue('forwardSkipTime', forwardTime));
- 
-  toggle.addEventListener('change', async () => {
+
+  function updateToggleStatus() {
+    if (toggle.checked) {
+      toggleStatus.textContent = 'Extension Enabled';
+      toggleStatus.style.color = '#4285f4';
+    } else {
+      toggleStatus.textContent = 'Extension Disabled';
+      toggleStatus.style.color = '#ea4335';
+    }
+  }
+
+  function enforceMinMax(input, min = 1, max = 300) {
+    let value = parseInt(input.value) || min;
+    value = Math.max(min, Math.min(max, value));
+    input.value = value;
+    return value;
+  }
+
+  [forwardTime, backwardTime, keyboardForward, keyboardBackward].forEach(input => {
+    input.addEventListener('change', () => enforceMinMax(input));
+    input.addEventListener('input', () => enforceMinMax(input));
+  });
+
+  async function loadSettings() {
     try {
-      const newState = toggle.checked;
-      toggleText.textContent = newState ? 'Extension Enabled' : 'Extension Disabled';
-      await browser.storage.local.set({ extensionEnabled: newState });
-     
+      const stored = await browser.storage.local.get([
+        'extensionEnabled',
+        'forwardSkipTime',
+        'backwardSkipTime',
+        'keyboardForward',
+        'keyboardBackward'
+      ]);
+      
+      currentSettings = {
+        extensionEnabled: stored.extensionEnabled !== false,
+        forwardSkipTime: stored.forwardSkipTime || 10,
+        backwardSkipTime: stored.backwardSkipTime || 10,
+        keyboardForward: stored.keyboardForward || 5,
+        keyboardBackward: stored.keyboardBackward || 5
+      };
+
+      toggle.checked = currentSettings.extensionEnabled;
+      forwardTime.value = currentSettings.forwardSkipTime;
+      backwardTime.value = currentSettings.backwardSkipTime;
+      keyboardForward.value = currentSettings.keyboardForward;
+      keyboardBackward.value = currentSettings.keyboardBackward;
+      
+      updateToggleStatus();
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      toggle.checked = true;
+      updateToggleStatus();
+    }
+  }
+
+  async function saveSettings() {
+    currentSettings = {
+      extensionEnabled: toggle.checked,
+      forwardSkipTime: enforceMinMax(forwardTime),
+      backwardSkipTime: enforceMinMax(backwardTime),
+      keyboardForward: enforceMinMax(keyboardForward),
+      keyboardBackward: enforceMinMax(keyboardBackward)
+    };
+
+    await browser.storage.local.set(currentSettings);
+    updateToggleStatus();
+
+    try {
       const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
       for (const tab of tabs) {
         try {
           await browser.tabs.sendMessage(tab.id, {
-            action: 'updateState',
-            isEnabled: newState
+            action: 'updateSettings',
+            settings: currentSettings
           });
         } catch (err) {
-          console.log('Tab not ready:', err);
+          console.log('Tab not ready for messaging:', err);
         }
       }
     } catch (error) {
-      console.error('Error updating extension state:', error);
-      toggle.checked = !toggle.checked;
+      console.error('Error querying tabs:', error);
     }
-  });
- });
+  }
+
+  toggle.addEventListener('change', saveSettings);
+  forwardTime.addEventListener('change', saveSettings);
+  backwardTime.addEventListener('change', saveSettings);
+  keyboardForward.addEventListener('change', saveSettings);
+  keyboardBackward.addEventListener('change', saveSettings);
+
+  loadSettings();
+
+  setInterval(async () => {
+    if (document.hidden) return;
+    
+    try {
+      const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
+      for (const tab of tabs) {
+        try {
+          await browser.tabs.sendMessage(tab.id, {
+            action: 'updateSettings',
+            settings: currentSettings
+          });
+        } catch (err) {
+        }
+      }
+    } catch (error) {
+      console.error('Background tab check failed:', error);
+    }
+  }, 5000);
+});

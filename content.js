@@ -22,11 +22,15 @@ const CONFIG = {
   STORAGE_KEYS: {
     ENABLED_STATE: 'extensionEnabled',
     FORWARD_SKIP_TIME: 'forwardSkipTime',
-    BACKWARD_SKIP_TIME: 'backwardSkipTime'
+    BACKWARD_SKIP_TIME: 'backwardSkipTime',
+    KEYBOARD_FORWARD: 'keyboardForward',
+    KEYBOARD_BACKWARD: 'keyboardBackward'
   },
   DEFAULT_SKIP_TIMES: {
     FORWARD: 10,
-    BACKWARD: 10
+    BACKWARD: 10,
+    KEYBOARD_FORWARD: 5,
+    KEYBOARD_BACKWARD: 5
   }
 };
 
@@ -38,25 +42,25 @@ const state = {
   playerObserver: null,
   lastVideoElement: null,
   lastUrl: null,
-  isEnabled: true
+  isEnabled: true,
+  keyboardTimes: {
+    forward: 5,
+    backward: 5
+  }
 };
 
-const debounce = (func, wait) => {
+function debounce(func, wait) {
   let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
+  return function(...args) {
     clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+    timeout = setTimeout(() => func.apply(this, args), wait);
   };
-};
+}
 
-const isMoviePage = () => {
+function isMoviePage() {
   return window.location.href.includes('/watch') && 
          document.querySelector('ytd-watch-flexy[is-two-columns_]') === null;
-};
+}
 
 function findVideoPlayer() {
   for (const selector of CONFIG.SELECTORS.VIDEO_PLAYERS) {
@@ -68,39 +72,37 @@ function findVideoPlayer() {
   return null;
 }
 
-const createButton = (id, iconPath, skipTime) => {
+function createButton(id, iconPath) {
   const button = document.createElement('button');
   button.id = id;
-  Object.assign(button.style, {
-    width: '40px',
-    height: '50px',
-    backgroundImage: `url(${browser.runtime.getURL(iconPath)})`,
-    backgroundSize: '80%',
-    backgroundColor: 'transparent',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center 15px',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '0',
-    marginTop: '-3px',
-    transition: 'opacity 0.2s',
-    opacity: '1',
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    zIndex: '999'
-  });
+  button.style.cssText = `
+    width: 40px;
+    height: 50px;
+    background-image: url(${browser.runtime.getURL(iconPath)});
+    background-size: 80%;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: center 15px;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-top: -3px;
+    transition: opacity 0.2s;
+    opacity: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 999;
+  `;
 
-  button.innerHTML = `<div style="
+  const counter = document.createElement('div');
+  counter.id = `${id}-counter`;
+  counter.style.cssText = `
     position: absolute;
-    bottom: 16px; /* Move the number up by 5px (from 15px to 10px) */
-    ${
-      id === 'fastForwardButton' 
-        ? 'left: calc(50% - 2px);' 
-        : 'left: 50%;' 
-    }
-    transform: translate(-50%, 0); /* Center text horizontally */
+    bottom: 16px;
+    left: ${id === 'fastForwardButton' ? 'calc(50% - 2px)' : '50%'};
+    transform: translate(-50%, 0);
     width: 100%;
     text-align: center;
     color: white;
@@ -109,44 +111,54 @@ const createButton = (id, iconPath, skipTime) => {
     font-family: 'Roboto', 'Arial', sans-serif;
     font-weight: 500;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-  ">${skipTime}</div>`;
+  `;
 
+  button.appendChild(counter);
   button.addEventListener('mouseover', () => button.style.opacity = '0.8');
   button.addEventListener('mouseout', () => button.style.opacity = '1');
-  
   return button;
-};
+}
 
-
-
-function createButtonsContainer() {
-  const container = document.createElement('div');
-  container.id = 'customButtonsContainer';
-  Object.assign(container.style, {
-    position: 'relative',
-    left: '0',
-    top: '0',
-    display: 'flex',
-    alignItems: 'center',
-    height: '100%',
-    zIndex: '1000',
-  });
+function updateButtonCounters() {
   browser.storage.local.get([
     CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME,
     CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME
   ]).then(result => {
-    const forwardSkipTime = result[CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.FORWARD;
-    const backwardSkipTime = result[CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.BACKWARD;
-
-    const rewindButton = createButton('rewindButton', 'icons/alt-rewind.png', backwardSkipTime);
-    const forwardButton = createButton('fastForwardButton', 'icons/alt-forward.png', forwardSkipTime);
+    const forwardCounter = document.getElementById('fastForwardButton-counter');
+    const backwardCounter = document.getElementById('rewindButton-counter');
     
-    rewindButton.style.marginRight = '2px'; 
-    forwardButton.style.marginLeft = '2px'; 
-    
-    container.appendChild(rewindButton);
-    container.appendChild(forwardButton);
+    if (forwardCounter) {
+      forwardCounter.textContent = result[CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.FORWARD;
+    }
+    if (backwardCounter) {
+      backwardCounter.textContent = result[CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.BACKWARD;
+    }
   });
+}
+
+function createButtonsContainer() {
+  const container = document.createElement('div');
+  container.id = 'customButtonsContainer';
+  container.style.cssText = `
+    position: relative;
+    left: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    z-index: 1000;
+  `;
+
+  const rewindButton = createButton('rewindButton', 'icons/alt-rewind.png');
+  const forwardButton = createButton('fastForwardButton', 'icons/alt-forward.png');
+  
+  rewindButton.style.marginRight = '2px';
+  forwardButton.style.marginLeft = '2px';
+  
+  container.appendChild(rewindButton);
+  container.appendChild(forwardButton);
+
+  updateButtonCounters();
   return container;
 }
 
@@ -157,6 +169,7 @@ function setupVideoControls(videoPlayer) {
   container.addEventListener('click', async (event) => {
     const button = event.target.closest('button');
     if (!button) return;
+    
     const storage = await browser.storage.local.get([
       CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME,
       CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME
@@ -165,10 +178,10 @@ function setupVideoControls(videoPlayer) {
     const forwardSkipTime = parseInt(storage[CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME]) || CONFIG.DEFAULT_SKIP_TIMES.FORWARD;
     const backwardSkipTime = parseInt(storage[CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME]) || CONFIG.DEFAULT_SKIP_TIMES.BACKWARD;
 
-    if (event.target.id === 'fastForwardButton') {
-      videoPlayer.currentTime = videoPlayer.currentTime + forwardSkipTime;
-    } else if (event.target.id === 'rewindButton') {
-      videoPlayer.currentTime = videoPlayer.currentTime - backwardSkipTime;
+    if (button.id === 'fastForwardButton') {
+      videoPlayer.currentTime += forwardSkipTime;
+    } else if (button.id === 'rewindButton') {
+      videoPlayer.currentTime -= backwardSkipTime;
     }
   });
 }
@@ -179,9 +192,7 @@ function injectButtons() {
   const videoPlayer = findVideoPlayer();
   const controlsContainer = document.querySelector(CONFIG.SELECTORS.CONTROLS);
   
-  if (!videoPlayer || !controlsContainer) {
-    return false;
-  }
+  if (!videoPlayer || !controlsContainer) return false;
 
   const buttonsContainer = createButtonsContainer();
   const timeDisplay = controlsContainer.querySelector(CONFIG.SELECTORS.TIME_DISPLAY);
@@ -195,37 +206,29 @@ function injectButtons() {
   setupVideoControls(videoPlayer);
   state.buttonsInjected = true;
   state.lastVideoElement = videoPlayer;
-  
   return true;
 }
 
-const handleKeyDown = (event) => {
+function handleKeyDown(event) {
   if (!state.isEnabled) return;
   
   const videoPlayer = state.lastVideoElement || findVideoPlayer();
-  if (!videoPlayer || videoPlayer.paused) return;
+  if (!videoPlayer) return;
 
   if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
 
-  browser.storage.local.get([
-    CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME,
-    CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME
-  ]).then(result => {
-    const forwardSkipTime = result[CONFIG.STORAGE_KEYS.FORWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.FORWARD;
-    const backwardSkipTime = result[CONFIG.STORAGE_KEYS.BACKWARD_SKIP_TIME] || CONFIG.DEFAULT_SKIP_TIMES.BACKWARD;
+  const shouldOverride = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
 
-    switch (event.key) {
-      case 'ArrowRight':
-        event.preventDefault();
-        videoPlayer.currentTime += forwardSkipTime;
-        break;
-      case 'ArrowLeft':
-        event.preventDefault();
-        videoPlayer.currentTime -= backwardSkipTime;
-        break;
-    }
-  });
-};
+  if (event.key === 'ArrowRight' && shouldOverride) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    videoPlayer.currentTime += state.keyboardTimes.forward;
+  } else if (event.key === 'ArrowLeft' && shouldOverride) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    videoPlayer.currentTime -= state.keyboardTimes.backward;
+  }
+}
 
 function cleanup() {
   removeButtons();
@@ -240,13 +243,11 @@ function cleanup() {
     state.playerObserver = null;
   }
   
-  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener('keydown', handleKeyDown, true);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
 
   const container = document.getElementById('customButtonsContainer');
-  if (container) {
-    container.replaceWith(container.cloneNode(true));
-  }
+  if (container) container.remove();
 
   state.buttonsInjected = false;
   state.retryAttempts = 0;
@@ -255,61 +256,11 @@ function cleanup() {
 
 function removeButtons() {
   const container = document.getElementById('customButtonsContainer');
-  if (container) {
-    container.remove();
-  }
+  if (container) container.remove();
   state.buttonsInjected = false;
 }
 
-async function enableExtension() {
-  try {
-    await browser.storage.local.set({
-      [CONFIG.STORAGE_KEYS.ENABLED_STATE]: true
-    });
-    
-    state.isEnabled = true;
-    initializeExtension();
-    
-    const tabs = await browser.tabs.query({url: '*://*.youtube.com/*'});
-    tabs.forEach(tab => {
-      browser.tabs.sendMessage(tab.id, {
-        action: 'updateState',
-        isEnabled: true
-      });
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Error enabling extension:', error);
-    return false;
-  }
-}
-
-async function disableExtension() {
-  try {
-    await browser.storage.local.set({
-      [CONFIG.STORAGE_KEYS.ENABLED_STATE]: false
-    });
-    
-    state.isEnabled = false;
-    cleanup();
-    
-    const tabs = await browser.tabs.query({url: '*://*.youtube.com/*'});
-    tabs.forEach(tab => {
-      browser.tabs.sendMessage(tab.id, {
-        action: 'updateState',
-        isEnabled: false
-      });
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Error disabling extension:', error);
-    return false;
-  }
-}
-
-const tryInjectButtons = debounce(() => {
+function tryInjectButtons() {
   if (!state.isEnabled) return;
 
   const maxAttempts = state.isMoviePage ? 
@@ -327,14 +278,12 @@ const tryInjectButtons = debounce(() => {
   } else {
     state.retryAttempts = 0;
   }
-}, CONFIG.DEBOUNCE.MUTATION);
+}
 
 function observePlayerChanges() {
   if (!state.isEnabled) return;
 
-  if (state.playerObserver) {
-    state.playerObserver.disconnect();
-  }
+  if (state.playerObserver) state.playerObserver.disconnect();
 
   const moviePlayer = document.querySelector(CONFIG.SELECTORS.MOVIE_PLAYER);
   if (!moviePlayer) return;
@@ -369,8 +318,17 @@ function handleNavigation() {
 
 async function initializeExtension() {
   try {
-    const stored = await browser.storage.local.get(CONFIG.STORAGE_KEYS.ENABLED_STATE);
+    const stored = await browser.storage.local.get([
+      CONFIG.STORAGE_KEYS.ENABLED_STATE,
+      CONFIG.STORAGE_KEYS.KEYBOARD_FORWARD,
+      CONFIG.STORAGE_KEYS.KEYBOARD_BACKWARD
+    ]);
+    
     state.isEnabled = stored[CONFIG.STORAGE_KEYS.ENABLED_STATE] ?? true;
+    state.keyboardTimes = {
+      forward: stored[CONFIG.STORAGE_KEYS.KEYBOARD_FORWARD] ?? CONFIG.DEFAULT_SKIP_TIMES.KEYBOARD_FORWARD,
+      backward: stored[CONFIG.STORAGE_KEYS.KEYBOARD_BACKWARD] ?? CONFIG.DEFAULT_SKIP_TIMES.KEYBOARD_BACKWARD
+    };
     
     if (!state.isEnabled) {
       cleanup();
@@ -393,9 +351,7 @@ async function initializeExtension() {
       });
     }
 
-    document.removeEventListener('keydown', handleKeyDown);
-    document.addEventListener('keydown', handleKeyDown);
-    
+    document.addEventListener('keydown', handleKeyDown, true);
     observePlayerChanges();
     tryInjectButtons();
     
@@ -411,7 +367,7 @@ async function initializeExtension() {
   }
 }
 
-const handleFullscreenChange = debounce(() => {
+function handleFullscreenChange() {
   if (!state.isEnabled) return;
   
   if (document.fullscreenElement) {
@@ -426,35 +382,51 @@ const handleFullscreenChange = debounce(() => {
       tryInjectButtons();
     }, 300);
   }
-}, 150);
+}
 
-document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('fullscreenchange', debounce(handleFullscreenChange, 150));
 
-browser.runtime.onMessage.addListener(async (message) => {
+browser.runtime.onMessage.addListener((message) => {
   switch (message.action) {
-    case 'updateState':
-      if (message.isEnabled) {
-        await enableExtension();
-      } else {
-        await disableExtension();
+    case 'updateSettings':
+      state.isEnabled = message.settings.extensionEnabled !== false;
+      state.keyboardTimes = {
+        forward: message.settings.keyboardForward || CONFIG.DEFAULT_SKIP_TIMES.KEYBOARD_FORWARD,
+        backward: message.settings.keyboardBackward || CONFIG.DEFAULT_SKIP_TIMES.KEYBOARD_BACKWARD
+      };
+      
+      if (message.settings.forwardSkipTime !== undefined || 
+          message.settings.backwardSkipTime !== undefined) {
+        updateButtonCounters();
       }
-      break;
-    case 'updateTimes':
-      if (message.times) {
-        if (message.times.forwardSkipTime) {
-          await browser.storage.local.set({ forwardSkipTime: message.times.forwardSkipTime });
-        }
-        if (message.times.backwardSkipTime) {
-          await browser.storage.local.set({ backwardSkipTime: message.times.backwardSkipTime });
-        }
+      
+      if (!state.isEnabled) {
+        cleanup();
+      } else if (!state.buttonsInjected) {
         removeButtons();
         tryInjectButtons();
       }
       break;
+      
+    case 'updateState':
+      state.isEnabled = message.isEnabled;
+      if (message.isEnabled) {
+        initializeExtension();
+      } else {
+        cleanup();
+      }
+      break;
+      
     case 'getState':
-      return Promise.resolve({ isEnabled: state.isEnabled });
+      return Promise.resolve({ 
+        isEnabled: state.isEnabled,
+        keyboardTimes: state.keyboardTimes
+      });
+      
     case 'initializeExtension':
-      await initializeExtension();
+      initializeExtension();
       break;
   }
 });
+
+initializeExtension();

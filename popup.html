@@ -2,286 +2,352 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <title>YouTube Fast Forward & Rewind</title>
   <style>
-      @property --border-angle {
-          syntax: '<angle>';
-          initial-value: 0deg;
-          inherits: false;
-      }
-
-      body {
-          width: 350px;
-          margin: 0;
-          min-height: 100vh;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          background: #202124;
-      }
-
-      .popup-wrapper {
-          position: relative;
-          width: 350px;
-          border-radius: 8px;
-      }
-
-      .popup-wrapper::before {
-          content: '';
-          position: absolute;
-          inset: -2px;
-          background: conic-gradient(
-              from var(--border-angle),
-              #202124,
-              #ffffff 30deg,
-              rgba(255, 255, 255, 0.8) 60deg,
-              #202124 90deg
-          );
-          border-radius: 8px;
-          animation: borderRotate 8s linear infinite;
-      }
-
-      .container {
-          background: #202124;
-          color: #fff;
-          border-radius: 8px;
-          position: relative;
-          z-index: 1;
-          margin: 2px;
-          padding: 20px;
-      }
-
-      @keyframes borderRotate {
-          from {
-              --border-angle: 0deg;
-          }
-          to {
-              --border-angle: 360deg;
-          }
-      }
-
-      .header {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin-bottom: 22px;
-      }
-
-      .header img {
-          width: 30px;
-          height: 30px;
-      }
-
-      .header span {
-          font-size: 16px;
-          font-weight: 500;
-      }
-
-      .controls {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-      }
-
-      .toggle-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: #303134;
-          padding: 12px 16px;
-          border-radius: 6px;
-          height: 36px;
-      }
-
-      .time-control {
-          background: #303134;
-          padding: 12px 16px;
-          border-radius: 6px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          height: 36px;
-      }
-
-      .toggle-row span {
-          font-size: 15px;
-          color: #e8eaed;
-      }
-
-      .time-control label {
-          font-size: 15px;
-          color: #e8eaed;
-      }
-
-      .time-control input {
-          width: 90px;
-          padding: 8px 12px;
-          background: #202124;
-          border: 1px solid #5f6368;
-          border-radius: 4px;
-          color: #e8eaed;
-          font-size: 14px;
-      }
-
-      .time-control input:focus {
-          outline: none;
-          border-color: #1a73e8;
-      }
-
-      .switch {
-          position: relative;
-          display: inline-block;
-          width: 48px;
-          height: 26px;
-      }
-
-      .switch input {
-          opacity: 0;
-          width: 0;
-          height: 0;
-      }
-
-      .slider {
-          position: absolute;
-          cursor: pointer;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: #5f6368;
-          transition: .3s;
-          border-radius: 24px;
-      }
-
-      input:checked + .slider {
-          background: linear-gradient(135deg, 
-              #03254c,
-              #03254c,
-              #1a73e8,
-              #64b5f6,
-              #1a73e8,
-              #03254c,
-              #03254c
-          );
-          background-size: 500% 500%;
-          animation: waveMove 8s linear infinite;
-      }
-
-      .slider:before {
-          position: absolute;
-          content: "";
-          height: 20px;
-          width: 20px;
-          left: 3px;
-          bottom: 3px;
-          background-color: white;
-          transition: .3s;
-          border-radius: 50%;
-      }
-
-      input:checked + .slider:before {
-          transform: translateX(22px);
-      }
-
-      .button-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-      }
-
-      .github-button {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          background: #303134;
-          color: #e8eaed;
-          text-decoration: none;
-          padding: 12px;
-          border-radius: 6px;
-          font-size: 15px;
-          height: 36px;
-      }
-
-      .coffee-button {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          background: linear-gradient(135deg, 
-              #03254c,
-              #03254c,
-              #1a73e8,
-              #64b5f6,
-              #1a73e8,
-              #03254c,
-              #03254c
-          );
-          background-size: 500% 500%;
-          animation: waveMove 8s linear infinite;
-          color: white;
-          text-decoration: none;
-          padding: 12px;
-          border-radius: 6px;
-          font-size: 15px;
-          height: 36px;
-          position: relative;
-          overflow: hidden;
-      }
-
-      @keyframes waveMove {
-          0% {
-              background-position: 100% 100%;
-          }
-          100% {
-              background-position: 0% 0%;
-          }
-      }
+    :root {
+      --primary: #4285f4;
+      --primary-dark: #3367d6;
+      --background: #202124;
+      --surface: #303134;
+      --on-surface: #e8eaed;
+      --border: #5f6368;
+      --success: #34a853;
+      --warning: #fbbc05;
+      --error: #ea4335;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      width: 380px;
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--background);
+      color: var(--on-surface);
+      padding: 0;
+      margin: 0;
+    }
+    
+    .container {
+      padding: 16px;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .header img {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .header h1 {
+      font-size: 16px;
+      font-weight: 500;
+      color: white;
+    }
+    
+    .card {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .card-title svg {
+      width: 18px;
+      height: 18px;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .control-label {
+      font-size: 13px;
+    }
+    
+    #toggleStatus {
+      color: #4285f4;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    
+    .number-input {
+      width: 70px;
+      padding: 6px 10px;
+      background: var(--background);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--on-surface);
+      font-size: 13px;
+      text-align: center;
+    }
+    
+    .number-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 22px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #5f6368;
+      transition: .3s;
+      border-radius: 22px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    }
+    
+    input:not(:checked) + .slider {
+      background-color: var(--error);
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+    
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--on-surface);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover {
+      background: #3c4043;
+    }
+    
+    .btn-icon {
+      width: 16px;
+      height: 16px;
+    }
+    
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+      opacity: 0.2;
+    }
+    
+    .status-text {
+      font-size: 12px;
+      color: #9aa0a6;
+      text-align: center;
+      margin-top: 6px;
+    }
+    
+    /* Custom icon paths */
+    .icon-play {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    
+    .icon-skip {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    
+    .icon-keyboard {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
   </style>
 </head>
 <body>
-  <div class="popup-wrapper">
-      <div class="container">
-          <div class="header">
-              <img src="images/icon48.png" alt="Extension Icon">
-              <span>YouTube Fast Forward & Rewind</span>
-          </div>
-          <div class="controls">
-              <div class="toggle-row">
-                  <span id="toggleText">Extension Enabled</span>
-                  <label class="switch">
-                      <input type="checkbox" id="enableToggle" checked>
-                      <span class="slider"></span>
-                  </label>
-              </div>
-              <div class="time-control">
-                  <label for="forwardSkipTime">Forward Time (seconds)</label>
-                  <input type="number" id="forwardSkipTime" min="1" max="300" value="10">
-              </div>
-              <div class="time-control">
-                  <label for="backwardSkipTime">Rewind Time (seconds)</label>
-                  <input type="number" id="backwardSkipTime" min="1" max="300" value="10">
-              </div>
-              <div class="button-group">
-                  <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" class="github-button">
-                      <svg height="20" viewBox="0 0 16 16" width="20">
-                          <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-                      </svg>
-                      View on GitHub
-                  </a>
-                  <a href="https://buymeacoffee.com/laskco" class="coffee-button">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                          <line x1="6" y1="1" x2="6" y2="4"></line>
-                          <line x1="10" y1="1" x2="10" y2="4"></line>
-                          <line x1="14" y1="1" x2="14" y2="4"></line>
-                      </svg>
-                      Buy me a coffee
-                  </a>
-              </div>
-          </div>
+  <div class="container">
+    <div class="header">
+      <img src="images/icon48.png" alt="Extension Icon">
+      <h1>YouTube Fast Forward & Rewind</h1>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">
+        <svg class="icon-play" viewBox="0 0 24 24">
+          <rect x="3" y="5" width="18" height="14" rx="2"/>
+          <path d="M9 8v8"/>
+          <path d="M15 8v8"/>
+        </svg>
+        Video Controls
       </div>
+      <div class="control-group">
+        <div class="control-row">
+          <span class="control-label" id="toggleStatus">Extension Enabled</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="enableToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">
+        <svg class="icon-skip" viewBox="0 0 24 24">
+          <path d="M12 5v14"/>
+          <path d="M19 12l-7-7"/>
+          <path d="M5 12l7-7"/>
+        </svg>
+        Button Skip Times
+      </div>
+      <div class="control-group">
+        <div class="control-row">
+          <span class="control-label">Forward (seconds)</span>
+          <input type="number" id="forwardSkipTime" class="number-input" min="1" max="300" value="10">
+        </div>
+        <div class="control-row">
+          <span class="control-label">Backward (seconds)</span>
+          <input type="number" id="backwardSkipTime" class="number-input" min="1" max="300" value="10">
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">
+        <svg class="icon-keyboard" viewBox="0 0 24 24">
+          <path d="M3 8h18M3 12h18M3 16h18"/>
+          <rect x="7" y="4" width="2" height="2" rx="0.5"/>
+          <rect x="11" y="4" width="2" height="2" rx="0.5"/>
+          <rect x="15" y="4" width="2" height="2" rx="0.5"/>
+          <rect x="7" y="8" width="2" height="2" rx="0.5"/>
+          <rect x="11" y="8" width="2" height="2" rx="0.5"/>
+          <rect x="15" y="8" width="2" height="2" rx="0.5"/>
+          <rect x="7" y="12" width="2" height="2" rx="0.5"/>
+          <rect x="11" y="12" width="2" height="2" rx="0.5"/>
+          <rect x="15" y="12" width="2" height="2" rx="0.5"/>
+          <rect x="7" y="16" width="2" height="2" rx="0.5"/>
+          <rect x="11" y="16" width="2" height="2" rx="0.5"/>
+          <rect x="15" y="16" width="2" height="2" rx="0.5"/>
+        </svg>
+        Keyboard Skip Times
+      </div>
+      <div class="control-group">
+        <div class="control-row">
+          <span class="control-label">Right Arrow (seconds)</span>
+          <input type="number" id="keyboardForward" class="number-input" min="1" max="300" value="5">
+        </div>
+        <div class="control-row">
+          <span class="control-label">Left Arrow (seconds)</span>
+          <input type="number" id="keyboardBackward" class="number-input" min="1" max="300" value="5">
+        </div>
+      </div>
+      <div class="status-text">Press ← → arrow keys to skip during playback</div>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="button-group">
+      <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" class="btn btn-secondary">
+        <svg class="btn-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub Project
+      </a>
+      <a href="https://buymeacoffee.com/laskco" class="btn btn-primary">
+        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+          <line x1="6" y1="1" x2="6" y2="4"/>
+          <line x1="10" y1="1" x2="10" y2="4"/>
+          <line x1="14" y1="1" x2="14" y2="4"/>
+        </svg>
+        Buy Me a Coffee
+      </a>
+    </div>
   </div>
   <script src="popup.js"></script>
 </body>
