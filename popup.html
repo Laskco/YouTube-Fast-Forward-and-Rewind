@@ -1,354 +1,356 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>YouTube Fast Forward & Rewind</title>
-  <style>
-    :root {
-      --primary: #4285f4;
-      --primary-dark: #3367d6;
-      --background: #202124;
-      --surface: #303134;
-      --on-surface: #e8eaed;
-      --border: #5f6368;
-      --success: #34a853;
-      --warning: #fbbc05;
-      --error: #ea4335;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      width: 380px;
-      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--background);
-      color: var(--on-surface);
-      padding: 0;
-      margin: 0;
-    }
-    
-    .container {
-      padding: 16px;
-    }
-    
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    
-    .header img {
-      width: 32px;
-      height: 32px;
-    }
-    
-    .header h1 {
-      font-size: 16px;
-      font-weight: 500;
-      color: white;
-    }
-    
-    .card {
-      background: var(--surface);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    }
-    
-    .card-title {
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 12px;
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .card-title svg {
-      width: 18px;
-      height: 18px;
-    }
-    
-    .control-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    
-    .control-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .control-label {
-      font-size: 13px;
-    }
-    
-    #toggleStatus {
-      color: #4285f4;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    
-    .number-input {
-      width: 70px;
-      padding: 6px 10px;
-      background: var(--background);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--on-surface);
-      font-size: 13px;
-      text-align: center;
-    }
-    
-    .number-input:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-    
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 42px;
-      height: 22px;
-    }
-    
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #5f6368;
-      transition: .3s;
-      border-radius: 22px;
-    }
-    
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 2px;
-      bottom: 2px;
-      background-color: white;
-      transition: .3s;
-      border-radius: 50%;
-    }
-    
-    input:checked + .slider {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    }
-    
-    input:not(:checked) + .slider {
-      background-color: var(--error);
-    }
-    
-    input:checked + .slider:before {
-      transform: translateX(20px);
-    }
-    
-    .button-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s;
-      cursor: pointer;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: white;
-    }
-    
-    .btn-primary:hover {
-      filter: brightness(1.1);
-    }
-    
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--on-surface);
-      border: 1px solid var(--border);
-    }
-    
-    .btn-secondary:hover {
-      background: #3c4043;
-    }
-    
-    .btn-icon {
-      width: 16px;
-      height: 16px;
-    }
-    
-    .divider {
-      height: 1px;
-      background: var(--border);
-      margin: 12px 0;
-      opacity: 0.2;
-    }
-    
-    .status-text {
-      font-size: 12px;
-      color: #9aa0a6;
-      text-align: center;
-      margin-top: 6px;
-    }
-    
-    /* Custom icon paths */
-    .icon-play {
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    
-    .icon-skip {
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    
-    .icon-keyboard {
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 1.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>YouTube FF/RW Settings</title>
+    <style>
+        :root {
+            --bg-color: rgba(18, 18, 18, 0.97); --surface-color: rgba(33, 33, 33, 0.95);
+            --text-primary: #FFFFFF; --text-secondary: #BDBDBD;
+            --border-color: rgba(255, 255, 255, 0.12); --input-bg: rgba(28, 28, 28, 0.9);
+            --success-color: #4A90E2; --success-color-dark: #357ABD;
+            --error-color: #EF5350; --success-text-on-blue: #FFFFFF;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --border-radius: 6px; --transition-speed: 0.2s;
+            --control-height: 30px;
+        }
+        .feather { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: middle; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { background: #0a0a0a; }
+        body {
+            width: 380px;
+            font-family: var(--font-family);
+            background: var(--bg-color);
+            color: var(--text-primary);
+            padding: 0;
+            margin: 0;
+            font-size: 13px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            max-height: 655px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #BDBDBD var(--input-bg);
+        }
+        body::-webkit-scrollbar { width: 8px; }
+        body::-webkit-scrollbar-track { background: var(--input-bg); border-radius: 4px; }
+        body::-webkit-scrollbar-thumb { background-color: #BDBDBD; border-radius: 4px; border: 2px solid var(--input-bg); }
+        .container { padding: 16px 12px; display: flex; flex-direction: column; gap: 16px; }
+        .header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+        .header img { width: 28px; height: 28px; flex-shrink: 0; }
+        .header h1 { font-size: 16px; font-weight: 600; flex-grow: 1; margin-right: 10px; }
+        .header-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;}
+        .version-text { font-size: 10px; color: var(--text-secondary); opacity: 0.7; margin-right: 4px; }
+
+        .header-actions .btn-link {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            border-radius: 50%;
+            border: none;
+        }
+        .header-actions .btn-link .feather {
+             width: 14px;
+             height: 14px;
+        }
+
+        .status-section { display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 10px 14px; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
+        .status-label { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        #extensionStatusText { font-weight: 600; transition: color var(--transition-speed); }
+        #extensionStatusText.enabled { color: var(--success-color); }
+        #extensionStatusText.disabled { color: var(--error-color); }
+        .toggle-switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+        .toggle-switch input { display: none; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--error-color); transition: var(--transition-speed); border-radius: 24px; border: 1px solid rgba(0,0,0,0.3); }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: var(--transition-speed); border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        input:checked + .slider { background: linear-gradient(135deg, var(--success-color), var(--success-color-dark)); }
+        input:checked + .slider:before { transform: translateX(22px); }
+        .settings-card { background: var(--surface-color); border-radius: var(--border-radius); padding: 14px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .card-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin: 0; flex-grow: 1; }
+        .card-title .feather { width: 18px; height: 18px; color: var(--success-color); }
+        .input-row { display: flex; flex-direction: column; gap: 8px; }
+        .input-main-row { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; min-height: var(--control-height); }
+        .input-label {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            color: var(--text-secondary);
+            font-size: 12px;
+            white-space: nowrap;
+            min-width: 85px;
+        }
+        .input-label .feather {
+            width: 14px;
+            height: 14px;
+            margin-right: 4px;
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-left: 0;
+            gap: 3px;
+            flex-shrink: 1;
+            min-width: 0;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .presets-hint {
+            width: 100%;
+            order: -1;
+            text-align: right;
+            font-size: 10px;
+            color: var(--text-secondary);
+            opacity: 0.8;
+            margin-bottom: 1px;
+            padding-right: 42px;
+            flex-basis: 100%;
+        }
+        .number-input { width: 45px; height: var(--control-height); padding: 0 4px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 13px; text-align: center; flex-shrink: 0; line-height: var(--control-height); margin: 0; }
+        .input-divider { width: 1px; height: 20px; background-color: var(--border-color); opacity: 0.5; flex-shrink: 0; margin: 0 3px; }
+        .preset-buttons { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+        .btn-preset { height: var(--control-height); font-size: 11px; font-weight: 600; padding: 0 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-secondary); border-radius: 4px; cursor: pointer; flex-shrink: 0; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+        .btn-edit-presets { height: var(--control-height); padding: 4px; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 4px; }
+        .number-input:focus { outline: none; border-color: var(--success-color); box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3); }
+        .number-input::-webkit-outer-spin-button, .number-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .number-input { appearance: textfield; -moz-appearance: textfield; }
+        .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--text-primary); }
+        .btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); color: var(--text-primary); }
+        .btn-edit-presets .feather { width: 16px; height: 16px; }
+        .btn-edit-presets:hover { color: var(--success-color); }
+        .preset-editor { display: none; flex-wrap: wrap; gap: 10px; padding: 10px 0 4px 0; border-top: 1px solid var(--border-color); margin-top: 10px; }
+        .input-row.is-editing-presets .preset-editor { display: flex; }
+        .preset-editor-item { display: flex; align-items: center; gap: 6px; }
+        .preset-editor-label { font-size: 12px; color: var(--text-secondary); min-width: 50px; }
+        .preset-value-input { width: 50px; padding: 4px 6px; font-size: 12px; }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-color); margin-top: 10px; }
+        .toggle-label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; flex-grow: 1; margin-right: 10px; }
+        .toggle-label .feather { width: 16px; height: 16px; color: var(--text-secondary); flex-shrink: 0; }
+
+        #saveStatus { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); background-color: var(--success-color); color: var(--success-text-on-blue); padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; opacity: 0; transition: opacity 0.3s ease-out; pointer-events: none; z-index: 10; }
+        #saveStatus.show { opacity: 1; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-decoration: none; transition: all var(--transition-speed); cursor: pointer; border: none; }
+        .btn .feather { width: 14px; height: 14px; }
+        .btn-primary { background: linear-gradient(135deg, var(--success-color), var(--success-color-dark)); color: var(--success-text-on-blue); }
+        .btn-primary:hover { filter: brightness(1.15); }
+        .btn-primary:active { filter: brightness(0.95); }
+        .btn-secondary { background: var(--surface-color); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-primary); border-color: rgba(255, 255, 255, 0.2); }
+        .btn-secondary:active { background: rgba(255, 255, 255, 0.05); }
+
+        .btn-link { background: none; border: none; color: var(--text-secondary); padding: 6px; }
+        .btn-link .feather { color: var(--text-secondary); }
+        .btn-link:hover { color: var(--success-color); background: rgba(74, 144, 226, 0.1); }
+        .btn-link:hover .feather { color: var(--success-color); }
+
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <img src="images/icon48.png" alt="Extension Icon">
-      <h1>YouTube Fast Forward & Rewind</h1>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-power" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></symbol>
+        <symbol id="icon-fast-forward" viewBox="0 0 24 24"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></symbol>
+        <symbol id="icon-rewind" viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon></symbol>
+        <symbol id="icon-skip-forward" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></symbol>
+        <symbol id="icon-skip-back" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></symbol>
+        <symbol id="icon-keyboard" viewBox="0 0 24 24"><path d="M2.5 7.5a1 1 0 0 1 1-1h17a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1zM4 12.5h2M8 12.5h2M12 12.5h2M16 12.5h4M8 15.5h8M6 9.5h2M10 9.5h2M14 9.5h2"></path></symbol>
+        <symbol id="icon-github" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></symbol>
+        <symbol id="icon-coffee" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></symbol>
+        <symbol id="icon-rotate-ccw" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></symbol>
+        <symbol id="icon-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></symbol>
+        <symbol id="icon-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></symbol>
+        <symbol id="icon-edit-3" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></symbol>
+        <symbol id="icon-toggle-left" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="8" cy="12" r="3"></circle></symbol>
+        <symbol id="icon-toggle-right" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="16" cy="12" r="3"></circle></symbol>
+    </svg>
+
+    <div class="container">
+        <header class="header">
+            <img src="images/icon48.png" alt="Extension Icon">
+            <h1>YouTube FF/RW</h1>
+            <div class="header-actions">
+                 <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="View on GitHub">
+                     <svg class="feather"><use href="#icon-github"></use></svg>
+                 </a>
+                 <a href="https://buymeacoffee.com/laskco" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Buy Me a Coffee">
+                     <svg class="feather"><use href="#icon-coffee"></use></svg>
+                 </a>
+                 <span class="version-text">v3.2</span>
+                 <button id="resetSettings" class="btn btn-link" title="Reset all settings to default">
+                     <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                 </button>
+            </div>
+        </header>
+
+        <section class="status-section">
+             <div class="status-label">
+                <svg class="feather"><use href="#icon-zap"></use></svg>
+                <span id="extensionStatusText">Extension Enabled</span>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="enableToggle" checked aria-labelledby="extensionStatusText">
+                <span class="slider"></span>
+            </label>
+        </section>
+
+        <section class="settings-card" id="button-skip-card">
+             <div class="card-header">
+                 <h2 class="card-title">
+                    <svg class="feather"><use href="#icon-skip-forward"></use></svg>
+                    Button Skip Times
+                </h2>
+             </div>
+             <div class="input-row" data-preset-context="btnFwd">
+                 <div class="input-main-row">
+                     <label for="forwardSkipTime" class="input-label">
+                         <svg class="feather"><use href="#icon-fast-forward"></use></svg>Forward:
+                     </label>
+                    <div class="input-group">
+                         <input type="number" id="forwardSkipTime" class="number-input skip-time-input" min="1" max="99">
+                         <span class="input-divider"></span>
+                         <span class="presets-hint">(Customizable Presets)</span>
+                         <div class="preset-buttons" data-target="forwardSkipTime" data-preset-context="btnFwd">
+                             <button class="btn-preset" data-preset-index="0"></button>
+                             <button class="btn-preset" data-preset-index="1"></button>
+                             <button class="btn-preset" data-preset-index="2"></button>
+                             <button class="btn-preset" data-preset-index="3"></button>
+                         </div>
+                         <button class="btn-edit-presets" aria-label="Edit Forward Button Presets">
+                             <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                             <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                         </button>
+                    </div>
+                </div>
+                <div class="preset-editor">
+                    <div class="preset-editor-item"><label class="preset-editor-label">P1:</label><input type="number" class="number-input preset-value-input" data-preset-index="0" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P2:</label><input type="number" class="number-input preset-value-input" data-preset-index="1" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P3:</label><input type="number" class="number-input preset-value-input" data-preset-index="2" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P4:</label><input type="number" class="number-input preset-value-input" data-preset-index="3" min="1" max="300"></div>
+                </div>
+            </div>
+             <div class="input-row" data-preset-context="btnBwd">
+                 <div class="input-main-row">
+                     <label for="backwardSkipTime" class="input-label">
+                          <svg class="feather"><use href="#icon-rewind"></use></svg>Backward:
+                     </label>
+                    <div class="input-group">
+                          <input type="number" id="backwardSkipTime" class="number-input skip-time-input" min="1" max="99">
+                          <span class="input-divider"></span>
+                          <span class="presets-hint"></span>
+                          <div class="preset-buttons" data-target="backwardSkipTime" data-preset-context="btnBwd">
+                              <button class="btn-preset" data-preset-index="0"></button>
+                              <button class="btn-preset" data-preset-index="1"></button>
+                              <button class="btn-preset" data-preset-index="2"></button>
+                              <button class="btn-preset" data-preset-index="3"></button>
+                          </div>
+                          <button class="btn-edit-presets" aria-label="Edit Backward Button Presets">
+                             <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                             <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                          </button>
+                    </div>
+                 </div>
+                 <div class="preset-editor">
+                    <div class="preset-editor-item"><label class="preset-editor-label">P1:</label><input type="number" class="number-input preset-value-input" data-preset-index="0" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P2:</label><input type="number" class="number-input preset-value-input" data-preset-index="1" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P3:</label><input type="number" class="number-input preset-value-input" data-preset-index="2" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P4:</label><input type="number" class="number-input preset-value-input" data-preset-index="3" min="1" max="300"></div>
+                </div>
+            </div>
+             <div class="toggle-row">
+                 <label for="buttonEnableToggle" class="toggle-label" id="buttonStatusLabel">
+                     <svg class="feather"><use href="#icon-toggle-right"></use></svg>
+                     Button Skip Times Enabled
+                 </label>
+                 <label class="toggle-switch">
+                     <input type="checkbox" id="buttonEnableToggle" checked aria-labelledby="buttonStatusLabel">
+                     <span class="slider"></span>
+                 </label>
+             </div>
+        </section>
+
+         <section class="settings-card" id="keyboard-skip-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <svg class="feather"><use href="#icon-keyboard"></use></svg>
+                    Keyboard Skip Times (← / →)
+                </h2>
+            </div>
+             <div class="input-row" data-preset-context="kbdFwd">
+                 <div class="input-main-row">
+                     <label for="keyboardForward" class="input-label">
+                          <svg class="feather"><use href="#icon-skip-forward"></use></svg>Forward (→):
+                     </label>
+                     <div class="input-group">
+                          <input type="number" id="keyboardForward" class="number-input skip-time-input" min="1" max="99">
+                          <span class="input-divider"></span>
+                          <span class="presets-hint">(Customizable Presets)</span>
+                          <div class="preset-buttons" data-target="keyboardForward" data-preset-context="kbdFwd">
+                               <button class="btn-preset" data-preset-index="0"></button>
+                               <button class="btn-preset" data-preset-index="1"></button>
+                               <button class="btn-preset" data-preset-index="2"></button>
+                               <button class="btn-preset" data-preset-index="3"></button>
+                          </div>
+                          <button class="btn-edit-presets" aria-label="Edit Forward Keyboard Presets">
+                             <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                             <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                          </button>
+                     </div>
+                 </div>
+                  <div class="preset-editor">
+                    <div class="preset-editor-item"><label class="preset-editor-label">P1:</label><input type="number" class="number-input preset-value-input" data-preset-index="0" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P2:</label><input type="number" class="number-input preset-value-input" data-preset-index="1" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P3:</label><input type="number" class="number-input preset-value-input" data-preset-index="2" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P4:</label><input type="number" class="number-input preset-value-input" data-preset-index="3" min="1" max="300"></div>
+                </div>
+             </div>
+              <div class="input-row" data-preset-context="kbdBwd">
+                  <div class="input-main-row">
+                     <label for="keyboardBackward" class="input-label">
+                         <svg class="feather"><use href="#icon-skip-back"></use></svg>Backward (←):
+                     </label>
+                      <div class="input-group">
+                          <input type="number" id="keyboardBackward" class="number-input skip-time-input" min="1" max="99">
+                          <span class="input-divider"></span>
+                          <span class="presets-hint"></span>
+                           <div class="preset-buttons" data-target="keyboardBackward" data-preset-context="kbdBwd">
+                               <button class="btn-preset" data-preset-index="0"></button>
+                               <button class="btn-preset" data-preset-index="1"></button>
+                               <button class="btn-preset" data-preset-index="2"></button>
+                               <button class="btn-preset" data-preset-index="3"></button>
+                           </div>
+                           <button class="btn-edit-presets" aria-label="Edit Backward Keyboard Presets">
+                             <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                             <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                          </button>
+                     </div>
+                 </div>
+                   <div class="preset-editor">
+                    <div class="preset-editor-item"><label class="preset-editor-label">P1:</label><input type="number" class="number-input preset-value-input" data-preset-index="0" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P2:</label><input type="number" class="number-input preset-value-input" data-preset-index="1" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P3:</label><input type="number" class="number-input preset-value-input" data-preset-index="2" min="1" max="300"></div>
+                    <div class="preset-editor-item"><label class="preset-editor-label">P4:</label><input type="number" class="number-input preset-value-input" data-preset-index="3" min="1" max="300"></div>
+                </div>
+             </div>
+             <div class="toggle-row">
+                 <label for="keyboardEnableToggle" class="toggle-label" id="keyboardStatusLabel">
+                     <svg class="feather"><use href="#icon-toggle-right"></use></svg>
+                     Keyboard Shortcuts Enabled
+                 </label>
+                 <label class="toggle-switch">
+                     <input type="checkbox" id="keyboardEnableToggle" checked aria-labelledby="keyboardStatusLabel">
+                     <span class="slider"></span>
+                 </label>
+             </div>
+         </section>
+
+        <div id="saveStatus">Settings Saved!</div>
+
     </div>
-    
-    <div class="card">
-      <div class="card-title">
-        <svg class="icon-play" viewBox="0 0 24 24">
-          <rect x="3" y="5" width="18" height="14" rx="2"/>
-          <path d="M9 8v8"/>
-          <path d="M15 8v8"/>
-        </svg>
-        Video Controls
-      </div>
-      <div class="control-group">
-        <div class="control-row">
-          <span class="control-label" id="toggleStatus">Extension Enabled</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="enableToggle" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
-    </div>
-    
-    <div class="card">
-      <div class="card-title">
-        <svg class="icon-skip" viewBox="0 0 24 24">
-          <path d="M12 5v14"/>
-          <path d="M19 12l-7-7"/>
-          <path d="M5 12l7-7"/>
-        </svg>
-        Button Skip Times
-      </div>
-      <div class="control-group">
-        <div class="control-row">
-          <span class="control-label">Forward (seconds)</span>
-          <input type="number" id="forwardSkipTime" class="number-input" min="1" max="300" value="10">
-        </div>
-        <div class="control-row">
-          <span class="control-label">Backward (seconds)</span>
-          <input type="number" id="backwardSkipTime" class="number-input" min="1" max="300" value="10">
-        </div>
-      </div>
-    </div>
-    
-    <div class="card">
-      <div class="card-title">
-        <svg class="icon-keyboard" viewBox="0 0 24 24">
-          <path d="M3 8h18M3 12h18M3 16h18"/>
-          <rect x="7" y="4" width="2" height="2" rx="0.5"/>
-          <rect x="11" y="4" width="2" height="2" rx="0.5"/>
-          <rect x="15" y="4" width="2" height="2" rx="0.5"/>
-          <rect x="7" y="8" width="2" height="2" rx="0.5"/>
-          <rect x="11" y="8" width="2" height="2" rx="0.5"/>
-          <rect x="15" y="8" width="2" height="2" rx="0.5"/>
-          <rect x="7" y="12" width="2" height="2" rx="0.5"/>
-          <rect x="11" y="12" width="2" height="2" rx="0.5"/>
-          <rect x="15" y="12" width="2" height="2" rx="0.5"/>
-          <rect x="7" y="16" width="2" height="2" rx="0.5"/>
-          <rect x="11" y="16" width="2" height="2" rx="0.5"/>
-          <rect x="15" y="16" width="2" height="2" rx="0.5"/>
-        </svg>
-        Keyboard Skip Times
-      </div>
-      <div class="control-group">
-        <div class="control-row">
-          <span class="control-label">Right Arrow (seconds)</span>
-          <input type="number" id="keyboardForward" class="number-input" min="1" max="300" value="5">
-        </div>
-        <div class="control-row">
-          <span class="control-label">Left Arrow (seconds)</span>
-          <input type="number" id="keyboardBackward" class="number-input" min="1" max="300" value="5">
-        </div>
-      </div>
-      <div class="status-text">Press ← → arrow keys to skip during playback</div>
-    </div>
-    
-    <div class="divider"></div>
-    
-    <div class="button-group">
-      <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" class="btn btn-secondary">
-        <svg class="btn-icon" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-        </svg>
-        GitHub Project
-      </a>
-      <a href="https://buymeacoffee.com/laskco" class="btn btn-primary">
-        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
-          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
-          <line x1="6" y1="1" x2="6" y2="4"/>
-          <line x1="10" y1="1" x2="10" y2="4"/>
-          <line x1="14" y1="1" x2="14" y2="4"/>
-        </svg>
-        Buy Me a Coffee
-      </a>
-    </div>
-  </div>
-  <script src="popup.js"></script>
+
+    <script src="popup.js"></script>
 </body>
 </html>
