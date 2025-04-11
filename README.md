@@ -7,8 +7,9 @@ You can find the Chrome version here [YouTube Fast Forward & Rewind](https://chr
 - Easy Navigation: The buttons are built right into the YouTube player for quick access.
 - Auto Save: Your settings are saved automatically, so you don't have to reset them every time.
 #
-![](<images/Screenshot 2024-11-27 185640.png>)
+![309321](https://github.com/user-attachments/assets/3e3a4cee-bf60-4515-a51a-088846a6bf4c)
 #
 ![alt text](<Screenshot 2025-04-10 091501.png>)
 #
-![](<images/Screenshot 2024-11-27 190154.png>)
+![309323](https://github.com/user-attachments/assets/3f604661-5ae5-4eb0-818e-aaeea7fcc96a)
+
