@@ -5,14 +5,22 @@
     <title>YouTube FF/RW Settings</title>
     <style>
         :root {
-            --bg-color: rgba(18, 18, 18, 0.97); --surface-color: rgba(33, 33, 33, 0.95);
-            --text-primary: #FFFFFF; --text-secondary: #BDBDBD;
-            --border-color: rgba(255, 255, 255, 0.12); --input-bg: rgba(28, 28, 28, 0.9);
-            --success-color: #4A90E2; --success-color-dark: #357ABD;
-            --error-color: #EF5350; --success-text-on-blue: #FFFFFF;
+            --bg-color: rgba(18, 18, 18, 0.97);
+            --surface-color: rgba(33, 33, 33, 0.95);
+            --editor-bg-color: rgba(0, 0, 0, 0.15);
+            --text-primary: #FFFFFF;
+            --text-secondary: #BDBDBD;
+            --border-color: rgba(255, 255, 255, 0.12);
+            --input-bg: rgba(28, 28, 28, 0.9);
+            --success-color: #4A90E2;
+            --success-color-dark: #357ABD;
+            --error-color: #EF5350;
+            --success-text-on-blue: #FFFFFF;
             --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            --border-radius: 6px; --transition-speed: 0.2s;
+            --border-radius: 12px;
+            --transition-speed: 0.2s;
             --control-height: 30px;
+            --editor-control-height: 28px;
         }
         .feather { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: middle; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,39 +30,39 @@
             font-family: var(--font-family);
             background: var(--bg-color);
             color: var(--text-primary);
-            padding: 0;
             margin: 0;
             font-size: 13px;
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
-            max-height: 655px;
             overflow-y: auto;
+            overflow-x: hidden;
             scrollbar-width: thin;
             scrollbar-color: #BDBDBD var(--input-bg);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
         body::-webkit-scrollbar { width: 8px; }
         body::-webkit-scrollbar-track { background: var(--input-bg); border-radius: 4px; }
         body::-webkit-scrollbar-thumb { background-color: #BDBDBD; border-radius: 4px; border: 2px solid var(--input-bg); }
-        .container { padding: 16px 12px; display: flex; flex-direction: column; gap: 16px; }
+        .container {
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            flex-grow: 1;
+            min-height: 0;
+        }
         .header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
         .header img { width: 28px; height: 28px; flex-shrink: 0; }
         .header h1 { font-size: 16px; font-weight: 600; flex-grow: 1; margin-right: 10px; }
         .header-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;}
         .version-text { font-size: 10px; color: var(--text-secondary); opacity: 0.7; margin-right: 4px; }
+        .header-actions .btn-link { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: none; }
+        .header-actions .btn-link .feather { width: 14px; height: 14px; }
 
-        .header-actions .btn-link {
-            width: 26px;
-            height: 26px;
-            padding: 0;
-            border-radius: 50%;
-            border: none;
-        }
-        .header-actions .btn-link .feather {
-             width: 14px;
-             height: 14px;
-        }
-
-        .status-section { display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 10px 14px; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
+        .status-section { display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 10px 14px; border-radius: var(--border-radius); border: 1px solid var(--border-color); flex-shrink: 0; }
         .status-label { display: flex; align-items: center; gap: 8px; font-weight: 500; }
         #extensionStatusText { font-weight: 600; transition: color var(--transition-speed); }
         #extensionStatusText.enabled { color: var(--success-color); }
@@ -65,12 +73,39 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: var(--transition-speed); border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
         input:checked + .slider { background: linear-gradient(135deg, var(--success-color), var(--success-color-dark)); }
         input:checked + .slider:before { transform: translateX(22px); }
-        .settings-card { background: var(--surface-color); border-radius: var(--border-radius); padding: 14px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px; }
+
+        .settings-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 11px; /* User preference */
+            min-height: 0;
+            flex-shrink: 0;
+            height: auto;
+        }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .card-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin: 0; flex-grow: 1; }
         .card-title .feather { width: 18px; height: 18px; color: var(--success-color); }
-        .input-row { display: flex; flex-direction: column; gap: 8px; }
-        .input-main-row { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; min-height: var(--control-height); }
+
+        .input-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: auto;
+            min-height: 0; /* Added back */
+            overflow: hidden; /* Added */
+            position: relative; /* Added */
+        }
+        .input-main-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            width: 100%;
+            gap: 8px;
+        }
         .input-label {
             display: inline-flex;
             align-items: center;
@@ -79,40 +114,18 @@
             font-size: 12px;
             white-space: nowrap;
             min-width: 85px;
+            margin-bottom: 7px;
         }
-        .input-label .feather {
-            width: 14px;
-            height: 14px;
-            margin-right: 4px;
-            flex-shrink: 0;
-            vertical-align: middle;
-        }
-        .input-group {
-            display: flex;
-            align-items: center;
-            margin-left: 0;
-            gap: 3px;
-            flex-shrink: 1;
-            min-width: 0;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        .presets-hint {
-            width: 100%;
-            order: -1;
-            text-align: right;
-            font-size: 10px;
-            color: var(--text-secondary);
-            opacity: 0.8;
-            margin-bottom: 1px;
-            padding-right: 42px;
-            flex-basis: 100%;
-        }
+        .input-label .feather { width: 14px; height: 14px; margin-right: 4px; flex-shrink: 0; }
+        .input-controls-wrapper { display: flex; flex-direction: column; align-items: flex-end; flex-grow: 1; min-width: 0; }
+        .presets-hint { font-size: 10px; color: var(--text-secondary); opacity: 0.8; text-align: right; margin-bottom: 2px; width: 100%; padding-right: 42px; }
+        .input-group { display: flex; align-items: center; gap: 3px; flex-wrap: nowrap; height: var(--control-height); }
         .number-input { width: 45px; height: var(--control-height); padding: 0 4px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 13px; text-align: center; flex-shrink: 0; line-height: var(--control-height); margin: 0; }
-        .input-divider { width: 1px; height: 20px; background-color: var(--border-color); opacity: 0.5; flex-shrink: 0; margin: 0 3px; }
+        .input-divider { width: 1px; height: 20px; background-color: var(--border-color); opacity: 0.5; flex-shrink: 0; margin: 0 3px; align-self: center; }
         .preset-buttons { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
         .btn-preset { height: var(--control-height); font-size: 11px; font-weight: 600; padding: 0 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-secondary); border-radius: 4px; cursor: pointer; flex-shrink: 0; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         .btn-edit-presets { height: var(--control-height); padding: 4px; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 4px; }
+
         .number-input:focus { outline: none; border-color: var(--success-color); box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3); }
         .number-input::-webkit-outer-spin-button, .number-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .number-input { appearance: textfield; -moz-appearance: textfield; }
@@ -120,12 +133,30 @@
         .btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); color: var(--text-primary); }
         .btn-edit-presets .feather { width: 16px; height: 16px; }
         .btn-edit-presets:hover { color: var(--success-color); }
-        .preset-editor { display: none; flex-wrap: wrap; gap: 10px; padding: 10px 0 4px 0; border-top: 1px solid var(--border-color); margin-top: 10px; }
-        .input-row.is-editing-presets .preset-editor { display: flex; }
-        .preset-editor-item { display: flex; align-items: center; gap: 6px; }
-        .preset-editor-label { font-size: 12px; color: var(--text-secondary); min-width: 50px; }
-        .preset-value-input { width: 50px; padding: 4px 6px; font-size: 12px; }
-        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-color); margin-top: 10px; }
+
+        .preset-editor {
+            display: none;
+            background-color: var(--editor-bg-color);
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid var(--border-color);
+            grid-template-columns: auto 1fr auto 1fr;
+            padding-left: 38px;
+            grid-template-rows: auto auto;
+            gap: 8px 10px;
+            align-items: center;
+            /* Ensure it's within the flow */
+            position: relative;
+            width: 100%;
+        }
+        .input-row.is-editing-presets .preset-editor { display: grid; }
+        .preset-editor-item { display: contents; }
+        .preset-editor-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-align: right; padding-right: 4px; white-space: nowrap; }
+        .preset-value-input { height: var(--editor-control-height); line-height: var(--editor-control-height); width: 50px; font-size: 12px; }
+
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-color); margin-top: 10px; flex-shrink: 0; }
         .toggle-label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; flex-grow: 1; margin-right: 10px; }
         .toggle-label .feather { width: 16px; height: 16px; color: var(--text-secondary); flex-shrink: 0; }
 
@@ -149,7 +180,9 @@
     </style>
 </head>
 <body>
+    <!-- SVG Symbols -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <!-- Symbols omitted for brevity -->
         <symbol id="icon-power" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></symbol>
         <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></symbol>
         <symbol id="icon-fast-forward" viewBox="0 0 24 24"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></symbol>
@@ -168,6 +201,7 @@
         <symbol id="icon-toggle-right" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="16" cy="12" r="3"></circle></symbol>
     </svg>
 
+    <!-- HTML Content -->
     <div class="container">
         <header class="header">
             <img src="images/icon48.png" alt="Extension Icon">
@@ -179,8 +213,8 @@
                  <a href="https://buymeacoffee.com/laskco" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Buy Me a Coffee">
                      <svg class="feather"><use href="#icon-coffee"></use></svg>
                  </a>
-                 <span class="version-text">v3.2</span>
-                 <button id="resetSettings" class="btn btn-link" title="Reset all settings to default">
+                 <span class="version-text">v3.4</span>
+                 <button type="button" id="resetSettings" class="btn btn-link" title="Reset all settings to default">
                      <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                  </button>
             </div>
@@ -209,56 +243,83 @@
                      <label for="forwardSkipTime" class="input-label">
                          <svg class="feather"><use href="#icon-fast-forward"></use></svg>Forward:
                      </label>
-                    <div class="input-group">
-                         <input type="number" id="forwardSkipTime" class="number-input skip-time-input" min="1" max="99">
-                         <span class="input-divider"></span>
-                         <span class="presets-hint">(Customizable Presets)</span>
-                         <div class="preset-buttons" data-target="forwardSkipTime" data-preset-context="btnFwd">
-                             <button class="btn-preset" data-preset-index="0"></button>
-                             <button class="btn-preset" data-preset-index="1"></button>
-                             <button class="btn-preset" data-preset-index="2"></button>
-                             <button class="btn-preset" data-preset-index="3"></button>
+                     <div class="input-controls-wrapper">
+                         <div class="presets-hint">(Customizable Presets)</div>
+                         <div class="input-group">
+                             <input type="number" id="forwardSkipTime" class="number-input skip-time-input" min="1" max="300">
+                             <span class="input-divider"></span>
+                             <div class="preset-buttons" data-target="forwardSkipTime" data-preset-context="btnFwd">
+                                 <button type="button" class="btn-preset" data-preset-index="0"></button>
+                                 <button type="button" class="btn-preset" data-preset-index="1"></button>
+                                 <button type="button" class="btn-preset" data-preset-index="2"></button>
+                                 <button type="button" class="btn-preset" data-preset-index="3"></button>
+                             </div>
+                             <button type="button" class="btn-edit-presets" aria-label="Edit Forward Button Presets">
+                                 <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                                 <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                             </button>
                          </div>
-                         <button class="btn-edit-presets" aria-label="Edit Forward Button Presets">
-                             <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                             <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
-                         </button>
+                     </div>
+                 </div>
+                 <div class="preset-editor">
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="btnFwd_p1">P1:</label>
+                         <input type="number" class="number-input preset-value-input" id="btnFwd_p1" data-preset-index="0" min="1" max="300">
                     </div>
-                </div>
-                <div class="preset-editor">
-                    <div class="preset-editor-item"><label class="preset-editor-label">P1:</label><input type="number" class="number-input preset-value-input" data-preset-index="0" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P2:</label><input type="number" class="number-input preset-value-input" data-preset-index="1" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P3:</label><input type="number" class="number-input preset-value-input" data-preset-index="2" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P4:</label><input type="number" class="number-input preset-value-input" data-preset-index="3" min="1" max="300"></div>
-                </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="btnFwd_p2">P2:</label>
+                         <input type="number" class="number-input preset-value-input" id="btnFwd_p2" data-preset-index="1" min="1" max="300">
+                    </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="btnFwd_p3">P3:</label>
+                         <input type="number" class="number-input preset-value-input" id="btnFwd_p3" data-preset-index="2" min="1" max="300">
+                     </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="btnFwd_p4">P4:</label>
+                         <input type="number" class="number-input preset-value-input" id="btnFwd_p4" data-preset-index="3" min="1" max="300">
+                     </div>
+                 </div>
             </div>
              <div class="input-row" data-preset-context="btnBwd">
                  <div class="input-main-row">
                      <label for="backwardSkipTime" class="input-label">
                           <svg class="feather"><use href="#icon-rewind"></use></svg>Backward:
                      </label>
-                    <div class="input-group">
-                          <input type="number" id="backwardSkipTime" class="number-input skip-time-input" min="1" max="99">
-                          <span class="input-divider"></span>
-                          <span class="presets-hint"></span>
-                          <div class="preset-buttons" data-target="backwardSkipTime" data-preset-context="btnBwd">
-                              <button class="btn-preset" data-preset-index="0"></button>
-                              <button class="btn-preset" data-preset-index="1"></button>
-                              <button class="btn-preset" data-preset-index="2"></button>
-                              <button class="btn-preset" data-preset-index="3"></button>
-                          </div>
-                          <button class="btn-edit-presets" aria-label="Edit Backward Button Presets">
-                             <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                             <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
-                          </button>
-                    </div>
+                     <div class="input-controls-wrapper">
+                         <div class="input-group">
+                              <input type="number" id="backwardSkipTime" class="number-input skip-time-input" min="1" max="300">
+                              <span class="input-divider"></span>
+                              <div class="preset-buttons" data-target="backwardSkipTime" data-preset-context="btnBwd">
+                                  <button type="button" class="btn-preset" data-preset-index="0"></button>
+                                  <button type="button" class="btn-preset" data-preset-index="1"></button>
+                                  <button type="button" class="btn-preset" data-preset-index="2"></button>
+                                  <button type="button" class="btn-preset" data-preset-index="3"></button>
+                              </div>
+                              <button type="button" class="btn-edit-presets" aria-label="Edit Backward Button Presets">
+                                 <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                                 <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                              </button>
+                         </div>
+                     </div>
                  </div>
                  <div class="preset-editor">
-                    <div class="preset-editor-item"><label class="preset-editor-label">P1:</label><input type="number" class="number-input preset-value-input" data-preset-index="0" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P2:</label><input type="number" class="number-input preset-value-input" data-preset-index="1" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P3:</label><input type="number" class="number-input preset-value-input" data-preset-index="2" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P4:</label><input type="number" class="number-input preset-value-input" data-preset-index="3" min="1" max="300"></div>
-                </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="btnBwd_p1">P1:</label>
+                         <input type="number" class="number-input preset-value-input" id="btnBwd_p1" data-preset-index="0" min="1" max="300">
+                    </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="btnBwd_p2">P2:</label>
+                         <input type="number" class="number-input preset-value-input" id="btnBwd_p2" data-preset-index="1" min="1" max="300">
+                    </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="btnBwd_p3">P3:</label>
+                         <input type="number" class="number-input preset-value-input" id="btnBwd_p3" data-preset-index="2" min="1" max="300">
+                     </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="btnBwd_p4">P4:</label>
+                         <input type="number" class="number-input preset-value-input" id="btnBwd_p4" data-preset-index="3" min="1" max="300">
+                     </div>
+                 </div>
             </div>
              <div class="toggle-row">
                  <label for="buttonEnableToggle" class="toggle-label" id="buttonStatusLabel">
@@ -284,56 +345,83 @@
                      <label for="keyboardForward" class="input-label">
                           <svg class="feather"><use href="#icon-skip-forward"></use></svg>Forward (→):
                      </label>
-                     <div class="input-group">
-                          <input type="number" id="keyboardForward" class="number-input skip-time-input" min="1" max="99">
-                          <span class="input-divider"></span>
-                          <span class="presets-hint">(Customizable Presets)</span>
-                          <div class="preset-buttons" data-target="keyboardForward" data-preset-context="kbdFwd">
-                               <button class="btn-preset" data-preset-index="0"></button>
-                               <button class="btn-preset" data-preset-index="1"></button>
-                               <button class="btn-preset" data-preset-index="2"></button>
-                               <button class="btn-preset" data-preset-index="3"></button>
-                          </div>
-                          <button class="btn-edit-presets" aria-label="Edit Forward Keyboard Presets">
-                             <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                             <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
-                          </button>
+                     <div class="input-controls-wrapper">
+                          <div class="presets-hint">(Customizable Presets)</div>
+                         <div class="input-group">
+                              <input type="number" id="keyboardForward" class="number-input skip-time-input" min="1" max="300">
+                              <span class="input-divider"></span>
+                              <div class="preset-buttons" data-target="keyboardForward" data-preset-context="kbdFwd">
+                                   <button type="button" class="btn-preset" data-preset-index="0"></button>
+                                   <button type="button" class="btn-preset" data-preset-index="1"></button>
+                                   <button type="button" class="btn-preset" data-preset-index="2"></button>
+                                   <button type="button" class="btn-preset" data-preset-index="3"></button>
+                              </div>
+                              <button type="button" class="btn-edit-presets" aria-label="Edit Forward Keyboard Presets">
+                                 <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                                 <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                              </button>
+                         </div>
                      </div>
                  </div>
                   <div class="preset-editor">
-                    <div class="preset-editor-item"><label class="preset-editor-label">P1:</label><input type="number" class="number-input preset-value-input" data-preset-index="0" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P2:</label><input type="number" class="number-input preset-value-input" data-preset-index="1" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P3:</label><input type="number" class="number-input preset-value-input" data-preset-index="2" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P4:</label><input type="number" class="number-input preset-value-input" data-preset-index="3" min="1" max="300"></div>
-                </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="kbdFwd_p1">P1:</label>
+                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p1" data-preset-index="0" min="1" max="300">
+                    </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="kbdFwd_p2">P2:</label>
+                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p2" data-preset-index="1" min="1" max="300">
+                    </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="kbdFwd_p3">P3:</label>
+                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p3" data-preset-index="2" min="1" max="300">
+                     </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="kbdFwd_p4">P4:</label>
+                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p4" data-preset-index="3" min="1" max="300">
+                     </div>
+                 </div>
              </div>
               <div class="input-row" data-preset-context="kbdBwd">
                   <div class="input-main-row">
                      <label for="keyboardBackward" class="input-label">
                          <svg class="feather"><use href="#icon-skip-back"></use></svg>Backward (←):
                      </label>
-                      <div class="input-group">
-                          <input type="number" id="keyboardBackward" class="number-input skip-time-input" min="1" max="99">
-                          <span class="input-divider"></span>
-                          <span class="presets-hint"></span>
-                           <div class="preset-buttons" data-target="keyboardBackward" data-preset-context="kbdBwd">
-                               <button class="btn-preset" data-preset-index="0"></button>
-                               <button class="btn-preset" data-preset-index="1"></button>
-                               <button class="btn-preset" data-preset-index="2"></button>
-                               <button class="btn-preset" data-preset-index="3"></button>
-                           </div>
-                           <button class="btn-edit-presets" aria-label="Edit Backward Keyboard Presets">
-                             <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                             <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
-                          </button>
+                     <div class="input-controls-wrapper">
+                          <div class="input-group">
+                              <input type="number" id="keyboardBackward" class="number-input skip-time-input" min="1" max="300">
+                              <span class="input-divider"></span>
+                               <div class="preset-buttons" data-target="keyboardBackward" data-preset-context="kbdBwd">
+                                   <button type="button" class="btn-preset" data-preset-index="0"></button>
+                                   <button type="button" class="btn-preset" data-preset-index="1"></button>
+                                   <button type="button" class="btn-preset" data-preset-index="2"></button>
+                                   <button type="button" class="btn-preset" data-preset-index="3"></button>
+                               </div>
+                               <button type="button" class="btn-edit-presets" aria-label="Edit Backward Keyboard Presets">
+                                 <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                                 <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                              </button>
+                         </div>
                      </div>
                  </div>
                    <div class="preset-editor">
-                    <div class="preset-editor-item"><label class="preset-editor-label">P1:</label><input type="number" class="number-input preset-value-input" data-preset-index="0" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P2:</label><input type="number" class="number-input preset-value-input" data-preset-index="1" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P3:</label><input type="number" class="number-input preset-value-input" data-preset-index="2" min="1" max="300"></div>
-                    <div class="preset-editor-item"><label class="preset-editor-label">P4:</label><input type="number" class="number-input preset-value-input" data-preset-index="3" min="1" max="300"></div>
-                </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="kbdBwd_p1">P1:</label>
+                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p1" data-preset-index="0" min="1" max="300">
+                    </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="kbdBwd_p2">P2:</label>
+                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p2" data-preset-index="1" min="1" max="300">
+                    </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="kbdBwd_p3">P3:</label>
+                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p3" data-preset-index="2" min="1" max="300">
+                     </div>
+                    <div class="preset-editor-item">
+                         <label class="preset-editor-label" for="kbdBwd_p4">P4:</label>
+                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p4" data-preset-index="3" min="1" max="300">
+                     </div>
+                 </div>
              </div>
              <div class="toggle-row">
                  <label for="keyboardEnableToggle" class="toggle-label" id="keyboardStatusLabel">
@@ -347,7 +435,7 @@
              </div>
          </section>
 
-        <div id="saveStatus">Settings Saved!</div>
+        <div id="saveStatus" aria-live="polite">Settings Saved!</div>
 
     </div>
 
