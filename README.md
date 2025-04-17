@@ -11,7 +11,8 @@ You can find the Chrome version here [YouTube Fast Forward & Rewind](https://chr
 #
 ![309321](https://github.com/user-attachments/assets/3e3a4cee-bf60-4515-a51a-088846a6bf4c)
 #
-![alt text](<Screenshot 2025-04-10 091501.png>)
+![Screenshot 2025-04-17 115141](https://github.com/user-attachments/assets/e38fe92d-6811-422f-ba3f-0934a737c1cb)![Screenshot 2025-04-17 115157](https://github.com/user-attachments/assets/8ad100ae-3bc8-44aa-b8f5-0478719716c0)
+
 #
 ![309323](https://github.com/user-attachments/assets/3f604661-5ae5-4eb0-818e-aaeea7fcc96a)
 
