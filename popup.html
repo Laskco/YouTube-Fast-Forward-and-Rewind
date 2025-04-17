@@ -24,7 +24,7 @@
         }
         .feather { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: middle; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { background: #0a0a0a; }
+        html { background: #0a0a0a; transition: background-color var(--transition-speed); }
         body {
             width: 380px;
             font-family: var(--font-family);
@@ -41,10 +41,11 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+            transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
         }
         body::-webkit-scrollbar { width: 8px; }
-        body::-webkit-scrollbar-track { background: var(--input-bg); border-radius: 4px; }
-        body::-webkit-scrollbar-thumb { background-color: #BDBDBD; border-radius: 4px; border: 2px solid var(--input-bg); }
+        body::-webkit-scrollbar-track { background: var(--input-bg); border-radius: 4px; transition: background-color var(--transition-speed); }
+        body::-webkit-scrollbar-thumb { background-color: #BDBDBD; border-radius: 4px; border: 2px solid var(--input-bg); transition: background-color var(--transition-speed), border-color var(--transition-speed); }
         .container {
             padding: 16px 12px;
             display: flex;
@@ -54,23 +55,51 @@
             flex-grow: 1;
             min-height: 0;
         }
-        .header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
-        .header img { width: 28px; height: 28px; flex-shrink: 0; }
+        .header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); transition: border-color var(--transition-speed); }
+
+        .header-icon {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            display: none;
+        }
+        .icon-dark-theme {
+            display: inline-block;
+        }
+        body.light-theme .icon-dark-theme {
+            display: none;
+        }
+        body.light-theme .icon-light-theme {
+            display: inline-block;
+        }
+
         .header h1 { font-size: 16px; font-weight: 600; flex-grow: 1; margin-right: 10px; }
-        .header-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;}
-        .version-text { font-size: 10px; color: var(--text-secondary); opacity: 0.7; margin-right: 4px; }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        #github-link {
+             margin-right: -4px;
+        }
+        #themeToggle {
+            margin-left: -4px;
+        }
+        .version-text { font-size: 10px; color: var(--text-secondary); opacity: 0.7; margin-right: 4px; transition: color var(--transition-speed); }
         .header-actions .btn-link { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: none; }
         .header-actions .btn-link .feather { width: 14px; height: 14px; }
 
-        .status-section { display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 10px 14px; border-radius: var(--border-radius); border: 1px solid var(--border-color); flex-shrink: 0; }
+        .status-section { display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 10px 14px; border-radius: var(--border-radius); border: 1px solid var(--border-color); flex-shrink: 0; transition: background-color var(--transition-speed), border-color var(--transition-speed); }
         .status-label { display: flex; align-items: center; gap: 8px; font-weight: 500; }
         #extensionStatusText { font-weight: 600; transition: color var(--transition-speed); }
         #extensionStatusText.enabled { color: var(--success-color); }
         #extensionStatusText.disabled { color: var(--error-color); }
         .toggle-switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
         .toggle-switch input { display: none; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--error-color); transition: var(--transition-speed); border-radius: 24px; border: 1px solid rgba(0,0,0,0.3); }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: var(--transition-speed); border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--error-color); transition: var(--transition-speed); border-radius: 24px; transition: background-color var(--transition-speed), border-color var(--transition-speed); }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: var(--transition-speed); border-radius: 50%; }
         input:checked + .slider { background: linear-gradient(135deg, var(--success-color), var(--success-color-dark)); }
         input:checked + .slider:before { transform: translateX(22px); }
 
@@ -81,13 +110,14 @@
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            gap: 11px; /* User preference */
+            gap: 11px;
             min-height: 0;
             flex-shrink: 0;
             height: auto;
+            transition: background-color var(--transition-speed), border-color var(--transition-speed);
         }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .card-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin: 0; flex-grow: 1; }
+        .card-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin: 0; flex-grow: 1; transition: color var(--transition-speed); }
         .card-title .feather { width: 18px; height: 18px; color: var(--success-color); }
 
         .input-row {
@@ -95,9 +125,9 @@
             flex-direction: column;
             gap: 4px;
             height: auto;
-            min-height: 0; /* Added back */
-            overflow: hidden; /* Added */
-            position: relative; /* Added */
+            min-height: 0;
+            overflow: hidden;
+            position: relative;
         }
         .input-main-row {
             display: flex;
@@ -115,16 +145,17 @@
             white-space: nowrap;
             min-width: 85px;
             margin-bottom: 7px;
+            transition: color var(--transition-speed);
         }
         .input-label .feather { width: 14px; height: 14px; margin-right: 4px; flex-shrink: 0; }
         .input-controls-wrapper { display: flex; flex-direction: column; align-items: flex-end; flex-grow: 1; min-width: 0; }
-        .presets-hint { font-size: 10px; color: var(--text-secondary); opacity: 0.8; text-align: right; margin-bottom: 2px; width: 100%; padding-right: 42px; }
+        .presets-hint { font-size: 10px; color: var(--text-secondary); opacity: 0.8; text-align: right; margin-bottom: 2px; width: 100%; padding-right: 42px; transition: color var(--transition-speed); }
         .input-group { display: flex; align-items: center; gap: 3px; flex-wrap: nowrap; height: var(--control-height); }
-        .number-input { width: 45px; height: var(--control-height); padding: 0 4px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 13px; text-align: center; flex-shrink: 0; line-height: var(--control-height); margin: 0; }
-        .input-divider { width: 1px; height: 20px; background-color: var(--border-color); opacity: 0.5; flex-shrink: 0; margin: 0 3px; align-self: center; }
+        .number-input { width: 45px; height: var(--control-height); padding: 0 4px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 13px; text-align: center; flex-shrink: 0; line-height: var(--control-height); margin: 0; transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed); }
+        .input-divider { width: 1px; height: 20px; background-color: var(--border-color); opacity: 0.5; flex-shrink: 0; margin: 0 3px; align-self: center; transition: background-color var(--transition-speed); }
         .preset-buttons { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
-        .btn-preset { height: var(--control-height); font-size: 11px; font-weight: 600; padding: 0 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-secondary); border-radius: 4px; cursor: pointer; flex-shrink: 0; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-        .btn-edit-presets { height: var(--control-height); padding: 4px; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 4px; }
+        .btn-preset { height: var(--control-height); font-size: 11px; font-weight: 600; padding: 0 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-secondary); border-radius: 4px; cursor: pointer; flex-shrink: 0; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed); }
+        .btn-edit-presets { height: var(--control-height); padding: 4px; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 4px; transition: color var(--transition-speed); }
 
         .number-input:focus { outline: none; border-color: var(--success-color); box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3); }
         .number-input::-webkit-outer-spin-button, .number-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -147,20 +178,20 @@
             grid-template-rows: auto auto;
             gap: 8px 10px;
             align-items: center;
-            /* Ensure it's within the flow */
             position: relative;
             width: 100%;
+            transition: background-color var(--transition-speed), border-color var(--transition-speed);
         }
         .input-row.is-editing-presets .preset-editor { display: grid; }
         .preset-editor-item { display: contents; }
-        .preset-editor-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-align: right; padding-right: 4px; white-space: nowrap; }
+        .preset-editor-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-align: right; padding-right: 4px; white-space: nowrap; transition: color var(--transition-speed); }
         .preset-value-input { height: var(--editor-control-height); line-height: var(--editor-control-height); width: 50px; font-size: 12px; }
 
-        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-color); margin-top: 10px; flex-shrink: 0; }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-color); margin-top: 10px; flex-shrink: 0; transition: border-color var(--transition-speed); }
         .toggle-label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; flex-grow: 1; margin-right: 10px; }
-        .toggle-label .feather { width: 16px; height: 16px; color: var(--text-secondary); flex-shrink: 0; }
+        .toggle-label .feather { width: 16px; height: 16px; color: var(--text-secondary); flex-shrink: 0; transition: color var(--transition-speed); }
 
-        #saveStatus { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); background-color: var(--success-color); color: var(--success-text-on-blue); padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; opacity: 0; transition: opacity 0.3s ease-out; pointer-events: none; z-index: 10; }
+        #saveStatus { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); background-color: var(--success-color); color: var(--success-text-on-blue); padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; opacity: 0; transition: opacity 0.3s ease-out, background-color var(--transition-speed); pointer-events: none; z-index: 10; }
         #saveStatus.show { opacity: 1; }
 
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-decoration: none; transition: all var(--transition-speed); cursor: pointer; border: none; }
@@ -172,17 +203,52 @@
         .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-primary); border-color: rgba(255, 255, 255, 0.2); }
         .btn-secondary:active { background: rgba(255, 255, 255, 0.05); }
 
-        .btn-link { background: none; border: none; color: var(--text-secondary); padding: 6px; }
-        .btn-link .feather { color: var(--text-secondary); }
+        .btn-link { background: none; border: none; color: var(--text-secondary); padding: 6px; transition: color var(--transition-speed), background-color var(--transition-speed); }
+        .btn-link .feather { color: var(--text-secondary); transition: color var(--transition-speed); }
         .btn-link:hover { color: var(--success-color); background: rgba(74, 144, 226, 0.1); }
         .btn-link:hover .feather { color: var(--success-color); }
+
+        body.light-theme {
+            --bg-color: #E8EAED;
+            --surface-color: #F1F3F4;
+            --editor-bg-color: rgba(0, 0, 0, 0.06);
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --border-color: #D1D5DB;
+            --input-bg: #FFFFFF;
+            --success-color: #1E88E5;
+            --success-color-dark: #1565C0;
+            --error-color: #D93025;
+            --success-text-on-blue: #FFFFFF;
+            scrollbar-color: #B0B0B0 #D1D5DB;
+        }
+
+        html.light-theme {
+             background: #E0E0E0;
+        }
+
+        body.light-theme::-webkit-scrollbar-track { background: var(--border-color); }
+        body.light-theme::-webkit-scrollbar-thumb { background-color: #B0B0B0; border-color: var(--border-color); }
+
+        body.light-theme .btn-preset { border-color: var(--border-color); background: var(--input-bg); color: var(--text-secondary); }
+        body.light-theme .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--success-text-on-blue); }
+        body.light-theme .btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); }
+        body.light-theme .btn-link { color: var(--text-secondary); }
+        body.light-theme .btn-link .feather { color: var(--text-secondary); }
+        body.light-theme .btn-link:hover { color: var(--success-color); background: rgba(30, 136, 229, 0.08); }
+        body.light-theme .btn-link:hover .feather { color: var(--success-color); }
+        body.light-theme .preset-editor { border-color: var(--border-color); border-top-color: var(--border-color); background-color: var(--editor-bg-color); }
+        body.light-theme .input-divider { background-color: var(--border-color); }
+        body.light-theme .btn-secondary { border-color: var(--border-color); background: var(--surface-color); color: var(--text-secondary); }
+        body.light-theme .btn-secondary:hover { background: rgba(0, 0, 0, 0.04); color: var(--text-primary); border-color: rgba(0, 0, 0, 0.15); }
+        body.light-theme .btn-secondary:active { background: rgba(0, 0, 0, 0.08); }
+        body.light-theme #saveStatus { background-color: var(--success-color); color: var(--success-text-on-blue); }
+        body.light-theme .number-input:focus { box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.2); border-color: var(--success-color); }
 
     </style>
 </head>
 <body>
-    <!-- SVG Symbols -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-        <!-- Symbols omitted for brevity -->
         <symbol id="icon-power" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></symbol>
         <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></symbol>
         <symbol id="icon-fast-forward" viewBox="0 0 24 24"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></symbol>
@@ -199,21 +265,27 @@
         <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></symbol>
         <symbol id="icon-toggle-left" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="8" cy="12" r="3"></circle></symbol>
         <symbol id="icon-toggle-right" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="16" cy="12" r="3"></circle></symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></symbol>
     </svg>
 
-    <!-- HTML Content -->
     <div class="container">
         <header class="header">
-            <img src="images/icon48.png" alt="Extension Icon">
+            <img src="images/icon48.png" alt="Extension Icon" class="header-icon icon-dark-theme">
+            <img src="images/icon48black.png" alt="Extension Icon" class="header-icon icon-light-theme">
             <h1>YouTube FF/RW</h1>
             <div class="header-actions">
-                 <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="View on GitHub">
+                 <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" target="_blank" rel="noopener noreferrer" id="github-link" class="btn btn-link" title="View on GitHub">
                      <svg class="feather"><use href="#icon-github"></use></svg>
                  </a>
                  <a href="https://buymeacoffee.com/laskco" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Buy Me a Coffee">
                      <svg class="feather"><use href="#icon-coffee"></use></svg>
                  </a>
-                 <span class="version-text">v3.4</span>
+                 <button type="button" id="themeToggle" class="btn btn-link" title="Toggle Light/Dark Theme">
+                     <svg class="feather icon-sun"><use href="#icon-sun"></use></svg>
+                     <svg class="feather icon-moon" style="display: none;"><use href="#icon-moon"></use></svg>
+                 </button>
+                 <span class="version-text">v3.5</span>
                  <button type="button" id="resetSettings" class="btn btn-link" title="Reset all settings to default">
                      <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                  </button>

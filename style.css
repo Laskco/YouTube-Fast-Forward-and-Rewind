@@ -1,9 +1,44 @@
+:root {
+    --bg-color: #202124;
+    --surface-color: #303134;
+    --text-primary: #e8eaed;
+    --text-secondary: #bdc1c6;
+    --border-color: #5f6368;
+    --input-bg-color: #202124;
+    --input-focus-border: #1a73e8;
+    --switch-bg-off: #5f6368;
+    --switch-bg-on: #1a73e8;
+    --switch-thumb-color: #ffffff;
+    --button-hover-bg: #3c4043;
+    --coffee-button-bg: #DD4B3E;
+    --coffee-button-hover-bg: #C73E31;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --transition-speed: 0.2s;
+}
+
+body.light-theme {
+    --bg-color: #ffffff;
+    --surface-color: #f1f3f4;
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --border-color: #dadce0;
+    --input-bg-color: #ffffff;
+    --input-focus-border: #1a73e8;
+    --switch-bg-off: #bdc1c6;
+    --switch-bg-on: #1a73e8;
+    --switch-thumb-color: #ffffff;
+    --button-hover-bg: #e8eaed;
+    --coffee-button-bg: #DD4B3E;
+    --coffee-button-hover-bg: #C73E31;
+}
+
 body {
     width: 350px;
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #202124;
-    color: #fff;
+    font-family: var(--font-family);
+    background: var(--bg-color);
+    color: var(--text-primary);
+    transition: background-color var(--transition-speed), color var(--transition-speed);
 }
 
 .container {
@@ -17,14 +52,64 @@ body {
     margin-bottom: 22px;
 }
 
-.header img {
+.header-icon {
     width: 30px;
     height: 30px;
+    display: none;
+}
+
+.icon-dark-theme {
+    display: inline-block;
+}
+
+body.light-theme .icon-dark-theme {
+    display: none;
+}
+
+body.light-theme .icon-light-theme {
+    display: inline-block;
 }
 
 .header span {
     font-size: 16px;
     font-weight: 500;
+    color: var(--text-primary);
+     transition: color var(--transition-speed);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    gap: 6px;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--text-secondary);
+     transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+.btn-link:hover {
+    background: var(--button-hover-bg);
+    color: var(--text-primary);
+}
+
+.btn-link svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
 }
 
 .controls {
@@ -37,51 +122,66 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #303134;
+    background: var(--surface-color);
     padding: 12px 16px;
     border-radius: 6px;
     height: 36px;
+    box-sizing: border-box;
+    transition: background-color var(--transition-speed);
 }
 
 .toggle-row span {
     font-size: 15px;
-    color: #e8eaed;
+    color: var(--text-primary);
+    transition: color var(--transition-speed);
 }
 
 .time-control {
-    background: #303134;
+    background: var(--surface-color);
     padding: 12px 16px;
     border-radius: 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     height: 36px;
+    box-sizing: border-box;
+    transition: background-color var(--transition-speed);
 }
 
 .time-control label {
     font-size: 15px;
-    color: #e8eaed;
+    color: var(--text-primary);
+    transition: color var(--transition-speed);
 }
 
 .time-control input {
     width: 90px;
     padding: 8px 12px;
-    background: #202124;
-    border: 1px solid #5f6368;
+    background: var(--input-bg-color);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
-    color: #e8eaed;
+    color: var(--text-primary);
     font-size: 14px;
+    box-sizing: border-box;
+    height: 100%;
+    transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
 }
 
 .time-control input:focus {
     outline: none;
-    border-color: #1a73e8;
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3);
+}
+
+input[type=number] {
+    appearance: none;
+    -moz-appearance: textfield;
 }
 
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
-    opacity: 1;
-    height: 22px;
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .switch {
@@ -104,8 +204,8 @@ input[type=number]::-webkit-outer-spin-button {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #5f6368;
-    transition: .3s;
+    background-color: var(--switch-bg-off);
+    transition: background-color var(--transition-speed);
     border-radius: 24px;
 }
 
@@ -116,13 +216,14 @@ input[type=number]::-webkit-outer-spin-button {
     width: 20px;
     left: 3px;
     bottom: 3px;
-    background-color: white;
-    transition: .3s;
+    background-color: var(--switch-thumb-color);
+    transition: transform var(--transition-speed);
     border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 input:checked + .slider {
-    background-color: #1a73e8;
+    background-color: var(--switch-bg-on);
 }
 
 input:checked + .slider:before {
@@ -133,6 +234,7 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin-top: 10px;
 }
 
 .github-button {
@@ -140,22 +242,27 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background: #303134;
-    color: #e8eaed;
+    background: var(--surface-color);
+    color: var(--text-primary);
     text-decoration: none;
-    padding: 12px;
+    padding: 0 12px;
     border-radius: 6px;
     font-size: 15px;
     height: 36px;
-    transition: background-color 0.2s;
+    box-sizing: border-box;
+    border: 1px solid var(--border-color);
+    transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
 }
 
 .github-button:hover {
-    background: #3c4043;
+    background: var(--button-hover-bg);
 }
 
 .github-button svg {
-    color: #e8eaed;
+    color: var(--text-primary);
+    width: 18px;
+    height: 18px;
+    transition: color var(--transition-speed);
 }
 
 .coffee-button {
@@ -163,21 +270,35 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background: #DD4B3E;
-    color: #e8eaed;
+    background: var(--coffee-button-bg);
+    color: #ffffff;
     text-decoration: none;
-    padding: 12px;
+    padding: 0 12px;
     border-radius: 6px;
     font-size: 15px;
     height: 36px;
-    transition: background-color 0.2s;
+    box-sizing: border-box;
+    border: none;
+    transition: background-color var(--transition-speed);
 }
 
 .coffee-button:hover {
-    background: #C73E31;
+    background: var(--coffee-button-hover-bg);
     text-decoration: none !important;
 }
 
 .coffee-button svg {
-    color: #e8eaed;
+    color: #ffffff;
+    width: 18px;
+    height: 18px;
+}
+
+body.light-theme .github-button:hover {
+    color: var(--text-primary);
+}
+body.light-theme .github-button svg {
+     color: var(--text-primary);
+}
+body.light-theme .time-control input:focus {
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
 }
