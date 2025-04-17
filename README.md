@@ -1,5 +1,6 @@
 # YouTube Fast Forward & Rewind
 A YouTube extension that adds custom skip and rewind buttons to the player, so you can choose how much time you want to jump forward or backward.
+
 You can find the Firefox version here [YouTube Fast Forward & Rewind](https://addons.mozilla.org/en-US/firefox/addon/youtube-fast-forward-rewind/)
 
 You can find the Chrome version here [YouTube Fast Forward & Rewind](https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm?authuser=0&hl=en)
