@@ -63,8 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       keyboardBackward: 5,
       btnFwdPreset1Value: 5, btnFwdPreset2Value: 10, btnFwdPreset3Value: 15, btnFwdPreset4Value: 30,
       btnBwdPreset1Value: 5, btnBwdPreset2Value: 10, btnBwdPreset3Value: 15, btnBwdPreset4Value: 30,
-      kbdFwdPreset1Value: 3, kbdFwdPreset2Value: 5, kbdFwdPreset3Value: 10, kbdFwdPreset4Value: 15,
-      kbdBwdPreset1Value: 3, kbdBwdPreset2Value: 5, kbdBwdPreset3Value: 10, kbdBwdPreset4Value: 15,
+      kbdFwdPreset1Value: 5, kbdFwdPreset2Value: 10, kbdFwdPreset3Value: 15, kbdFwdPreset4Value: 30,
+      kbdBwdPreset1Value: 5, kbdBwdPreset2Value: 10, kbdBwdPreset3Value: 15, kbdBwdPreset4Value: 30,
       theme: 'dark'
     };
 
@@ -90,14 +90,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function enforceMinMax(input, min = 1, max = 300) {
-        if (!input) return min;
+    function enforceMinMax(input, min = 1, max = 99) {
+        if (!input || typeof input.value === 'undefined') return min;
         let value = parseInt(input.value, 10);
         if (isNaN(value) || value < min) value = min;
         else if (value > max) value = max;
-        input.value = value;
+        if (input.value !== value.toString()) {
+             input.value = value;
+        }
         return value;
     }
+
 
     function showSaveFeedback() {
         if (!saveStatusIndicator) return;
@@ -115,7 +118,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 buttonsContainer.querySelectorAll('.btn-preset').forEach(button => {
                     const index = button.dataset.presetIndex;
                     const settingKey = `${context}Preset${parseInt(index) + 1}Value`;
-                    const value = currentSettings[settingKey] ?? defaultSettings[settingKey];
+                    const rawValue = currentSettings[settingKey] ?? defaultSettings[settingKey];
+                    const value = enforceMinMax({ value: rawValue });
                     button.textContent = `${value}s`;
                     button.dataset.value = value;
                 });
@@ -125,12 +129,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                  editor.querySelectorAll('.preset-value-input').forEach(input => {
                     const index = input.dataset.presetIndex;
                     const settingKey = `${context}Preset${parseInt(index) + 1}Value`;
-                    const value = currentSettings[settingKey] ?? defaultSettings[settingKey];
-                    input.value = value;
+                    const rawValue = currentSettings[settingKey] ?? defaultSettings[settingKey];
+                    input.value = enforceMinMax({ value: rawValue });
                 });
             }
         });
     }
+
 
     function togglePresetEditMode(inputRowElement) {
         const editButton = inputRowElement.querySelector('.btn-edit-presets');
@@ -157,6 +162,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (changed) {
                 saveSettings(true);
+            } else {
+                 updatePresetUI();
             }
             inputRowElement.classList.remove('is-editing-presets');
             if(iconEdit) iconEdit.style.display = '';
@@ -187,10 +194,10 @@ document.addEventListener('DOMContentLoaded', async () => {
          if (toggle) toggle.checked = settings.extensionEnabled;
          if (buttonToggle) buttonToggle.checked = settings.buttonSkipEnabled;
          if (keyboardToggle) keyboardToggle.checked = settings.keyboardShortcutsEnabled;
-         if (forwardTimeInput) forwardTimeInput.value = settings.forwardSkipTime;
-         if (backwardTimeInput) backwardTimeInput.value = settings.backwardSkipTime;
-         if (keyboardForwardInput) keyboardForwardInput.value = settings.keyboardForward;
-         if (keyboardBackwardInput) keyboardBackwardInput.value = settings.keyboardBackward;
+         if (forwardTimeInput) forwardTimeInput.value = enforceMinMax({ value: settings.forwardSkipTime });
+         if (backwardTimeInput) backwardTimeInput.value = enforceMinMax({ value: settings.backwardSkipTime });
+         if (keyboardForwardInput) keyboardForwardInput.value = enforceMinMax({ value: settings.keyboardForward });
+         if (keyboardBackwardInput) keyboardBackwardInput.value = enforceMinMax({ value: settings.keyboardBackward });
          updateStatusUI();
          updatePresetUI();
          allInputRows.forEach(row => {
@@ -265,6 +272,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             enforceMinMax(input);
             saveSettings();
         });
+        input.addEventListener('blur', () => {
+             enforceMinMax(input);
+        });
     });
 
     editPresetButtons.forEach(button => {
@@ -308,7 +318,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (resetButton) {
         resetButton.addEventListener('click', async () => {
             const themeToKeep = currentSettings.theme || 'dark';
-            currentSettings = { ...defaultSettings, theme: themeToKeep };
+            currentSettings = { ...defaultSettings };
+            Object.keys(currentSettings).forEach(key => {
+                if (key.includes('Preset') || key.includes('SkipTime')) {
+                    currentSettings[key] = enforceMinMax({ value: defaultSettings[key] });
+                }
+            });
+            currentSettings.theme = themeToKeep;
             applyTheme(themeToKeep);
             applySettings(currentSettings);
             const settingsToSave = { ...currentSettings };

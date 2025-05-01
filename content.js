@@ -1,18 +1,16 @@
 const CONFIG = {
   SELECTORS: {
-    VIDEO_PLAYERS: [
-      'video.html5-main-video',
-      '.html5-video-player video',
-      '.html5-video-player .html5-main-video',
-      '#movie_player video'
-    ],
-    CONTROLS: '.ytp-left-controls',
+    MOVIE_PLAYER: '#movie_player',
+    VIDEO_TAG: 'video.html5-main-video',
+    CONTROLS_WRAPPER: '.ytp-chrome-bottom',
+    LEFT_CONTROLS: '.ytp-left-controls',
     TIME_DISPLAY: '.ytp-time-display.notranslate',
-    MOVIE_PLAYER: '#movie_player'
+    AUTOHIDE_CLASS_TARGET: '#movie_player',
+    AUTOHIDE_CLASS: 'ytp-autohide'
   },
   RETRY: {
-    INTERVAL: 250,
-    MAX_ATTEMPTS: 20
+    INTERVAL: 350,
+    MAX_ATTEMPTS: 25
   },
   DEBOUNCE: {
     NAVIGATION: 300,
@@ -55,8 +53,11 @@ const state = {
   navigationObserver: null,
   playerObserver: null,
   lastVideoElement: null,
-  lastUrl: window.location.href,
-  settings: { ...CONFIG.DEFAULT_SETTINGS }
+  lastUrl: null,
+  settings: { ...CONFIG.DEFAULT_SETTINGS },
+  playerElementCache: null,
+  isBuffering: false,
+  isHoveringOverCustomButtons: false
 };
 
 let retryTimeout = null;
@@ -78,22 +79,75 @@ function isEditable(element) {
            tagName === 'SELECT';
 }
 
-function isMoviePage() {
-  return window.location.href.includes('/watch') &&
-         document.querySelector('ytd-watch-flexy[is-two-columns_]') === null;
+function isWatchPage(url = window.location.href) {
+  try {
+    if (!url) return false;
+    const currentUrl = new URL(url);
+    return currentUrl.pathname === '/watch';
+  } catch (e) {
+    return false;
+  }
 }
 
-function findVideoPlayer() {
-  for (const selector of CONFIG.SELECTORS.VIDEO_PLAYERS) {
-    try {
-        const player = document.querySelector(selector);
-        if (player && player.tagName === 'VIDEO' && typeof player.currentTime === 'number') {
-            return player;
-        }
-    } catch(e) { }
+function findMoviePlayer() {
+  if (state.playerElementCache && document.body.contains(state.playerElementCache)) {
+    return state.playerElementCache;
   }
+  state.playerElementCache = document.querySelector(CONFIG.SELECTORS.MOVIE_PLAYER);
+  return state.playerElementCache;
+}
+
+
+function findVideoPlayer(moviePlayer) {
+  if (!moviePlayer) return null;
+  try {
+      const player = moviePlayer.querySelector(CONFIG.SELECTORS.VIDEO_TAG);
+      if (player && player.tagName === 'VIDEO' && typeof player.currentTime === 'number') {
+          return player;
+      }
+  } catch(e) { console.error("YT FF/RW: Error finding video player:", e); }
   return null;
 }
+
+function handleVideoWaiting() {
+    state.isBuffering = true;
+}
+
+function handleVideoPlaying() {
+    state.isBuffering = false;
+}
+
+function addBufferingListeners(videoElement) {
+    if (!videoElement) return;
+    removeBufferingListeners(videoElement);
+    videoElement.addEventListener('waiting', handleVideoWaiting);
+    videoElement.addEventListener('playing', handleVideoPlaying);
+    videoElement.addEventListener('stalled', handleVideoWaiting);
+    videoElement.addEventListener('canplay', handleVideoPlaying);
+    state.isBuffering = videoElement.readyState < 3 || (!videoElement.paused && videoElement.seeking);
+
+}
+
+function removeBufferingListeners(videoElement) {
+    if (!videoElement) return;
+    videoElement.removeEventListener('waiting', handleVideoWaiting);
+    videoElement.removeEventListener('playing', handleVideoPlaying);
+    videoElement.removeEventListener('stalled', handleVideoWaiting);
+    videoElement.removeEventListener('canplay', handleVideoPlaying);
+}
+
+function keepControlsVisible() {
+    state.isHoveringOverCustomButtons = true;
+    const player = document.querySelector(CONFIG.SELECTORS.AUTOHIDE_CLASS_TARGET);
+    if (player) {
+        player.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
+    }
+}
+
+function handleMouseLeaveCustomButtons() {
+    state.isHoveringOverCustomButtons = false;
+}
+
 
 function createButton(id, iconPath) {
   const button = document.createElement('button');
@@ -117,6 +171,7 @@ function createButton(id, iconPath) {
     flex-direction: column;
     align-items: center;
     z-index: 999;
+    flex-shrink: 0;
   `;
 
   const counter = document.createElement('div');
@@ -186,95 +241,149 @@ function createButtonsContainer() {
   return container;
 }
 
-function setupVideoControls() {
-  const container = document.getElementById(CONFIG.IDS.CONTAINER);
-  if (!container) return;
+function performDirectSeek(direction) {
+    const moviePlayer = findMoviePlayer();
+    const videoPlayer = state.lastVideoElement || findVideoPlayer(moviePlayer);
 
-  container.onclick = null;
-
-  container.onclick = (event) => {
-    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) return;
-
-    const currentVideoPlayer = state.lastVideoElement || findVideoPlayer();
-    if (!currentVideoPlayer || currentVideoPlayer.readyState === 0) return;
-
-    const button = event.target.closest('button');
-    if (!button) return;
+    if (!videoPlayer || videoPlayer.readyState < 3 || videoPlayer.seeking || state.isBuffering || videoPlayer.ended) {
+         if (state.isBuffering) {
+             console.log("YT FF/RW: Seek blocked by buffering state.");
+         } else if (videoPlayer && videoPlayer.ended) {
+             console.log("YT FF/RW: Seek blocked, video ended.");
+         } else if (videoPlayer && videoPlayer.seeking) {
+              console.log("YT FF/RW: Seek blocked, player already seeking.");
+         } else if (videoPlayer && videoPlayer.readyState < 3) {
+              console.log(`YT FF/RW: Seek blocked, readyState=${videoPlayer.readyState}`);
+         }
+        return;
+    }
 
     try {
         let skipTime = 0;
         let newTime;
-        if (button.id === CONFIG.IDS.FORWARD_BUTTON) {
-            skipTime = state.settings.forwardSkipTime;
-            newTime = Math.min(currentVideoPlayer.duration || Infinity, currentVideoPlayer.currentTime + skipTime);
-        } else if (button.id === CONFIG.IDS.REWIND_BUTTON) {
-            skipTime = -state.settings.backwardSkipTime;
-            newTime = Math.max(0, currentVideoPlayer.currentTime + skipTime);
+        let currentTargetTime = videoPlayer.currentTime;
+
+        if (direction === 'forward') {
+            skipTime = state.settings.forwardSkipTime || CONFIG.DEFAULT_SETTINGS.forwardSkipTime;
+            newTime = Math.min(videoPlayer.duration || Infinity, currentTargetTime + skipTime);
+        } else if (direction === 'backward') {
+            skipTime = -(state.settings.backwardSkipTime || CONFIG.DEFAULT_SETTINGS.backwardSkipTime);
+            newTime = Math.max(0, currentTargetTime + skipTime);
+        } else if (direction === 'forward_key') {
+            skipTime = state.settings.keyboardForward || CONFIG.DEFAULT_SETTINGS.keyboardForward;
+            newTime = Math.min(videoPlayer.duration || Infinity, currentTargetTime + skipTime);
+        } else if (direction === 'backward_key') {
+            skipTime = -(state.settings.keyboardBackward || CONFIG.DEFAULT_SETTINGS.keyboardBackward);
+            newTime = Math.max(0, currentTargetTime + skipTime);
         }
-         if (newTime !== undefined && currentVideoPlayer.currentTime !== newTime) {
-            currentVideoPlayer.currentTime = newTime;
-         }
+
+        if (newTime !== undefined && !isNaN(newTime) && Math.abs(videoPlayer.currentTime - newTime) > 0.01) {
+            videoPlayer.currentTime = newTime;
+        }
     } catch (e) {
-        console.error("YT FF/RW: Error setting currentTime on button click:", e);
+        console.error(`YT FF/RW: Error setting currentTime during ${direction} seek:`, e);
     }
-  };
 }
 
+function handleButtonClick(event) {
+    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) return;
+
+    const button = event.target.closest('button');
+    if (!button) return;
+
+    event.stopPropagation();
+    event.preventDefault();
+
+    if (button.id === CONFIG.IDS.FORWARD_BUTTON) {
+        performDirectSeek('forward');
+    } else if (button.id === CONFIG.IDS.REWIND_BUTTON) {
+        performDirectSeek('backward');
+    }
+}
+
+function setupVideoControls() {
+  const container = document.getElementById(CONFIG.IDS.CONTAINER);
+  if (!container) return;
+
+  container.removeEventListener('click', handleButtonClick, { capture: true });
+  container.addEventListener('click', handleButtonClick, { capture: true });
+}
+
+
 function injectButtons() {
-    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) {
+    if (!isWatchPage() || !state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) {
       removeButtons();
       return false;
     }
 
-    const moviePlayer = document.querySelector(CONFIG.SELECTORS.MOVIE_PLAYER);
-    if (moviePlayer && moviePlayer.classList.contains('ad-showing')) {
-         removeButtons();
-         return false;
-    }
+    const moviePlayer = findMoviePlayer();
+     if(!moviePlayer || moviePlayer.classList.contains('ad-showing')){
+        removeButtons();
+        return false;
+     }
 
-    const videoPlayer = findVideoPlayer();
-    const controlsContainer = document.querySelector(CONFIG.SELECTORS.CONTROLS);
+    const videoPlayer = findVideoPlayer(moviePlayer);
+    const controlsWrapper = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS_WRAPPER);
+    const controlsContainer = controlsWrapper ? controlsWrapper.querySelector(CONFIG.SELECTORS.LEFT_CONTROLS) : null;
 
-    if (!videoPlayer || !controlsContainer) {
+    if (!videoPlayer || !controlsWrapper || !controlsContainer) {
       if (state.buttonsInjected) removeButtons();
       return false;
+    }
+
+    if (state.lastVideoElement !== videoPlayer) {
+        removeBufferingListeners(state.lastVideoElement);
+        state.lastVideoElement = videoPlayer;
+        addBufferingListeners(state.lastVideoElement);
+    } else if (!state.lastVideoElement && videoPlayer) {
+         state.lastVideoElement = videoPlayer;
+         addBufferingListeners(state.lastVideoElement);
     }
 
     let existingContainer = document.getElementById(CONFIG.IDS.CONTAINER);
 
     if (existingContainer && existingContainer.parentNode === controlsContainer) {
-        state.lastVideoElement = videoPlayer;
         setupVideoControls();
         updateButtonCounters();
+        existingContainer.removeEventListener('mouseenter', keepControlsVisible);
+        existingContainer.removeEventListener('mouseleave', handleMouseLeaveCustomButtons);
+        existingContainer.addEventListener('mouseenter', keepControlsVisible);
+        existingContainer.addEventListener('mouseleave', handleMouseLeaveCustomButtons);
         state.buttonsInjected = true;
         return true;
     }
 
     removeButtons();
 
-    const buttonsContainer = createButtonsContainer();
-    const timeDisplay = controlsContainer.querySelector(CONFIG.SELECTORS.TIME_DISPLAY);
+    try {
+      const buttonsContainer = createButtonsContainer();
+      const timeDisplay = controlsContainer.querySelector(CONFIG.SELECTORS.TIME_DISPLAY);
 
-    if (timeDisplay && timeDisplay.parentNode === controlsContainer) {
-        controlsContainer.insertBefore(buttonsContainer, timeDisplay.nextSibling);
-    } else {
-        controlsContainer.appendChild(buttonsContainer);
+      if (timeDisplay && timeDisplay.parentNode === controlsContainer) {
+          controlsContainer.insertBefore(buttonsContainer, timeDisplay.nextSibling);
+      } else {
+          controlsContainer.appendChild(buttonsContainer);
+          console.warn("YT FF/RW: Time display not found relative to left controls. Appending buttons to end.");
+      }
+
+      buttonsContainer.addEventListener('mouseenter', keepControlsVisible);
+      buttonsContainer.addEventListener('mouseleave', handleMouseLeaveCustomButtons);
+
+      setupVideoControls();
+      updateButtonCounters();
+      state.buttonsInjected = true;
+      return true;
+    } catch (e) {
+       console.error("YT FF/RW: Error injecting buttons:", e);
+       removeButtons();
+       return false;
     }
-
-    state.lastVideoElement = videoPlayer;
-    setupVideoControls();
-    updateButtonCounters();
-    state.buttonsInjected = true;
-    return true;
 }
 
 
 function handleKeyDown(event) {
-  if (!state.settings.extensionEnabled || !state.settings.keyboardShortcutsEnabled) return;
+  if (!isWatchPage() || !state.settings.extensionEnabled || !state.settings.keyboardShortcutsEnabled) return;
   if (isEditable(document.activeElement)) return;
-
-  const videoPlayer = state.lastVideoElement || findVideoPlayer();
-  if (!videoPlayer || videoPlayer.readyState === 0) return;
 
   const isLeft = event.key === 'ArrowLeft';
   const isRight = event.key === 'ArrowRight';
@@ -282,41 +391,49 @@ function handleKeyDown(event) {
 
   if ((isRight || isLeft) && shouldOverride) {
     event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
-    try {
-        const skipTime = isRight ? state.settings.keyboardForward : -state.settings.keyboardBackward;
-        const newTime = Math.max(0, Math.min(videoPlayer.duration || Infinity, videoPlayer.currentTime + skipTime));
-        if (videoPlayer.currentTime !== newTime) {
-            videoPlayer.currentTime = newTime;
-        }
-    } catch (e) { console.error("YT FF/RW: Error setting currentTime:", e); }
+
+    if (isRight) {
+        performDirectSeek('forward_key');
+    } else {
+        performDirectSeek('backward_key');
+    }
   }
 }
 
 function cleanup() {
+  if (retryTimeout) clearTimeout(retryTimeout); retryTimeout = null;
+  state.isHoveringOverCustomButtons = false;
   removeButtons();
+  removeBufferingListeners(state.lastVideoElement);
   if (state.navigationObserver) state.navigationObserver.disconnect(); state.navigationObserver = null;
   if (state.playerObserver) state.playerObserver.disconnect(); state.playerObserver = null;
   document.removeEventListener('keydown', handleKeyDown, true);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
   window.removeEventListener('resize', debouncedResizeCheck);
-  if (retryTimeout) clearTimeout(retryTimeout); retryTimeout = null;
   state.buttonsInjected = false;
   state.retryAttempts = 0;
   state.lastVideoElement = null;
-  state.lastUrl = null;
+  state.playerElementCache = null;
+  state.isBuffering = false;
 }
 
 function removeButtons() {
   const container = document.getElementById(CONFIG.IDS.CONTAINER);
   if (container) {
-    container.remove();
+    try {
+      container.removeEventListener('click', handleButtonClick, { capture: true });
+      container.removeEventListener('mouseenter', keepControlsVisible);
+      container.removeEventListener('mouseleave', handleMouseLeaveCustomButtons);
+      container.remove();
+    } catch (e) {
+      console.error("YT FF/RW: Error removing buttons container:", e);
+    }
   }
   state.buttonsInjected = false;
 }
 
-
 function tryInjectButtons(attempt = 0) {
-    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) {
+    if (!isWatchPage() || !state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) {
         removeButtons();
         if (retryTimeout) clearTimeout(retryTimeout);
         state.retryAttempts = 0;
@@ -331,18 +448,15 @@ function tryInjectButtons(attempt = 0) {
     }
 
     state.retryAttempts = attempt + 1;
-    const maxAttempts = isMoviePage() ? 30 : CONFIG.RETRY.MAX_ATTEMPTS;
-    if (state.retryAttempts < maxAttempts) {
+    if (state.retryAttempts < CONFIG.RETRY.MAX_ATTEMPTS) {
         retryTimeout = setTimeout(() => tryInjectButtons(state.retryAttempts), CONFIG.RETRY.INTERVAL);
     } else {
-        console.warn("YT FF/RW: Max retry attempts reached. Failed to inject buttons.");
         state.retryAttempts = 0;
     }
 }
 
-
 const debouncedTryInjectCheck = debounce(() => {
-    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) {
+    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled || !isWatchPage()) {
         removeButtons();
         return;
     }
@@ -351,63 +465,143 @@ const debouncedTryInjectCheck = debounce(() => {
 
 
 function playerMutationCallback(mutationsList, observer) {
-  let relevantChange = false;
-  for (const mutation of mutationsList) {
-    if (mutation.type === 'childList') {
-       if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
-         relevantChange = true;
-         break;
-       }
+ try {
+    let relevantChange = false;
+    let autohideAddedWhileHovering = false;
+
+    for (const mutation of mutationsList) {
+        if (mutation.type === 'attributes' &&
+            mutation.attributeName === 'class' &&
+            mutation.target.matches(CONFIG.SELECTORS.AUTOHIDE_CLASS_TARGET))
+        {
+            const targetElement = mutation.target;
+            if (targetElement.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)) {
+                if (state.isHoveringOverCustomButtons) {
+                    autohideAddedWhileHovering = true;
+                }
+            }
+            relevantChange = true;
+        }
+
+         if (mutation.type === 'childList' || (mutation.type === 'attributes' && mutation.attributeName === 'src')) {
+            let videoChanged = false;
+            if (mutation.type === 'attributes' && mutation.target.matches && mutation.target.matches(CONFIG.SELECTORS.VIDEO_TAG)) {
+                videoChanged = true;
+            } else if (mutation.type === 'childList') {
+                 for (const node of [...mutation.addedNodes, ...mutation.removedNodes]) {
+                     if (node.nodeType === Node.ELEMENT_NODE && node.matches && node.matches(CONFIG.SELECTORS.VIDEO_TAG)) {
+                         videoChanged = true;
+                         break;
+                     }
+                 }
+            }
+             if (videoChanged) {
+                 relevantChange = true;
+                 setTimeout(() => tryInjectButtons(0), 50);
+             }
+         }
+
+
+         if (mutation.type === 'childList' || (mutation.type === 'attributes' && mutation.attributeName === 'class')) {
+             if (mutation.target && typeof mutation.target.matches === 'function') {
+                 if (mutation.target.matches(CONFIG.SELECTORS.CONTROLS_WRAPPER) ||
+                     mutation.target.matches(CONFIG.SELECTORS.LEFT_CONTROLS) ||
+                     mutation.target.closest(CONFIG.SELECTORS.CONTROLS_WRAPPER)) {
+                    relevantChange = true;
+                 }
+             }
+             if (!relevantChange && (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
+                  relevantChange = true;
+             }
+        }
     }
-  }
-  if (relevantChange) {
-    debouncedTryInjectCheck();
+
+    if (autohideAddedWhileHovering) {
+        requestAnimationFrame(() => {
+             keepControlsVisible();
+        });
+    }
+
+    if (relevantChange && !autohideAddedWhileHovering) {
+       debouncedTryInjectCheck();
+    }
+  } catch (e) {
+      console.error("YT FF/RW: Error in playerMutationCallback:", e);
+      debouncedTryInjectCheck();
   }
 }
 
 function observePlayerChanges() {
-  if (!state.settings.extensionEnabled) return;
+  if (!isWatchPage() || !state.settings.extensionEnabled) return;
 
   if (state.playerObserver) state.playerObserver.disconnect();
 
-  const moviePlayer = document.querySelector(CONFIG.SELECTORS.MOVIE_PLAYER) || document.body;
+  const moviePlayer = findMoviePlayer();
   if (!moviePlayer) {
-      console.warn("YT FF/RW: Could not find movie player element to observe.");
+      console.warn("YT FF/RW: Could not find movie player element to observe. Will retry on navigation/mutation.");
       return;
   };
 
-  state.playerObserver = new MutationObserver(playerMutationCallback);
-  state.playerObserver.observe(moviePlayer, {
-      childList: true,
-      subtree: true
-  });
+ try {
+    state.playerObserver = new MutationObserver(playerMutationCallback);
+    state.playerObserver.observe(moviePlayer, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'src']
+    });
+ } catch (e) {
+    console.error("YT FF/RW: Failed to set up player observer:", e);
+ }
 }
 
 const debouncedNavigationHandler = debounce(() => {
-    if (window.location.href !== state.lastUrl) {
-        state.lastUrl = window.location.href;
-        handleNavigation();
-    }
+  const currentUrl = window.location.href;
+  if (currentUrl !== state.lastUrl) {
+      const wasWatch = isWatchPage(state.lastUrl);
+      const isNowWatch = isWatchPage(currentUrl);
+      state.lastUrl = currentUrl;
+      state.playerElementCache = null;
+
+      if (wasWatch && !isNowWatch) {
+          cleanup();
+      } else if (isNowWatch) {
+          handleNavigation();
+      } else {
+         cleanup();
+      }
+  }
 }, CONFIG.DEBOUNCE.NAVIGATION);
 
 
 function handleNavigation() {
-    if (!state.settings.extensionEnabled) return;
+    if (!state.settings.extensionEnabled || !isWatchPage()) {
+        cleanup();
+        return;
+    }
+
+    if (retryTimeout) clearTimeout(retryTimeout); retryTimeout = null;
 
     removeButtons();
+    removeBufferingListeners(state.lastVideoElement);
     state.retryAttempts = 0;
-    if (retryTimeout) clearTimeout(retryTimeout);
     state.lastVideoElement = null;
+    state.playerElementCache = null;
+    state.isBuffering = false;
+    state.isHoveringOverCustomButtons = false;
 
     setTimeout(() => {
-        if (!state.settings.extensionEnabled) return;
-        observePlayerChanges();
-        tryInjectButtons(0);
+        if (state.settings.extensionEnabled && isWatchPage(window.location.href)) {
+            observePlayerChanges();
+            tryInjectButtons(0);
+        } else {
+            cleanup();
+        }
     }, 500);
 }
 
 const debouncedFullscreenCheck = debounce(() => {
-  if (state.settings.extensionEnabled && state.settings.buttonSkipEnabled) {
+  if (state.settings.extensionEnabled && state.settings.buttonSkipEnabled && isWatchPage()) {
       tryInjectButtons(0);
   }
 }, CONFIG.DEBOUNCE.FULLSCREEN);
@@ -418,7 +612,7 @@ function handleFullscreenChange() {
 }
 
 const debouncedResizeCheck = debounce(() => {
-  if (state.settings.extensionEnabled && state.settings.buttonSkipEnabled) {
+  if (state.settings.extensionEnabled && state.settings.buttonSkipEnabled && isWatchPage()) {
       tryInjectButtons(0);
   }
 }, CONFIG.DEBOUNCE.RESIZE);
@@ -428,7 +622,7 @@ async function initializeExtension() {
     cleanup();
 
     try {
-        const stored = await browser.storage.local.get(CONFIG.DEFAULT_SETTINGS);
+        const stored = await browser.storage.local.get(Object.values(CONFIG.STORAGE_KEYS));
         state.settings = { ...CONFIG.DEFAULT_SETTINGS, ...stored };
 
         if (!state.settings.extensionEnabled) {
@@ -438,21 +632,31 @@ async function initializeExtension() {
 
         state.lastUrl = window.location.href;
 
+        const setupWatchPageListenersAndAttemptInject = () => {
+            document.removeEventListener('keydown', handleKeyDown, true);
+            document.addEventListener('keydown', handleKeyDown, true);
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            window.removeEventListener('resize', debouncedResizeCheck);
+            window.addEventListener('resize', debouncedResizeCheck);
+            observePlayerChanges();
+             setTimeout(() => {
+                if (state.settings.extensionEnabled && isWatchPage(window.location.href)) {
+                     tryInjectButtons(0);
+                }
+            }, 250);
+        };
+
+        if (isWatchPage()) {
+            setupWatchPageListenersAndAttemptInject();
+        } else {
+            console.log("YT FF/RW: Not a watch page, initialization deferred.");
+        }
+
         if (!state.navigationObserver) {
             state.navigationObserver = new MutationObserver(debouncedNavigationHandler);
             state.navigationObserver.observe(document.body, { childList: true, subtree: false });
         }
-
-        document.addEventListener('keydown', handleKeyDown, true);
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        window.addEventListener('resize', debouncedResizeCheck);
-        observePlayerChanges();
-
-        setTimeout(() => {
-            if (state.settings.extensionEnabled) {
-                 tryInjectButtons(0);
-            }
-        }, 100);
 
     } catch (error) {
         console.error('YT FF/RW: Error initializing extension:', error);
@@ -465,24 +669,56 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'updateSettings') {
     const oldSettings = { ...state.settings };
     state.settings = { ...CONFIG.DEFAULT_SETTINGS, ...message.settings };
+    const wasEnabled = oldSettings.extensionEnabled;
+    const isEnabled = state.settings.extensionEnabled;
+    const isOnWatchPage = isWatchPage();
 
-    if (!state.settings.extensionEnabled && oldSettings.extensionEnabled) {
+    if (!isEnabled && wasEnabled) {
       cleanup();
     }
-    else if (state.settings.extensionEnabled && !oldSettings.extensionEnabled) {
+    else if (isEnabled && !wasEnabled) {
       initializeExtension();
     }
-    else if (state.settings.extensionEnabled) {
-      if (state.settings.buttonSkipEnabled && !oldSettings.buttonSkipEnabled) {
-          tryInjectButtons(0);
-      } else if (!state.settings.buttonSkipEnabled && oldSettings.buttonSkipEnabled) {
-          removeButtons();
-      } else if (state.buttonsInjected) {
-           updateButtonCounters();
-      }
+    else if (isEnabled && isOnWatchPage) {
+       const buttonsWereEnabled = oldSettings.buttonSkipEnabled;
+       const buttonsAreEnabled = state.settings.buttonSkipEnabled;
 
-      document.removeEventListener('keydown', handleKeyDown, true);
-      document.addEventListener('keydown', handleKeyDown, true);
+       if (buttonsAreEnabled && !buttonsWereEnabled) {
+          tryInjectButtons(0);
+          document.removeEventListener('fullscreenchange', handleFullscreenChange);
+          document.addEventListener('fullscreenchange', handleFullscreenChange);
+          window.removeEventListener('resize', debouncedResizeCheck);
+          window.addEventListener('resize', debouncedResizeCheck);
+       } else if (!buttonsAreEnabled && buttonsWereEnabled) {
+          removeButtons();
+          document.removeEventListener('fullscreenchange', handleFullscreenChange);
+          window.removeEventListener('resize', debouncedResizeCheck);
+       } else if (state.buttonsInjected) {
+           updateButtonCounters();
+       }
+
+       const keyboardWasEnabled = oldSettings.keyboardShortcutsEnabled;
+       const keyboardIsEnabled = state.settings.keyboardShortcutsEnabled;
+       document.removeEventListener('keydown', handleKeyDown, true);
+       if(keyboardIsEnabled){
+           document.addEventListener('keydown', handleKeyDown, true);
+       }
+    } else if (isEnabled && !isOnWatchPage) {
+        cleanup();
+         if (!state.navigationObserver) {
+             try {
+                state.navigationObserver = new MutationObserver(debouncedNavigationHandler);
+                state.navigationObserver.observe(document.body, { childList: true, subtree: false });
+             } catch (e) {
+                 console.error("YT FF/RW: Failed to re-attach navigation observer", e);
+             }
+         }
+         document.removeEventListener('keydown', handleKeyDown, true);
+         document.addEventListener('keydown', handleKeyDown, true);
+         document.removeEventListener('fullscreenchange', handleFullscreenChange);
+         document.addEventListener('fullscreenchange', handleFullscreenChange);
+         window.removeEventListener('resize', debouncedResizeCheck);
+         window.addEventListener('resize', debouncedResizeCheck);
     }
 
     sendResponse({ status: "Settings updated successfully" });
@@ -491,4 +727,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-initializeExtension();
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeExtension);
+} else {
+    initializeExtension();
+}

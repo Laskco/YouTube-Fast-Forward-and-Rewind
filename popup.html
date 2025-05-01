@@ -16,6 +16,8 @@
             --success-color-dark: #357ABD;
             --error-color: #EF5350;
             --success-text-on-blue: #FFFFFF;
+            --tooltip-bg: rgba(45, 45, 45, 0.98);
+            --tooltip-shadow: rgba(0, 0, 0, 0.3);
             --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             --border-radius: 12px;
             --transition-speed: 0.2s;
@@ -56,7 +58,6 @@
             min-height: 0;
         }
         .header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); transition: border-color var(--transition-speed); }
-
         .header-icon {
             width: 28px;
             height: 28px;
@@ -72,7 +73,6 @@
         body.light-theme .icon-light-theme {
             display: inline-block;
         }
-
         .header h1 { font-size: 16px; font-weight: 600; flex-grow: 1; margin-right: 10px; }
         .header-actions {
             display: flex;
@@ -90,7 +90,6 @@
         .version-text { font-size: 10px; color: var(--text-secondary); opacity: 0.7; margin-right: 4px; transition: color var(--transition-speed); }
         .header-actions .btn-link { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: none; }
         .header-actions .btn-link .feather { width: 14px; height: 14px; }
-
         .status-section { display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 10px 14px; border-radius: var(--border-radius); border: 1px solid var(--border-color); flex-shrink: 0; transition: background-color var(--transition-speed), border-color var(--transition-speed); }
         .status-label { display: flex; align-items: center; gap: 8px; font-weight: 500; }
         #extensionStatusText { font-weight: 600; transition: color var(--transition-speed); }
@@ -102,7 +101,6 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: var(--transition-speed); border-radius: 50%; }
         input:checked + .slider { background: linear-gradient(135deg, var(--success-color), var(--success-color-dark)); }
         input:checked + .slider:before { transform: translateX(22px); }
-
         .settings-card {
             background: var(--surface-color);
             border-radius: var(--border-radius);
@@ -116,10 +114,26 @@
             height: auto;
             transition: background-color var(--transition-speed), border-color var(--transition-speed);
         }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .card-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin: 0; flex-grow: 1; transition: color var(--transition-speed); }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            margin: 0;
+            flex-grow: 1;
+            transition: color var(--transition-speed);
+            padding-right: 30px;
+        }
         .card-title .feather { width: 18px; height: 18px; color: var(--success-color); }
-
         .input-row {
             display: flex;
             flex-direction: column;
@@ -149,22 +163,99 @@
         }
         .input-label .feather { width: 14px; height: 14px; margin-right: 4px; flex-shrink: 0; }
         .input-controls-wrapper { display: flex; flex-direction: column; align-items: flex-end; flex-grow: 1; min-width: 0; }
-        .presets-hint { font-size: 10px; color: var(--text-secondary); opacity: 0.8; text-align: right; margin-bottom: 2px; width: 100%; padding-right: 42px; transition: color var(--transition-speed); }
-        .input-group { display: flex; align-items: center; gap: 3px; flex-wrap: nowrap; height: var(--control-height); }
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            flex-wrap: nowrap;
+            height: var(--control-height);
+        }
         .number-input { width: 45px; height: var(--control-height); padding: 0 4px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 13px; text-align: center; flex-shrink: 0; line-height: var(--control-height); margin: 0; transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed); }
         .input-divider { width: 1px; height: 20px; background-color: var(--border-color); opacity: 0.5; flex-shrink: 0; margin: 0 3px; align-self: center; transition: background-color var(--transition-speed); }
         .preset-buttons { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
         .btn-preset { height: var(--control-height); font-size: 11px; font-weight: 600; padding: 0 5px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-secondary); border-radius: 4px; cursor: pointer; flex-shrink: 0; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed); }
-        .btn-edit-presets { height: var(--control-height); padding: 4px; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 4px; transition: color var(--transition-speed); }
+
+        .tooltip-trigger-button {
+            position: absolute;
+            top: -3px;
+            right: -2px;
+            padding: 4px;
+            height: 26px;
+            width: 26px;
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            border-radius: 50%;
+            cursor: help;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            margin: 0;
+        }
+        .tooltip-trigger-button .feather {
+            width: 17px;
+            height: 17px;
+            stroke-width: 2.2;
+        }
+        .tooltip-trigger-button:hover {
+            color: var(--success-color);
+            background: rgba(74, 144, 226, 0.1);
+        }
+
+        .btn-edit-presets {
+            height: var(--control-height);
+            padding: 4px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 4px;
+            transition: color var(--transition-speed);
+            position: relative;
+        }
+        .btn-edit-presets .feather { width: 16px; height: 16px; stroke-width: 2; }
+        .btn-edit-presets:hover { color: var(--success-color); }
+
+        .tooltip-text {
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--tooltip-bg);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1.4;
+            text-align: center;
+            white-space: normal;
+            width: max-content;
+            max-width: 200px;
+            z-index: 10;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 3px 8px var(--tooltip-shadow);
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+            pointer-events: none;
+        }
+
+        .tooltip-trigger-button:hover + .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
 
         .number-input:focus { outline: none; border-color: var(--success-color); box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3); }
         .number-input::-webkit-outer-spin-button, .number-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .number-input { appearance: textfield; -moz-appearance: textfield; }
         .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--text-primary); }
         .btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); color: var(--text-primary); }
-        .btn-edit-presets .feather { width: 16px; height: 16px; }
-        .btn-edit-presets:hover { color: var(--success-color); }
-
         .preset-editor {
             display: none;
             background-color: var(--editor-bg-color);
@@ -186,28 +277,25 @@
         .preset-editor-item { display: contents; }
         .preset-editor-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-align: right; padding-right: 4px; white-space: nowrap; transition: color var(--transition-speed); }
         .preset-value-input { height: var(--editor-control-height); line-height: var(--editor-control-height); width: 50px; font-size: 12px; }
-
         .toggle-row { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-color); margin-top: 10px; flex-shrink: 0; transition: border-color var(--transition-speed); }
         .toggle-label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; flex-grow: 1; margin-right: 10px; }
         .toggle-label .feather { width: 16px; height: 16px; color: var(--text-secondary); flex-shrink: 0; transition: color var(--transition-speed); }
-
         #saveStatus { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); background-color: var(--success-color); color: var(--success-text-on-blue); padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; opacity: 0; transition: opacity 0.3s ease-out, background-color var(--transition-speed); pointer-events: none; z-index: 10; }
         #saveStatus.show { opacity: 1; }
-
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-decoration: none; transition: all var(--transition-speed); cursor: pointer; border: none; }
-        .btn .feather { width: 14px; height: 14px; }
+        .btn .feather { width: 14px; height: 14px; stroke-width: 2; }
         .btn-primary { background: linear-gradient(135deg, var(--success-color), var(--success-color-dark)); color: var(--success-text-on-blue); }
         .btn-primary:hover { filter: brightness(1.15); }
         .btn-primary:active { filter: brightness(0.95); }
         .btn-secondary { background: var(--surface-color); color: var(--text-secondary); border: 1px solid var(--border-color); }
         .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-primary); border-color: rgba(255, 255, 255, 0.2); }
         .btn-secondary:active { background: rgba(255, 255, 255, 0.05); }
-
         .btn-link { background: none; border: none; color: var(--text-secondary); padding: 6px; transition: color var(--transition-speed), background-color var(--transition-speed); }
         .btn-link .feather { color: var(--text-secondary); transition: color var(--transition-speed); }
         .btn-link:hover { color: var(--success-color); background: rgba(74, 144, 226, 0.1); }
         .btn-link:hover .feather { color: var(--success-color); }
-
+        .header-actions .btn-link { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: none; }
+        .header-actions .btn-link .feather { width: 14px; height: 14px; stroke-width: 2;}
         body.light-theme {
             --bg-color: #E8EAED;
             --surface-color: #F1F3F4;
@@ -220,16 +308,15 @@
             --success-color-dark: #1565C0;
             --error-color: #D93025;
             --success-text-on-blue: #FFFFFF;
+            --tooltip-bg: #FFFFFF;
+            --tooltip-shadow: rgba(0, 0, 0, 0.15);
             scrollbar-color: #B0B0B0 #D1D5DB;
         }
-
         html.light-theme {
              background: #E0E0E0;
         }
-
         body.light-theme::-webkit-scrollbar-track { background: var(--border-color); }
         body.light-theme::-webkit-scrollbar-thumb { background-color: #B0B0B0; border-color: var(--border-color); }
-
         body.light-theme .btn-preset { border-color: var(--border-color); background: var(--input-bg); color: var(--text-secondary); }
         body.light-theme .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--success-text-on-blue); }
         body.light-theme .btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); }
@@ -244,7 +331,19 @@
         body.light-theme .btn-secondary:active { background: rgba(0, 0, 0, 0.08); }
         body.light-theme #saveStatus { background-color: var(--success-color); color: var(--success-text-on-blue); }
         body.light-theme .number-input:focus { box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.2); border-color: var(--success-color); }
-
+        body.light-theme .tooltip-trigger-button {
+             color: var(--text-secondary);
+        }
+        body.light-theme .tooltip-trigger-button:hover {
+            color: var(--success-color);
+            background: rgba(30, 136, 229, 0.08);
+        }
+        body.light-theme .tooltip-text {
+            background-color: var(--tooltip-bg);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            box-shadow: 0 3px 8px var(--tooltip-shadow);
+        }
     </style>
 </head>
 <body>
@@ -267,6 +366,7 @@
         <symbol id="icon-toggle-right" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="16" cy="12" r="3"></circle></symbol>
         <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></symbol>
         <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></symbol>
+        <symbol id="icon-help-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></symbol>
     </svg>
 
     <div class="container">
@@ -285,7 +385,7 @@
                      <svg class="feather icon-sun"><use href="#icon-sun"></use></svg>
                      <svg class="feather icon-moon" style="display: none;"><use href="#icon-moon"></use></svg>
                  </button>
-                 <span class="version-text">v3.5</span>
+                 <span class="version-text">v3.6</span>
                  <button type="button" id="resetSettings" class="btn btn-link" title="Reset all settings to default">
                      <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                  </button>
@@ -309,6 +409,10 @@
                     <svg class="feather"><use href="#icon-skip-forward"></use></svg>
                     Button Skip Times
                 </h2>
+                <button type="button" class="btn-link tooltip-trigger-button" aria-label="Preset Info" aria-describedby="button-preset-tooltip-desc">
+                    <svg class="feather"><use href="#icon-help-circle"></use></svg>
+                </button>
+                <span class="tooltip-text" id="button-preset-tooltip-desc" role="tooltip">Customize the 4 preset buttons by clicking the pencil edit icon.</span>
              </div>
              <div class="input-row" data-preset-context="btnFwd">
                  <div class="input-main-row">
@@ -316,9 +420,8 @@
                          <svg class="feather"><use href="#icon-fast-forward"></use></svg>Forward:
                      </label>
                      <div class="input-controls-wrapper">
-                         <div class="presets-hint">(Customizable Presets)</div>
                          <div class="input-group">
-                             <input type="number" id="forwardSkipTime" class="number-input skip-time-input" min="1" max="300">
+                             <input type="number" id="forwardSkipTime" class="number-input skip-time-input" min="1" max="99">
                              <span class="input-divider"></span>
                              <div class="preset-buttons" data-target="forwardSkipTime" data-preset-context="btnFwd">
                                  <button type="button" class="btn-preset" data-preset-index="0"></button>
@@ -336,19 +439,19 @@
                  <div class="preset-editor">
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="btnFwd_p1">P1:</label>
-                         <input type="number" class="number-input preset-value-input" id="btnFwd_p1" data-preset-index="0" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="btnFwd_p1" data-preset-index="0" min="1" max="99">
                     </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="btnFwd_p2">P2:</label>
-                         <input type="number" class="number-input preset-value-input" id="btnFwd_p2" data-preset-index="1" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="btnFwd_p2" data-preset-index="1" min="1" max="99">
                     </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="btnFwd_p3">P3:</label>
-                         <input type="number" class="number-input preset-value-input" id="btnFwd_p3" data-preset-index="2" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="btnFwd_p3" data-preset-index="2" min="1" max="99">
                      </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="btnFwd_p4">P4:</label>
-                         <input type="number" class="number-input preset-value-input" id="btnFwd_p4" data-preset-index="3" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="btnFwd_p4" data-preset-index="3" min="1" max="99">
                      </div>
                  </div>
             </div>
@@ -359,7 +462,7 @@
                      </label>
                      <div class="input-controls-wrapper">
                          <div class="input-group">
-                              <input type="number" id="backwardSkipTime" class="number-input skip-time-input" min="1" max="300">
+                              <input type="number" id="backwardSkipTime" class="number-input skip-time-input" min="1" max="99">
                               <span class="input-divider"></span>
                               <div class="preset-buttons" data-target="backwardSkipTime" data-preset-context="btnBwd">
                                   <button type="button" class="btn-preset" data-preset-index="0"></button>
@@ -377,19 +480,19 @@
                  <div class="preset-editor">
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="btnBwd_p1">P1:</label>
-                         <input type="number" class="number-input preset-value-input" id="btnBwd_p1" data-preset-index="0" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="btnBwd_p1" data-preset-index="0" min="1" max="99">
                     </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="btnBwd_p2">P2:</label>
-                         <input type="number" class="number-input preset-value-input" id="btnBwd_p2" data-preset-index="1" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="btnBwd_p2" data-preset-index="1" min="1" max="99">
                     </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="btnBwd_p3">P3:</label>
-                         <input type="number" class="number-input preset-value-input" id="btnBwd_p3" data-preset-index="2" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="btnBwd_p3" data-preset-index="2" min="1" max="99">
                      </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="btnBwd_p4">P4:</label>
-                         <input type="number" class="number-input preset-value-input" id="btnBwd_p4" data-preset-index="3" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="btnBwd_p4" data-preset-index="3" min="1" max="99">
                      </div>
                  </div>
             </div>
@@ -411,6 +514,10 @@
                     <svg class="feather"><use href="#icon-keyboard"></use></svg>
                     Keyboard Skip Times (← / →)
                 </h2>
+                <button type="button" class="btn-link tooltip-trigger-button" aria-label="Preset Info" aria-describedby="keyboard-preset-tooltip-desc">
+                    <svg class="feather"><use href="#icon-help-circle"></use></svg>
+                 </button>
+                 <span class="tooltip-text" id="keyboard-preset-tooltip-desc" role="tooltip">Customize the 4 preset buttons by clicking the pencil edit icon.</span>
             </div>
              <div class="input-row" data-preset-context="kbdFwd">
                  <div class="input-main-row">
@@ -418,9 +525,8 @@
                           <svg class="feather"><use href="#icon-skip-forward"></use></svg>Forward (→):
                      </label>
                      <div class="input-controls-wrapper">
-                          <div class="presets-hint">(Customizable Presets)</div>
                          <div class="input-group">
-                              <input type="number" id="keyboardForward" class="number-input skip-time-input" min="1" max="300">
+                              <input type="number" id="keyboardForward" class="number-input skip-time-input" min="1" max="99">
                               <span class="input-divider"></span>
                               <div class="preset-buttons" data-target="keyboardForward" data-preset-context="kbdFwd">
                                    <button type="button" class="btn-preset" data-preset-index="0"></button>
@@ -438,19 +544,19 @@
                   <div class="preset-editor">
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="kbdFwd_p1">P1:</label>
-                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p1" data-preset-index="0" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p1" data-preset-index="0" min="1" max="99">
                     </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="kbdFwd_p2">P2:</label>
-                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p2" data-preset-index="1" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p2" data-preset-index="1" min="1" max="99">
                     </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="kbdFwd_p3">P3:</label>
-                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p3" data-preset-index="2" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p3" data-preset-index="2" min="1" max="99">
                      </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="kbdFwd_p4">P4:</label>
-                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p4" data-preset-index="3" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="kbdFwd_p4" data-preset-index="3" min="1" max="99">
                      </div>
                  </div>
              </div>
@@ -461,7 +567,7 @@
                      </label>
                      <div class="input-controls-wrapper">
                           <div class="input-group">
-                              <input type="number" id="keyboardBackward" class="number-input skip-time-input" min="1" max="300">
+                              <input type="number" id="keyboardBackward" class="number-input skip-time-input" min="1" max="99">
                               <span class="input-divider"></span>
                                <div class="preset-buttons" data-target="keyboardBackward" data-preset-context="kbdBwd">
                                    <button type="button" class="btn-preset" data-preset-index="0"></button>
@@ -479,19 +585,19 @@
                    <div class="preset-editor">
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="kbdBwd_p1">P1:</label>
-                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p1" data-preset-index="0" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p1" data-preset-index="0" min="1" max="99">
                     </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="kbdBwd_p2">P2:</label>
-                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p2" data-preset-index="1" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p2" data-preset-index="1" min="1" max="99">
                     </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="kbdBwd_p3">P3:</label>
-                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p3" data-preset-index="2" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p3" data-preset-index="2" min="1" max="99">
                      </div>
                     <div class="preset-editor-item">
                          <label class="preset-editor-label" for="kbdBwd_p4">P4:</label>
-                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p4" data-preset-index="3" min="1" max="300">
+                         <input type="number" class="number-input preset-value-input" id="kbdBwd_p4" data-preset-index="3" min="1" max="99">
                      </div>
                  </div>
              </div>
