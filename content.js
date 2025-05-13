@@ -304,22 +304,73 @@ function removeBufferingListeners(videoElement) {
     videoElement.removeEventListener('canplay', handleVideoPlaying);
 }
 
+function sanitizeSkipTimeSettings(settingsObject) {
+    const numericKeys = [
+        'forwardSkipTime', 'backwardSkipTime',
+        'keyboardForward', 'keyboardBackward'
+    ];
+    const newSettings = { ...settingsObject };
+    for (const key of numericKeys) {
+        let value = newSettings[key];
+        let defaultValue = CONFIG.DEFAULT_SETTINGS[key];
+        if (typeof value === 'string') {
+            const parsedValue = parseInt(value, 10);
+            if (!isNaN(parsedValue)) {
+                newSettings[key] = parsedValue;
+            } else {
+                newSettings[key] = defaultValue;
+            }
+        } else if (typeof value !== 'number' || isNaN(value)) {
+            newSettings[key] = defaultValue;
+        }
+        if (key.includes('Forward') || key.includes('forwardSkipTime')) {
+            if (newSettings[key] < 1) newSettings[key] = defaultValue > 0 ? defaultValue : 1;
+        }
+        if (key.includes('Backward') || key.includes('backwardSkipTime')) {
+             if (newSettings[key] < 1) newSettings[key] = defaultValue > 0 ? defaultValue : 1;
+        }
+    }
+    return newSettings;
+}
+
 function handleKeyDown(event) {
   if (!state.settings.extensionEnabled || !state.settings.keyboardShortcutsEnabled) return;
   if (isEditable(document.activeElement)) return;
   const isLeft = event.key === 'ArrowLeft'; const isRight = event.key === 'ArrowRight';
   if (!isLeft && !isRight) return;
   const shouldOverride = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
+
   if (shouldOverride) {
     const videoPlayer = findVideoPlayerElement();
+
+    console.log("--- YT FF/RW KeyDown ---");
+    console.log("Raw state.settings.keyboardForward:", state.settings.keyboardForward, typeof state.settings.keyboardForward);
+    console.log("Raw state.settings.keyboardBackward:", state.settings.keyboardBackward, typeof state.settings.keyboardBackward);
+
     if (!videoPlayer || videoPlayer.readyState < 1 || state.isBuffering || videoPlayer.seeking) {
+        console.log("Video not ready or buffering/seeking.");
         event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); return;
     }
     event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
     try {
-        const skipTime = isRight ? (state.settings.keyboardForward || CONFIG.DEFAULT_SETTINGS.keyboardForward) : -(state.settings.keyboardBackward || CONFIG.DEFAULT_SETTINGS.keyboardBackward);
+        const skipTimeSettingForward = state.settings.keyboardForward || CONFIG.DEFAULT_SETTINGS.keyboardForward;
+        const skipTimeSettingBackward = state.settings.keyboardBackward || CONFIG.DEFAULT_SETTINGS.keyboardBackward;
+
+        console.log("Using forward setting:", skipTimeSettingForward);
+        console.log("Using backward setting:", skipTimeSettingBackward);
+
+        const skipTime = isRight ? skipTimeSettingForward : -skipTimeSettingBackward;
+
+        console.log("Calculated skipTime:", skipTime);
+        console.log("Current time before seek:", videoPlayer.currentTime);
+
         const newTime = Math.max(0, Math.min(videoPlayer.duration || Infinity, videoPlayer.currentTime + skipTime));
-        if (!isNaN(newTime) && Math.abs(videoPlayer.currentTime - newTime) > 0.01) videoPlayer.currentTime = newTime;
+        if (!isNaN(newTime) && Math.abs(videoPlayer.currentTime - newTime) > 0.01) {
+             console.log("Seeking to newTime:", newTime);
+             videoPlayer.currentTime = newTime;
+        } else {
+            console.log("Not seeking, newTime is too close or NaN:", newTime);
+        }
     } catch (e) { console.error("YT FF/RW: Error setting currentTime:", e); }
   }
 }
@@ -448,8 +499,11 @@ function cleanup() {
 async function initializeExtension() {
     cleanup();
     try {
-        const stored = await browser.storage.local.get(Object.keys(CONFIG.DEFAULT_SETTINGS));
-        state.settings = { ...CONFIG.DEFAULT_SETTINGS, ...stored };
+        const settingKeys = Object.keys(CONFIG.DEFAULT_SETTINGS);
+        const stored = await browser.storage.local.get(settingKeys);
+        let mergedSettings = { ...CONFIG.DEFAULT_SETTINGS, ...stored };
+        state.settings = sanitizeSkipTimeSettings(mergedSettings);
+
         if (!state.settings.extensionEnabled) return;
         state.lastUrl = window.location.href;
         if (state.settings.keyboardShortcutsEnabled) addKeyListeners();
@@ -474,13 +528,18 @@ async function initializeExtension() {
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'updateSettings') {
     const oldSettings = { ...state.settings };
-    state.settings = { ...CONFIG.DEFAULT_SETTINGS, ...message.settings };
+    const sanitizedNewSettings = sanitizeSkipTimeSettings(message.settings);
+    state.settings = { ...CONFIG.DEFAULT_SETTINGS, ...sanitizedNewSettings };
+
     if (!state.settings.extensionEnabled && oldSettings.extensionEnabled) { cleanup(); sendResponse({ status: "Extension disabled" }); return true; }
     if (state.settings.extensionEnabled && !oldSettings.extensionEnabled) { initializeExtension(); sendResponse({ status: "Extension enabled" }); return true; }
     if (state.settings.extensionEnabled) {
         removeKeyListeners(); if (state.settings.keyboardShortcutsEnabled) addKeyListeners();
         if (state.settings.buttonSkipEnabled) { if (isWatchPage()) tryInjectButtons(0); else removeButtons(); }
         else { removeButtons(); }
+        if (state.buttonsInjected && state.settings.buttonSkipEnabled) {
+            updateButtonCounters();
+        }
     }
     sendResponse({ status: "Settings updated" }); return true;
   }
