@@ -1,9 +1,4 @@
-const themeToggleButton = document.getElementById('themeToggle');
-const sunIcon = document.getElementById('icon-sun');
-const moonIcon = document.getElementById('icon-moon');
-const bodyElement = document.body;
-
-function applyTheme(theme) {
+async function applyTheme(theme, bodyElement, themeToggleButton) {
     if (theme === 'light') {
         bodyElement.classList.add('light-theme');
         if (themeToggleButton) {
@@ -23,18 +18,20 @@ function applyTheme(theme) {
     }
 }
 
-async function loadInitialTheme() {
+async function loadInitialTheme(bodyElement, themeToggleButton) {
      try {
         const data = await browser.storage.local.get('theme');
         const savedTheme = data.theme || 'dark';
-        applyTheme(savedTheme);
+        applyTheme(savedTheme, bodyElement, themeToggleButton);
      } catch (error) {
          console.error("Error loading theme setting:", error);
-         applyTheme('dark');
+         applyTheme('dark', bodyElement, themeToggleButton);
      }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const bodyElement = document.body;
+    const themeToggleButton = document.getElementById('themeToggle');
     const toggle = document.getElementById('enableToggle');
     const statusText = document.getElementById('extensionStatusText');
     const keyboardToggle = document.getElementById('keyboardEnableToggle');
@@ -51,7 +48,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editPresetButtons = document.querySelectorAll('.btn-edit-presets');
     const presetButtonContainers = document.querySelectorAll('.preset-buttons');
     const allInputRows = document.querySelectorAll('.input-row');
-    const themeToggleButton = document.getElementById('themeToggle');
 
     const defaultSettings = {
       extensionEnabled: true,
@@ -78,14 +74,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         statusText.classList.toggle('disabled', !toggle.checked);
 
         const btnLabelIconUse = buttonStatusLabel.querySelector('svg use');
-        if (btnLabelIconUse) {
-            buttonStatusLabel.childNodes[2].nodeValue = buttonToggle.checked ? ' Button Skip Times Enabled' : ' Button Skip Times Disabled';
+        const btnLabelTextNode = buttonStatusLabel.childNodes[2];
+        if (btnLabelIconUse && btnLabelTextNode && btnLabelTextNode.nodeType === Node.TEXT_NODE) {
+            btnLabelTextNode.nodeValue = buttonToggle.checked ? ' Button Skip Times Enabled' : ' Button Skip Times Disabled';
             btnLabelIconUse.setAttribute('href', buttonToggle.checked ? '#icon-toggle-right' : '#icon-toggle-left');
         }
 
         const kbdLabelIconUse = keyboardStatusLabel.querySelector('svg use');
-         if (kbdLabelIconUse) {
-            keyboardStatusLabel.childNodes[2].nodeValue = keyboardToggle.checked ? ' Keyboard Shortcuts Enabled' : ' Keyboard Shortcuts Disabled';
+        const kbdLabelTextNode = keyboardStatusLabel.childNodes[2];
+         if (kbdLabelIconUse && kbdLabelTextNode && kbdLabelTextNode.nodeType === Node.TEXT_NODE) {
+            kbdLabelTextNode.nodeValue = keyboardToggle.checked ? ' Keyboard Shortcuts Enabled' : ' Keyboard Shortcuts Disabled';
             kbdLabelIconUse.setAttribute('href', keyboardToggle.checked ? '#icon-toggle-right' : '#icon-toggle-left');
         }
     }
@@ -100,7 +98,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         return value;
     }
-
 
     function showSaveFeedback() {
         if (!saveStatusIndicator) return;
@@ -135,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
 
     function togglePresetEditMode(inputRowElement) {
         const editButton = inputRowElement.querySelector('.btn-edit-presets');
@@ -183,14 +179,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const stored = await browser.storage.local.get(Object.keys(defaultSettings).filter(k => k !== 'theme'));
             const themeData = await browser.storage.local.get('theme');
             currentSettings = { ...defaultSettings, ...stored, theme: themeData.theme || defaultSettings.theme };
-            applySettings(currentSettings);
+            applySettingsToUI(currentSettings);
         } catch (error) {
             console.error('Error loading settings:', error);
-            applySettings(defaultSettings);
+            applySettingsToUI(defaultSettings);
         }
     }
 
-    function applySettings(settings) {
+    function applySettingsToUI(settings) {
          if (toggle) toggle.checked = settings.extensionEnabled;
          if (buttonToggle) buttonToggle.checked = settings.buttonSkipEnabled;
          if (keyboardToggle) keyboardToggle.checked = settings.keyboardShortcutsEnabled;
@@ -231,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const settingsToSave = { ...currentSettings };
         delete settingsToSave.theme;
 
-        applySettings(currentSettings);
+        applySettingsToUI(currentSettings);
         try {
             await browser.storage.local.set(settingsToSave);
             if (showFeedback) showSaveFeedback();
@@ -241,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     browser.tabs.sendMessage(tab.id, {
                         action: 'updateSettings',
                         settings: currentSettings
-                    }).catch(err => console.log(`Tab ${tab.id} msg failed:`, err.message));
+                    }).catch(err => {});
                 }
             });
         } catch (error) {
@@ -253,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         themeToggleButton.addEventListener('click', async () => {
             const isLight = bodyElement.classList.contains('light-theme');
             const newTheme = isLight ? 'dark' : 'light';
-            applyTheme(newTheme);
+            applyTheme(newTheme, bodyElement, themeToggleButton);
             try {
                 await browser.storage.local.set({ theme: newTheme });
                 currentSettings.theme = newTheme;
@@ -320,13 +316,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const themeToKeep = currentSettings.theme || 'dark';
             currentSettings = { ...defaultSettings };
             Object.keys(currentSettings).forEach(key => {
-                if (key.includes('Preset') || key.includes('SkipTime')) {
-                    currentSettings[key] = enforceMinMax({ value: defaultSettings[key] });
+                if (key.includes('Preset') || key.includes('SkipTime') || key.includes('Forward') || key.includes('Backward')) {
+                     currentSettings[key] = defaultSettings[key];
                 }
             });
             currentSettings.theme = themeToKeep;
-            applyTheme(themeToKeep);
-            applySettings(currentSettings);
+            applyTheme(themeToKeep, bodyElement, themeToggleButton);
+            applySettingsToUI(currentSettings);
             const settingsToSave = { ...currentSettings };
             delete settingsToSave.theme;
              try {
@@ -337,7 +333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                          browser.tabs.sendMessage(tab.id, {
                              action: 'updateSettings',
                              settings: currentSettings
-                         }).catch(err => console.log(`Tab ${tab.id} msg failed:`, err.message));
+                         }).catch(err => {});
                      }
                  });
              } catch (error) {
@@ -347,5 +343,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await loadSettings();
-    await loadInitialTheme();
+    await loadInitialTheme(bodyElement, themeToggleButton);
+    if (currentSettings.theme && currentSettings.theme !== 'dark') {
+        applyTheme(currentSettings.theme, bodyElement, themeToggleButton);
+    } else if (!currentSettings.theme) {
+        applyTheme('dark', bodyElement, themeToggleButton);
+    }
 });
