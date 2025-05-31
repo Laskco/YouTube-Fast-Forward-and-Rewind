@@ -10,7 +10,15 @@ const CONFIG = {
     TIME_DISPLAY: '.ytp-time-display.notranslate',
     MOVIE_PLAYER: '#movie_player',
     AUTOHIDE_CLASS_TARGET: '#movie_player',
-    AUTOHIDE_CLASS: 'ytp-autohide'
+    AUTOHIDE_CLASS: 'ytp-autohide',
+    AD_SHOWING_CLASS: 'ad-showing',
+    SKIP_AD_BUTTONS: [
+        '.ytp-ad-skip-button-modern button',
+        '.ytp-ad-skip-button-modern',
+        '.ytp-ad-skip-button button',
+        '.ytp-ad-skip-button',
+        '.ytp-skip-ad-button'
+    ]
   },
   RETRY: {
     INTERVAL: 150,
@@ -121,18 +129,18 @@ function isWatchPage() {
   } catch(e) { return false; }
 }
 
-function findMoviePlayerElement() {
+function findMoviePlayerContainerElement() {
     return document.querySelector(CONFIG.SELECTORS.MOVIE_PLAYER);
 }
 
 function findVideoPlayerElement() {
-  if (state.lastVideoElement && document.body.contains(state.lastVideoElement) && typeof state.lastVideoElement.currentTime === 'number') {
+  if (state.lastVideoElement && state.lastVideoElement.isConnected && typeof state.lastVideoElement.currentTime === 'number' && state.lastVideoElement.videoWidth > 0) {
       return state.lastVideoElement;
   }
   for (const selector of CONFIG.SELECTORS.VIDEO_PLAYERS) {
     try {
         const player = document.querySelector(selector);
-        if (player && player.tagName === 'VIDEO' && typeof player.currentTime === 'number') {
+        if (player && player.tagName === 'VIDEO' && typeof player.currentTime === 'number' && player.videoWidth > 0) {
             state.lastVideoElement = player;
             addBufferingListeners(player);
             return player;
@@ -147,18 +155,18 @@ function findVideoPlayerElement() {
 }
 
 function findControlsContainerElement() {
-    const moviePlayer = findMoviePlayerElement();
-    if (moviePlayer) {
-        return moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS);
+    const moviePlayerContainer = findMoviePlayerContainerElement();
+    if (moviePlayerContainer) {
+        return moviePlayerContainer.querySelector(CONFIG.SELECTORS.CONTROLS);
     }
     return document.querySelector(CONFIG.SELECTORS.CONTROLS);
 }
 
 function keepControlsVisible() {
     state.isHoveringOverCustomButtons = true;
-    const player = findMoviePlayerElement();
-    if (player && player.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)) {
-        player.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
+    const playerContainer = document.querySelector(CONFIG.SELECTORS.AUTOHIDE_CLASS_TARGET);
+    if (playerContainer && playerContainer.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)) {
+        playerContainer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
     }
 }
 
@@ -219,6 +227,18 @@ function createButtonsContainer() {
   return container;
 }
 
+function clickYouTubeSkipButton() {
+    for (const selector of CONFIG.SELECTORS.SKIP_AD_BUTTONS) {
+        const skipButton = document.querySelector(selector);
+        if (skipButton && skipButton.offsetParent !== null) {
+            console.log("YT FF/RW: Clicking YouTube skip ad button:", selector);
+            skipButton.click();
+            return true;
+        }
+    }
+    return false;
+}
+
 function handleButtonClick(event) {
     if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) return;
     const button = event.target.closest('button');
@@ -227,9 +247,30 @@ function handleButtonClick(event) {
     event.stopPropagation();
     event.stopImmediatePropagation();
     const currentVideoPlayer = findVideoPlayerElement();
-    if (!currentVideoPlayer || currentVideoPlayer.readyState < HTMLMediaElement.HAVE_METADATA || currentVideoPlayer.seeking || state.isBuffering) return;
+    if (!currentVideoPlayer || currentVideoPlayer.readyState < HTMLMediaElement.HAVE_METADATA || currentVideoPlayer.seeking || state.isBuffering) {
+        console.warn("YT FF/RW: Button click: Player not ready or not found.");
+        return;
+    }
+
     try {
-        let skipTimeValue = 0; let newTime;
+        const moviePlayerContainer = findMoviePlayerContainerElement();
+        const isAdShowing = moviePlayerContainer && moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AD_SHOWING_CLASS);
+        let skipTimeValue = 0;
+        let newTime;
+
+        if (isAdShowing && button.id === CONFIG.IDS.FORWARD_BUTTON) {
+            console.log("YT FF/RW: Ad detected. Forward button trying to skip ad.");
+            if (clickYouTubeSkipButton()) {
+                return;
+            }
+            if (currentVideoPlayer.duration && isFinite(currentVideoPlayer.duration) && currentVideoPlayer.currentTime < currentVideoPlayer.duration - 0.1) {
+                console.log("YT FF/RW: No skip button, trying currentTime = duration for ad.");
+                currentVideoPlayer.currentTime = currentVideoPlayer.duration;
+                return;
+            }
+            console.log("YT FF/RW: Ad skip via button failed, proceeding with normal skip if applicable.");
+        }
+
         if (button.id === CONFIG.IDS.FORWARD_BUTTON) {
             skipTimeValue = state.settings.forwardSkipTime || CONFIG.DEFAULT_SETTINGS.forwardSkipTime;
             newTime = Math.min(currentVideoPlayer.duration || Infinity, currentVideoPlayer.currentTime + skipTimeValue);
@@ -246,10 +287,6 @@ function handleButtonClick(event) {
 function injectButtons() {
     if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) {
       removeButtons(); return false;
-    }
-    const moviePlayer = findMoviePlayerElement();
-    if (moviePlayer && moviePlayer.classList.contains('ad-showing')) {
-         removeButtons(); return false;
     }
     const videoPlayer = findVideoPlayerElement();
     const controlsContainer = findControlsContainerElement();
@@ -275,19 +312,19 @@ function injectButtons() {
             logErrorToStorage("Error injecting/moving buttons container:", e);
             if (wasNewlyCreated) buttonsContainer.remove();
             state.buttonsInjected = false;
-            return false; 
+            return false;
         }
     }
-    updateButtonCounters(); 
-    state.buttonsInjected = true; 
-    if (state.visibilityTimer) cancelAnimationFrame(state.visibilityTimer); 
+    updateButtonCounters();
+    state.buttonsInjected = true;
+    if (state.visibilityTimer) cancelAnimationFrame(state.visibilityTimer);
     state.visibilityTimer = requestAnimationFrame(() => {
-        state.visibilityTimer = requestAnimationFrame(() => { 
+        state.visibilityTimer = requestAnimationFrame(() => {
             const currentContainer = document.getElementById(CONFIG.IDS.CONTAINER);
-            if (currentContainer) { 
+            if (currentContainer) {
                  currentContainer.classList.add('visible');
             } else {
-                state.buttonsInjected = false; 
+                state.buttonsInjected = false;
             }
         });
     });
@@ -296,11 +333,11 @@ function injectButtons() {
 
 function removeButtons() {
   const container = document.getElementById(CONFIG.IDS.CONTAINER);
-  if (state.visibilityTimer) cancelAnimationFrame(state.visibilityTimer); 
+  if (state.visibilityTimer) cancelAnimationFrame(state.visibilityTimer);
   state.visibilityTimer = null;
   if (container) {
     container.classList.remove('visible');
-    const transitionDuration = 200; 
+    const transitionDuration = 200;
     setTimeout(() => {
         const currentContainer = document.getElementById(CONFIG.IDS.CONTAINER);
         if (currentContainer && currentContainer.parentNode) {
@@ -368,15 +405,35 @@ function handleKeyDown(event) {
   const isRight = event.key === 'ArrowRight';
   if (!isLeft && !isRight) return;
   const shouldOverride = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
+
   if (shouldOverride) {
-    const videoPlayer = findVideoPlayerElement();
-    if (!videoPlayer || videoPlayer.readyState < HTMLMediaElement.HAVE_METADATA || state.isBuffering || videoPlayer.seeking) {
-        return;
-    }
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
+
+    const videoPlayer = findVideoPlayerElement();
+    if (!videoPlayer || videoPlayer.readyState < HTMLMediaElement.HAVE_METADATA || state.isBuffering || videoPlayer.seeking) {
+        console.warn("YT FF/RW: Keyboard shortcut: Player not ready or not found, but default was prevented.");
+        return;
+    }
+
     try {
+        const moviePlayerContainer = findMoviePlayerContainerElement();
+        const isAdShowing = moviePlayerContainer && moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AD_SHOWING_CLASS);
+
+        if (isAdShowing && isRight) {
+            console.log("YT FF/RW: Ad detected. Right arrow key trying to skip ad.");
+            if (clickYouTubeSkipButton()) {
+                return;
+            }
+            if (videoPlayer.duration && isFinite(videoPlayer.duration) && videoPlayer.currentTime < videoPlayer.duration - 0.1) {
+                console.log("YT FF/RW: No skip button (keyboard), trying currentTime = duration for ad.");
+                videoPlayer.currentTime = videoPlayer.duration;
+                return;
+            }
+            console.log("YT FF/RW: Ad skip via keyboard failed, proceeding with normal skip if applicable.");
+        }
+
         const skipTimeSettingForward = state.settings.keyboardForward || CONFIG.DEFAULT_SETTINGS.keyboardForward;
         const skipTimeSettingBackward = state.settings.keyboardBackward || CONFIG.DEFAULT_SETTINGS.keyboardBackward;
         const skipTime = isRight ? skipTimeSettingForward : -skipTimeSettingBackward;
@@ -433,14 +490,13 @@ const debouncedTryInjectCheck = debounce(() => { tryInjectButtons(0); }, CONFIG.
 function playerMutationCallback(mutationsList, observer) {
   let relevantChange = false;
   let autohideAddedWhileHovering = false;
-  const moviePlayerElement = findMoviePlayerElement();
+  const moviePlayerContainer = findMoviePlayerContainerElement();
+
   for (const mutation of mutationsList) {
       if (mutation.type === 'attributes' &&
           mutation.attributeName === 'class' &&
-          mutation.target === moviePlayerElement && moviePlayerElement &&
-          moviePlayerElement.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS))
-      {
-          if (state.isHoveringOverCustomButtons) {
+          mutation.target === moviePlayerContainer) {
+          if (moviePlayerContainer && moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS) && state.isHoveringOverCustomButtons) {
               autohideAddedWhileHovering = true;
           }
           relevantChange = true;
@@ -465,10 +521,10 @@ function playerMutationCallback(mutationsList, observer) {
       }
       if (relevantChange) break;
   }
-  if (autohideAddedWhileHovering && moviePlayerElement) {
+  if (autohideAddedWhileHovering && moviePlayerContainer) {
         requestAnimationFrame(() => {
-             if (state.isHoveringOverCustomButtons && moviePlayerElement.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)) {
-                  moviePlayerElement.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
+             if (state.isHoveringOverCustomButtons && moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)) {
+                  moviePlayerContainer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
              }
         });
    }
@@ -485,22 +541,30 @@ function observePlayerChanges() {
       }
       return;
   }
-  const moviePlayerElement = findMoviePlayerElement();
-  if (!moviePlayerElement) {
+  const moviePlayerContainerToObserve = findMoviePlayerContainerElement();
+  if (!moviePlayerContainerToObserve) {
+      console.warn("YT FF/RW: Movie player container not found for MutationObserver.");
       return;
   }
-  if (state.playerObserver) state.playerObserver.disconnect();
-  try {
-    state.playerObserver = new MutationObserver(playerMutationCallback);
-    state.playerObserver.observe(moviePlayerElement, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class']
-    });
-  } catch(e) {
-      logErrorToStorage("Error setting up player observer:", e);
+  if (state.playerObserver && state.playerObserver.target !== moviePlayerContainerToObserve) {
+      state.playerObserver.disconnect();
       state.playerObserver = null;
+  }
+
+  if (!state.playerObserver) {
+    try {
+        state.playerObserver = new MutationObserver(playerMutationCallback);
+        state.playerObserver.observe(moviePlayerContainerToObserve, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        state.playerObserver.target = moviePlayerContainerToObserve;
+    } catch(e) {
+        logErrorToStorage("Error setting up player observer:", e);
+        state.playerObserver = null;
+    }
   }
 }
 
@@ -508,26 +572,31 @@ const debouncedNavigationHandler = debounce(() => {
     const currentUrl = window.location.href;
     const oldPath = state.lastUrl ? (new URL(state.lastUrl).pathname + new URL(state.lastUrl).search) : null;
     const newPath = window.location.pathname + window.location.search;
-    if (currentUrl !== state.lastUrl && newPath !== oldPath) {
-        state.lastUrl = currentUrl;
-        handleNavigation();
-    } else if (currentUrl !== state.lastUrl && isWatchPage()) {
-        state.lastUrl = currentUrl;
-        handleNavigation();
+
+    if (currentUrl !== state.lastUrl) {
+        if (newPath !== oldPath || (isWatchPage() && currentUrl !== state.lastUrl) ) {
+            state.lastUrl = currentUrl;
+            handleNavigation();
+        } else {
+             state.lastUrl = currentUrl;
+        }
     } else if (isWatchPage() && !state.buttonsInjected && state.settings.buttonSkipEnabled) {
         handleNavigation();
     }
 }, CONFIG.DEBOUNCE.NAVIGATION);
 
 function handleNavigation() {
-    if (state.playerObserver) { 
-        state.playerObserver.disconnect(); 
-        state.playerObserver = null; 
+    if (state.playerObserver) {
+        state.playerObserver.disconnect();
+        state.playerObserver = null;
     }
     state.retryAttempts = 0;
     if (retryTimeout) clearTimeout(retryTimeout);
     if (state.visibilityTimer) cancelAnimationFrame(state.visibilityTimer);
     state.visibilityTimer = null;
+
+    state.lastVideoElement = null;
+
     if (!state.settings.extensionEnabled) {
         cleanup();
         return;
@@ -538,33 +607,32 @@ function handleNavigation() {
     }
     if (isWatchPage()) {
          setTimeout(() => {
-            if (!state.settings.extensionEnabled || window.location.href !== state.lastUrl) {
+            if (!state.settings.extensionEnabled || window.location.href !== state.lastUrl || !isWatchPage()) {
                 if (!isWatchPage() || !state.settings.extensionEnabled) {
                     removeButtons();
                 }
                 return;
             }
-            const oldVideoElement = state.lastVideoElement;
-            state.lastVideoElement = null; 
+
             const newVideoElement = findVideoPlayerElement();
-            if (oldVideoElement && oldVideoElement !== newVideoElement) {
-                removeBufferingListeners(oldVideoElement);
-            }
             if (newVideoElement) {
                 addBufferingListeners(newVideoElement);
-            }
-            state.isBuffering = newVideoElement ? (newVideoElement.readyState < HTMLMediaElement.HAVE_FUTURE_DATA || (newVideoElement.seeking && !newVideoElement.paused)) : false;
-            observePlayerChanges(); 
-            if (state.settings.buttonSkipEnabled) {
-                tryInjectButtons(0); 
+                state.isBuffering = newVideoElement.readyState < HTMLMediaElement.HAVE_FUTURE_DATA || (newVideoElement.seeking && !newVideoElement.paused);
             } else {
-                removeButtons(); 
+                state.isBuffering = false;
             }
-         }, 150); 
+
+            observePlayerChanges();
+
+            if (state.settings.buttonSkipEnabled) {
+                tryInjectButtons(0);
+            } else {
+                removeButtons();
+            }
+         }, 250);
     } else {
         removeButtons();
         if(state.lastVideoElement) removeBufferingListeners(state.lastVideoElement);
-        state.lastVideoElement = null;
         state.isBuffering = false;
     }
 }
@@ -585,6 +653,7 @@ const debouncedResizeCheck = debounce(() => {
 function cleanup() {
   removeButtons();
   if(state.lastVideoElement) removeBufferingListeners(state.lastVideoElement);
+  state.lastVideoElement = null;
   removeKeyListeners();
   if (state.navigationObserver) {state.navigationObserver.disconnect(); state.navigationObserver = null;}
   if (state.playerObserver) {state.playerObserver.disconnect(); state.playerObserver = null;}
@@ -594,7 +663,6 @@ function cleanup() {
   retryTimeout = null;
   state.buttonsInjected = false;
   state.retryAttempts = 0;
-  state.lastVideoElement = null;
   state.isBuffering = false;
   state.keyListenersAttached = false;
   state.isHoveringOverCustomButtons = false;
@@ -620,18 +688,7 @@ async function initializeExtension() {
             state.navigationObserver = new MutationObserver(debouncedNavigationHandler);
             state.navigationObserver.observe(document.documentElement, { childList: true, subtree: true });
         }
-        if (isWatchPage()) {
-             setTimeout(() => {
-                 if (state.settings.extensionEnabled && isWatchPage() && window.location.href === state.lastUrl) {
-                      observePlayerChanges();
-                      if (state.settings.buttonSkipEnabled) {
-                          tryInjectButtons(0);
-                      }
-                       const video = findVideoPlayerElement();
-                       if(video) addBufferingListeners(video);
-                 }
-             }, 150);
-        }
+        handleNavigation();
     } catch (error) {
         logErrorToStorage('Error initializing extension:', error);
         cleanup();
@@ -679,7 +736,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else if (state.settings.buttonSkipEnabled && isWatchPage() && !state.buttonsInjected) {
             tryInjectButtons(0);
         }
-        if (isWatchPage() && !state.playerObserver) {
+        if (isWatchPage() && !state.playerObserver && state.settings.extensionEnabled) {
             observePlayerChanges();
         }
     }
