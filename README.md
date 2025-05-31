@@ -1,8 +1,8 @@
 <p align="center">
   <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind/commits/main"><img src="https://img.shields.io/github/commit-activity/m/Laskco/YouTube-Fast-Forward-and-Rewind?label=Commits" alt="Commits"/></a>
   <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind/issues"><img src="https://img.shields.io/github/issues-raw/Laskco/YouTube-Fast-Forward-and-Rewind?label=Issues%20Open" alt="Issues Open"/></a>
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/youtube-fast-forward-rewind/"><img src="https://img.shields.io/amo/stars/youtube-fast-forward-rewind?label=Firefox%20Rating" alt="Firefox Rating"/></a>
-  <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm"><img src="https://img.shields.io/chrome-web-store/stars/bkhjomondpmkjohilihdldfjmhpgkhcm?label=Chrome%20Rating" alt="Chrome Rating"/></a>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/youtube-fast-forward-rewind/"><img src="https://img.shields.io/amo/rating/youtube-fast-forward-rewind?label=Firefox%20Rating&suffix=/5" alt="Firefox Rating"/></a>
+  <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm"><img src="https://img.shields.io/chrome-web-store/rating/bkhjomondpmkjohilihdldfjmhpgkhcm?label=Chrome%20Rating&suffix=/5" alt="Chrome Rating"/></a>
   <a href="https://addons.mozilla.org/en-US/firefox/addon/youtube-fast-forward-rewind/"><img src="https://img.shields.io/amo/v/youtube-fast-forward-rewind?label=Firefox%20Version" alt="Firefox Version"/></a>
   <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm"><img src="https://img.shields.io/chrome-web-store/v/bkhjomondpmkjohilihdldfjmhpgkhcm?label=Chrome%20Version" alt="Chrome Version"/></a>
 </p>
