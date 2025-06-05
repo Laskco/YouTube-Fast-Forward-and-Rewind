@@ -7,14 +7,10 @@
   <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm"><img src="https://img.shields.io/chrome-web-store/v/bkhjomondpmkjohilihdldfjmhpgkhcm?label=Chrome%20Version" alt="Chrome Version"/></a>
 </p>
 
-<hr>
-
 <div align="center">
   <h1>YouTube Fast Forward & Rewind</h1>
-  <p style="white-space: nowrap;">Adds custom skip/rewind buttons to YouTube for your preferred jump times.</p>
+  <p>Adds custom skip/rewind buttons to YouTube for your preferred jump times.</p>
 </div>
-
-<br>
 
 <div align="center">
 <table width="80%">
