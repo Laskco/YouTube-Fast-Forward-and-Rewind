@@ -46,7 +46,7 @@
 </div>
 
 <br>
-<hr>
+
 
 ## Features
 
@@ -73,4 +73,4 @@
   <img src="./assets/309323.png" alt="Underwater scene with a lionfish" width="80%">
 </div>
 <br>
-<hr>
+
