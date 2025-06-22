@@ -13,7 +13,7 @@
 </div>
 
 <div align="center">
-<table width="80%">
+<table>
   <thead>
     <tr>
       <th align="center" width="50%">Firefox</th>
@@ -28,8 +28,6 @@
           <br>
           <strong>Install from Firefox Add-ons</strong>
         </a>
-        <br><br>
-        <small><em>Actively maintained.</em></small>
       </td>
       <td align="center" valign="top">
         <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm?authuser=0&hl=en">
@@ -37,50 +35,55 @@
           <br>
           <strong>Install from Chrome Web Store</strong>
         </a>
-        <br><br>
-        <small><em>Actively maintained.</em></small>
       </td>
     </tr>
   </tbody>
 </table>
 </div>
 
-<br>
+---
 
+<p align="center">
+  <img src="assets/FullPreview.PNG" alt="A full preview showing the extension's features, including custom buttons on the YouTube player and the settings popup." width="850"/>
+</p>
+
+---
 
 ## Key Features
 
--   **Customizable Skip Times & Presets**
-    -   Set your own fast forward and rewind times for both the on-screen buttons and keyboard shortcuts.
-    -   Configure up to 4 quick-select presets for each action, accessible from a clean, collapsible editor.
+-   **Customizable Skip Times & Presets:** Set your own fast forward and rewind times for both on-screen buttons and keyboard shortcuts. Configure up to 4 quick-select presets for each action.
+-   **Fully Customizable Hotkeys:** Override YouTube's defaults and assign any key you want for skipping. Includes a "Reset to Default" option.
+-   **Advanced Controls:** Fine-tune player responsiveness with an "Action Delay" setting, perfect for preventing buffering on slower connections.
+-   **Seamless Integration:** Buttons are designed to fit perfectly into YouTube's native player interface.
+-   **Auto-Save:** All your custom settings are saved automatically.
 
--   **Fully Customizable Hotkeys**
-    -   Override YouTube's defaults and assign any key you want for skipping forward and backward.
-    -   Includes a "Reset to Default" option to quickly restore the arrow keys.
-
--   **Advanced Controls**
-    -   Fine-tune player responsiveness with an experimental "Action Delay" setting, perfect for preventing buffering on slower connections.
-
--   **Seamless Integration**
-    -   The buttons are designed to fit perfectly into YouTube's native player interface.
-
--   **Auto-Save**
-    -   All your custom settings are saved automatically.
+---
 
 ## Gallery
 
 <div align="center">
-  <img src="./assets/Seamless.PNG" alt="Custom forward and rewind buttons integrated into the YouTube player." width="800">
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="assets/Seamless.PNG" alt="Custom forward and rewind buttons integrated into the YouTube player." width="420">
+    </td>
+    <td align="center" valign="top">
+      <img src="assets/SkipTimes.PNG" alt="Extension popup showing settings for button and keyboard skip times." width="420">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top">
+      <img src="assets/CustomizablePresets.PNG" alt="Collapsible editor panel for setting custom preset values." width="420">
+    </td>
+    <td align="center" valign="top">
+      <img src="assets/FineTune.PNG" alt="Advanced settings page with the Action Delay control." width="420">
+    </td>
+  </tr>
+</table>
 </div>
-<br>
-<div align="center">
-  <img src="./assets/SkipTimes.PNG" alt="Extension popup showing settings for button and keyboard skip times." width="800">
-</div>
-<br>
-<div align="center">
-  <img src="./assets/CustomizablePresets.PNG" alt="Collapsible editor panel for setting custom preset values." width="800">
-</div>
-<br>
-<div align="center">
-  <img src="./assets/FineTune.PNG" alt="Advanced settings page with the Action Delay control." width="800">
-</div>
+
+---
+
+## Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind/issues).
