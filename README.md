@@ -16,7 +16,7 @@
 </div>
 
 <div align="center">
-<table>
+<table width="80%">
   <thead>
     <tr>
       <th align="center" width="50%">Firefox</th>
@@ -27,17 +27,21 @@
     <tr>
       <td align="center" valign="top">
         <a href="https://addons.mozilla.org/en-US/firefox/addon/youtube-fast-forward-rewind/">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Firefox_logo%2C_2019.svg/100px-Firefox_logo%2C_2019.svg.png" alt="Firefox" width="100" height="100"/>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Firefox_logo%2C_2019.svg/120px-Firefox_logo%2C_2019.svg.png" alt="Firefox" width="64" height="64"/>
           <br>
-          <strong>Install from Firefox Add-ons</strong>
+          <strong>Install from Firefox Add-ons</strong>
         </a>
+        <br><br>
+        <small><em>Actively maintained.</em></small>
       </td>
       <td align="center" valign="top">
         <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm?authuser=0&hl=en">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/100px-Google_Chrome_icon_%28February_2022%29.svg.png" alt="Chrome" width="100" height="100"/>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/120px-Google_Chrome_icon_%28February_2022%29.svg.png" alt="Chrome" width="64" height="64"/>
           <br>
-          <strong>Install from Chrome Web Store</strong>
+          <strong>Install from Chrome Web Store</strong>
         </a>
+        <br><br>
+        <small><em>Actively maintained.</em></small>
       </td>
     </tr>
   </tbody>
@@ -90,3 +94,5 @@
 ## Contributing
 
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind/issues).
+
+---
