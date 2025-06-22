@@ -8,7 +8,10 @@
 </p>
 
 <div align="center">
-  <h1>YouTube Fast Forward & Rewind</h1>
+  <h1>
+    YouTube Fast Forward & Rewind 
+    <img src="assets/Inosuke.png" alt="Inosuke" height="70" style="vertical-align: middle;">
+  </h1>
   <p>Take full control of your YouTube playback with customizable skip buttons, keyboard shortcuts, and advanced settings.</p>
 </div>
 
@@ -24,16 +27,16 @@
     <tr>
       <td align="center" valign="top">
         <a href="https://addons.mozilla.org/en-US/firefox/addon/youtube-fast-forward-rewind/">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Firefox_logo%2C_2019.svg/120px-Firefox_logo%2C_2019.svg.png" alt="Firefox" width="64" height="64"/>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Firefox_logo%2C_2019.svg/100px-Firefox_logo%2C_2019.svg.png" alt="Firefox" width="100" height="100"/>
           <br>
-          <strong>Install from Firefox Add-ons</strong>
+          <strong>Install from Firefox Add-ons</strong>
         </a>
       </td>
       <td align="center" valign="top">
         <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm?authuser=0&hl=en">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/120px-Google_Chrome_icon_%28February_2022%29.svg.png" alt="Chrome" width="64" height="64"/>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/100px-Google_Chrome_icon_%28February_2022%29.svg.png" alt="Chrome" width="100" height="100"/>
           <br>
-          <strong>Install from Chrome Web Store</strong>
+          <strong>Install from Chrome Web Store</strong>
         </a>
       </td>
     </tr>
