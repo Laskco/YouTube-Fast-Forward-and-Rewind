@@ -9,7 +9,7 @@
 
 <div align="center">
   <h1>YouTube Fast Forward & Rewind</h1>
-  <p>Adds custom skip/rewind buttons to YouTube for your preferred jump times.</p>
+  <p>Take full control of your YouTube playback with customizable skip buttons, keyboard shortcuts, and advanced settings.</p>
 </div>
 
 <div align="center">
@@ -48,29 +48,39 @@
 <br>
 
 
-## Features
+## Key Features
 
--   Custom Buttons: Set your own fast forward and rewind times for better control.
--   Easy Navigation: The buttons are built right into the YouTube player for quick access.
--   Auto Save: Your settings are saved automatically, so you don't have to reset them every time.
+-   **Customizable Skip Times & Presets**
+    -   Set your own fast forward and rewind times for both the on-screen buttons and keyboard shortcuts.
+    -   Configure up to 4 quick-select presets for each action, accessible from a clean, collapsible editor.
 
-## Screenshots
+-   **Fully Customizable Hotkeys**
+    -   Override YouTube's defaults and assign any key you want for skipping forward and backward.
+    -   Includes a "Reset to Default" option to quickly restore the arrow keys.
+
+-   **Advanced Controls**
+    -   Fine-tune player responsiveness with an experimental "Action Delay" setting, perfect for preventing buffering on slower connections.
+
+-   **Seamless Integration**
+    -   The buttons are designed to fit perfectly into YouTube's native player interface.
+
+-   **Auto-Save**
+    -   All your custom settings are saved automatically.
+
+## Gallery
 
 <div align="center">
-  <strong>Player Interface with Custom Buttons:</strong><br>
-  <img src="./assets/309321.png" alt="YouTube Player with Fast Forward & Rewind Buttons" width="350">
-</div>
-<br><br>
-
-<div align="center">
-  <strong>Extension Popup Settings (Dark & Light Mode):</strong><br>
-  <img src="./assets/ffrwextension.png" alt="YouTube Fast Forward & Rewind Extension Popup Settings" width="75%">
-</div>
-<br><br>
-
-<div align="center">
-  <strong>Additional Extension View:</strong><br>
-  <img src="./assets/309323.png" alt="Underwater scene with a lionfish" width="80%">
+  <img src="./assets/Seamless.PNG" alt="Custom forward and rewind buttons integrated into the YouTube player." width="800">
 </div>
 <br>
-
+<div align="center">
+  <img src="./assets/SkipTimes.PNG" alt="Extension popup showing settings for button and keyboard skip times." width="800">
+</div>
+<br>
+<div align="center">
+  <img src="./assets/CustomizablePresets.PNG" alt="Collapsible editor panel for setting custom preset values." width="800">
+</div>
+<br>
+<div align="center">
+  <img src="./assets/FineTune.PNG" alt="Advanced settings page with the Action Delay control." width="800">
+</div>
