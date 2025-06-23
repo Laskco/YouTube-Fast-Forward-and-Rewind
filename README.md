@@ -16,36 +16,7 @@
 </div>
 
 <div align="center">
-<table width="80%">
-  <thead>
-    <tr>
-      <th align="center" width="50%">Firefox</th>
-      <th align="center" width="50%">Google Chrome</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center" valign="top">
-        <a href="https://addons.mozilla.org/en-US/firefox/addon/youtube-fast-forward-rewind/">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Firefox_logo%2C_2019.svg/120px-Firefox_logo%2C_2019.svg.png" alt="Firefox" width="64" height="64"/>
-          <br>
-          <strong>Install from Firefox Add-ons</strong>
-        </a>
-        <br><br>
-        <small><em>Actively maintained.</em></small>
-      </td>
-      <td align="center" valign="top">
-        <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm?authuser=0&hl=en">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/120px-Google_Chrome_icon_%28February_2022%29.svg.png" alt="Chrome" width="64" height="64"/>
-          <br>
-          <strong>Install from Chrome Web Store</strong>
-        </a>
-        <br><br>
-        <small><em>Actively maintained.</em></small>
-      </td>
-    </tr>
-  </tbody>
-</table>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/youtube-fast-forward-rewind/"><img src="https://img.shields.io/badge/Available%20on-Firefox-2A2A2A?style=for-the-badge&logo=firefox" alt="Available on Firefox"/></a>   <a href="https://chromewebstore.google.com/detail/youtube-fast-forward-rewi/bkhjomondpmkjohilihdldfjmhpgkhcm"><img src="https://img.shields.io/badge/Available%20on-Chrome-2A2A2A?style=for-the-badge&logo=googlechrome" alt="Available on Chrome"/></a>
 </div>
 
 ---
