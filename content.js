@@ -91,7 +91,7 @@ function performSeek(skipTime) {
         clearTimeout(state.actionTimeout);
         state.actionTimeout = null;
     }
-    
+
     const currentVideoPlayer = findVideoPlayerElement();
 
     if (!currentVideoPlayer || currentVideoPlayer.readyState < HTMLMediaElement.HAVE_METADATA || currentVideoPlayer.seeking || state.isBuffering) {
@@ -252,7 +252,7 @@ function createButtonsContainer() {
   container.id = CONFIG.IDS.CONTAINER;
   const rewindButton = createButton(CONFIG.IDS.REWIND_BUTTON, CONFIG.ICONS.REWIND);
   const forwardButton = createButton(CONFIG.IDS.FORWARD_BUTTON, CONFIG.ICONS.FORWARD);
-  
+
   container.appendChild(rewindButton);
   container.appendChild(forwardButton);
   container.addEventListener('click', handleButtonClick, { capture: true });
@@ -286,7 +286,7 @@ function handleButtonClick(event) {
 
     if (isAdShowing && button.id === CONFIG.IDS.FORWARD_BUTTON) {
         if (clickYouTubeSkipButton()) return;
-        
+
         const currentVideoPlayer = findVideoPlayerElement();
         if (currentVideoPlayer && currentVideoPlayer.duration && isFinite(currentVideoPlayer.duration)) {
              currentVideoPlayer.currentTime = currentVideoPlayer.duration;
@@ -299,7 +299,7 @@ function handleButtonClick(event) {
     } else if (button.id === CONFIG.IDS.REWIND_BUTTON) {
         skipTimeValue = -(state.settings.backwardSkipTime || CONFIG.DEFAULT_SETTINGS.backwardSkipTime);
     }
-    
+
     if (skipTimeValue !== 0) {
         performSeek(skipTimeValue);
     }
@@ -317,63 +317,52 @@ function injectButtons() {
         return false;
     }
 
-    const buttonsContainer = document.getElementById(CONFIG.IDS.CONTAINER);
-    if (buttonsContainer) {
-        let isCorrectlyPlaced = false;
-        if (state.settings.buttonPosition === 'right') {
-            const rightControls = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS_RIGHT);
-            if (rightControls && rightControls.previousElementSibling === buttonsContainer) {
-                isCorrectlyPlaced = true;
-            }
-        } else {
-            const leftControls = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS);
-            if (leftControls && buttonsContainer.parentElement === leftControls) {
-                isCorrectlyPlaced = true;
-            }
-        }
-        if (isCorrectlyPlaced) {
-            updateButtonCounters(buttonsContainer);
-            buttonsContainer.classList.add('visible');
-            buttonsContainer.classList.toggle('position-right', state.settings.buttonPosition === 'right');
-            return true;
-        }
+    let buttonsContainer = document.getElementById(CONFIG.IDS.CONTAINER);
+    const position = state.settings.buttonPosition || 'left';
+
+    if (!buttonsContainer) {
+        buttonsContainer = createButtonsContainer();
+        state.buttonsInjected = true;
     }
-    
-    removeButtons();
 
-    const newButtonsContainer = createButtonsContainer();
-    updateButtonCounters(newButtonsContainer);
-    newButtonsContainer.classList.toggle('position-right', state.settings.buttonPosition === 'right');
+    updateButtonCounters(buttonsContainer);
+    buttonsContainer.classList.toggle('position-right', position === 'right');
 
-    try {
-        if (state.settings.buttonPosition === 'right') {
-            const chromeControls = moviePlayer.querySelector(CONFIG.SELECTORS.CHROME_CONTROLS);
-            const rightControls = chromeControls ? chromeControls.querySelector(CONFIG.SELECTORS.CONTROLS_RIGHT) : null;
-            if (chromeControls && rightControls) {
-                chromeControls.insertBefore(newButtonsContainer, rightControls);
-            } else { return false; }
-        } else {
-            const leftControls = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS);
-            const timeDisplay = leftControls ? leftControls.querySelector(CONFIG.SELECTORS.TIME_DISPLAY) : null;
-            if (leftControls && timeDisplay) {
-                leftControls.insertBefore(newButtonsContainer, timeDisplay.nextSibling);
-            } else if (leftControls) {
-                leftControls.appendChild(newButtonsContainer);
-            } else { return false; }
-        }
-    } catch (e) {
-        logErrorToStorage("Error injecting buttons container:", e);
+    let correctParent = null;
+    let anchorElement = null;
+
+    if (position === 'right') {
+        const chromeControls = moviePlayer.querySelector(CONFIG.SELECTORS.CHROME_CONTROLS);
+        correctParent = chromeControls;
+        anchorElement = chromeControls ? chromeControls.querySelector(CONFIG.SELECTORS.CONTROLS_RIGHT) : null;
+    } else {
+        correctParent = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS);
+        const timeDisplay = correctParent ? correctParent.querySelector(CONFIG.SELECTORS.TIME_DISPLAY) : null;
+        anchorElement = timeDisplay ? timeDisplay.nextSibling : null;
+    }
+
+    if (!correctParent) {
+        removeButtons();
         return false;
     }
-    
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            const currentContainer = document.getElementById(CONFIG.IDS.CONTAINER);
-            if (currentContainer) {
-                currentContainer.classList.add('visible');
+
+    if (buttonsContainer.parentElement !== correctParent) {
+        try {
+            if (position === 'right' && anchorElement) {
+                correctParent.insertBefore(buttonsContainer, anchorElement);
+            } else if (position === 'left' && anchorElement) {
+                correctParent.insertBefore(buttonsContainer, anchorElement);
+            } else {
+                correctParent.appendChild(buttonsContainer);
             }
-        });
-    });
+        } catch (e) {
+            logErrorToStorage("Error moving/injecting buttons container:", e);
+            removeButtons();
+            return false;
+        }
+    }
+
+    requestAnimationFrame(() => buttonsContainer.classList.add('visible'));
 
     state.buttonsInjected = true;
     return true;
@@ -459,8 +448,8 @@ function handleKeyDown(event) {
 
         stopContinuousSeek();
         state.activeSeekKey = event.key;
-        
-        const skipTimeValue = isForward 
+
+        const skipTimeValue = isForward
             ? (state.settings.keyboardForward || CONFIG.DEFAULT_SETTINGS.keyboardForward)
             : -(state.settings.keyboardBackward || CONFIG.DEFAULT_SETTINGS.keyboardBackward);
 
@@ -609,7 +598,7 @@ function handleNavigation() {
     }
     state.retryAttempts = 0;
     if (retryTimeout) clearTimeout(retryTimeout);
-    
+
     state.cachedMoviePlayer = null;
     state.lastVideoElement = null;
 
@@ -725,7 +714,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else if (!state.settings.keyboardShortcutsEnabled && oldSettings.keyboardShortcutsEnabled) {
             removeKeyListeners();
         }
-        
+
         if (isWatchPage()) {
             tryInjectButtons(0);
         } else {
