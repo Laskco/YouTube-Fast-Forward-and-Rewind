@@ -7,6 +7,8 @@ const CONFIG = {
       '#movie_player video'
     ],
     CONTROLS: '.ytp-left-controls',
+    CONTROLS_RIGHT: '.ytp-right-controls',
+    CHROME_CONTROLS: '.ytp-chrome-controls',
     TIME_DISPLAY: '.ytp-time-display.notranslate',
     MOVIE_PLAYER: '#movie_player',
     AUTOHIDE_CLASS_TARGET: '#movie_player',
@@ -41,7 +43,8 @@ const CONFIG = {
     keyboardForwardKey: 'ArrowRight',
     keyboardBackwardKey: 'ArrowLeft',
     actionTimingEnabled: true,
-    actionDelay: 0
+    actionDelay: 0,
+    buttonPosition: 'left'
   },
   ICONS: {
     FORWARD: 'icons/alt-forward.png',
@@ -69,7 +72,6 @@ const state = {
   isHoveringOverCustomButtons: false,
   actionTimeout: null,
   cachedMoviePlayer: null,
-  cachedControlsContainer: null,
   seekIntervalId: null,
   activeSeekKey: null
 };
@@ -193,19 +195,6 @@ function findVideoPlayerElement() {
   return null;
 }
 
-function findControlsContainerElement() {
-    if (state.cachedControlsContainer && state.cachedControlsContainer.isConnected) {
-        return state.cachedControlsContainer;
-    }
-    const moviePlayerContainer = findMoviePlayerContainerElement();
-    if (moviePlayerContainer) {
-        state.cachedControlsContainer = moviePlayerContainer.querySelector(CONFIG.SELECTORS.CONTROLS);
-        return state.cachedControlsContainer;
-    }
-    state.cachedControlsContainer = document.querySelector(CONFIG.SELECTORS.CONTROLS);
-    return state.cachedControlsContainer;
-}
-
 function keepControlsVisible() {
     state.isHoveringOverCustomButtons = true;
     const playerContainer = document.querySelector(CONFIG.SELECTORS.AUTOHIDE_CLASS_TARGET);
@@ -317,33 +306,60 @@ function handleButtonClick(event) {
 }
 
 function injectButtons() {
-    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled) {
-      removeButtons();
-      return false;
-    }
-    const controlsContainer = findControlsContainerElement();
-    if (!controlsContainer) {
-      if (state.buttonsInjected) removeButtons();
-      return false;
+    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled || !isWatchPage()) {
+        removeButtons();
+        return false;
     }
 
-    let buttonsContainer = document.getElementById(CONFIG.IDS.CONTAINER);
+    const moviePlayer = findMoviePlayerContainerElement();
+    if (!moviePlayer) {
+        removeButtons();
+        return false;
+    }
 
+    const buttonsContainer = document.getElementById(CONFIG.IDS.CONTAINER);
     if (buttonsContainer) {
-        updateButtonCounters(buttonsContainer);
-        buttonsContainer.classList.add('visible');
-        return true;
+        let isCorrectlyPlaced = false;
+        if (state.settings.buttonPosition === 'right') {
+            const rightControls = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS_RIGHT);
+            if (rightControls && rightControls.previousElementSibling === buttonsContainer) {
+                isCorrectlyPlaced = true;
+            }
+        } else {
+            const leftControls = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS);
+            if (leftControls && buttonsContainer.parentElement === leftControls) {
+                isCorrectlyPlaced = true;
+            }
+        }
+        if (isCorrectlyPlaced) {
+            updateButtonCounters(buttonsContainer);
+            buttonsContainer.classList.add('visible');
+            buttonsContainer.classList.toggle('position-right', state.settings.buttonPosition === 'right');
+            return true;
+        }
     }
     
-    buttonsContainer = createButtonsContainer();
-    updateButtonCounters(buttonsContainer);
-    
-    const timeDisplay = controlsContainer.querySelector(CONFIG.SELECTORS.TIME_DISPLAY);
+    removeButtons();
+
+    const newButtonsContainer = createButtonsContainer();
+    updateButtonCounters(newButtonsContainer);
+    newButtonsContainer.classList.toggle('position-right', state.settings.buttonPosition === 'right');
+
     try {
-        if (timeDisplay && timeDisplay.parentNode === controlsContainer) {
-            controlsContainer.insertBefore(buttonsContainer, timeDisplay.nextSibling);
+        if (state.settings.buttonPosition === 'right') {
+            const chromeControls = moviePlayer.querySelector(CONFIG.SELECTORS.CHROME_CONTROLS);
+            const rightControls = chromeControls ? chromeControls.querySelector(CONFIG.SELECTORS.CONTROLS_RIGHT) : null;
+            if (chromeControls && rightControls) {
+                chromeControls.insertBefore(newButtonsContainer, rightControls);
+            } else { return false; }
         } else {
-            controlsContainer.appendChild(buttonsContainer);
+            const leftControls = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS);
+            const timeDisplay = leftControls ? leftControls.querySelector(CONFIG.SELECTORS.TIME_DISPLAY) : null;
+            if (leftControls && timeDisplay) {
+                leftControls.insertBefore(newButtonsContainer, timeDisplay.nextSibling);
+            } else if (leftControls) {
+                leftControls.appendChild(newButtonsContainer);
+            } else { return false; }
         }
     } catch (e) {
         logErrorToStorage("Error injecting buttons container:", e);
@@ -396,7 +412,7 @@ function removeBufferingListeners(videoElement) {
 function sanitizeSettings(settingsObject) {
     const newSettings = { ...settingsObject };
     for (const key in CONFIG.DEFAULT_SETTINGS) {
-        if (typeof newSettings[key] !== typeof CONFIG.DEFAULT_SETTINGS[key]) {
+        if (newSettings[key] === undefined || typeof newSettings[key] !== typeof CONFIG.DEFAULT_SETTINGS[key]) {
             newSettings[key] = CONFIG.DEFAULT_SETTINGS[key];
         }
     }
@@ -548,37 +564,25 @@ function playerMutationCallback(mutationsList, observer) {
 }
 
 function observePlayerChanges() {
+  if (state.playerObserver) {
+      state.playerObserver.disconnect();
+      state.playerObserver = null;
+  }
   if (!state.settings.extensionEnabled || !isWatchPage()) {
-      if (state.playerObserver) {
-          state.playerObserver.disconnect();
-          state.playerObserver = null;
-      }
       return;
   }
   const moviePlayerContainerToObserve = findMoviePlayerContainerElement();
   if (!moviePlayerContainerToObserve) {
       return;
   }
-  if (state.playerObserver && state.playerObserver.target !== moviePlayerContainerToObserve) {
-      state.playerObserver.disconnect();
-      state.playerObserver = null;
-  }
 
-  if (!state.playerObserver) {
-    try {
-        state.playerObserver = new MutationObserver(playerMutationCallback);
-        state.playerObserver.observe(moviePlayerContainerToObserve, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['class']
-        });
-        state.playerObserver.target = moviePlayerContainerToObserve;
-    } catch(e) {
-        logErrorToStorage("Error setting up player observer:", e);
-        state.playerObserver = null;
-    }
-  }
+  state.playerObserver = new MutationObserver(playerMutationCallback);
+  state.playerObserver.observe(moviePlayerContainerToObserve, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class']
+  });
 }
 
 function onNavigation() {
@@ -607,7 +611,6 @@ function handleNavigation() {
     if (retryTimeout) clearTimeout(retryTimeout);
     
     state.cachedMoviePlayer = null;
-    state.cachedControlsContainer = null;
     state.lastVideoElement = null;
 
     if (!state.settings.extensionEnabled) {

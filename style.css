@@ -66,7 +66,7 @@ body.popup-body {
     padding: 16px 12px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
     width: 100%;
 }
 body.popup-body::-webkit-scrollbar { width: 8px; }
@@ -174,10 +174,8 @@ body.popup-body.light-theme .icon-light-theme {
 .toggle-switch input:checked + .slider:before { transform: translateX(22px); }
 .card-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 4px;
-    position: relative;
 }
 .card-title {
     margin: 0;
@@ -187,11 +185,47 @@ body.popup-body.light-theme .icon-light-theme {
     align-items: center;
     gap: 8px;
     color: var(--text-primary);
-    flex-grow: 1;
     transition: color var(--transition-speed);
-    padding-right: 30px;
 }
 .card-title .feather { width: 18px; height: 18px; color: var(--success-color); }
+.header-spacer {
+    flex-grow: 1;
+}
+.position-toggle-group {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    margin-right: 3px;
+}
+.btn-pos {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg-color);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all var(--transition-speed);
+}
+.btn-pos:hover {
+    border-color: var(--success-color);
+    color: var(--text-primary);
+}
+.btn-pos.active {
+    background-color: var(--success-color);
+    color: var(--success-text-on-blue);
+    border-color: var(--success-color);
+}
+.tooltip-wrapper {
+    position: relative;
+    margin-left: 6px;
+}
 .input-row {
     display: flex;
     flex-direction: column;
@@ -255,7 +289,8 @@ body.popup-body.light-theme .icon-light-theme {
     transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
 }
 .tooltip-trigger-button {
-    position: absolute; top: -3px; right: -2px; padding: 4px; height: 26px; width: 26px;
+    position: relative;
+    padding: 4px; height: 26px; width: 26px;
     color: var(--text-secondary); background: none; border: none; border-radius: 50%;
     cursor: help; display: inline-flex; align-items: center; justify-content: center; line-height: 1; margin: 0;
     transition: color var(--transition-speed), background-color var(--transition-speed);
@@ -278,7 +313,7 @@ body.popup-body.light-theme .icon-light-theme {
     visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
     pointer-events: none;
 }
-.tooltip-trigger-button:hover + .tooltip-text { visibility: visible; opacity: 1; }
+.tooltip-wrapper:hover .tooltip-text { visibility: visible; opacity: 1; }
 .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--text-primary); }
 .btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); color: var(--text-primary); }
 .preset-editor {
@@ -340,8 +375,6 @@ body.popup-body.light-theme .icon-light-theme {
     margin-top: 6px;
     border-top: none;
 }
-.toggle-label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; flex-grow: 1; margin-right: 10px; color: var(--text-primary); }
-.toggle-label .feather { width: 16px; height: 16px; color: var(--text-secondary); flex-shrink: 0; transition: color var(--transition-speed); }
 #saveStatus {
     position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
     background-color: var(--success-color); color: var(--success-text-on-blue);
@@ -399,16 +432,13 @@ body.popup-body.light-theme {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     color-scheme: light;
 }
-body.popup-body.light-theme .status-section {
-    box-shadow: none;
-}
 body.popup-body.light-theme .settings-card {
     box-shadow: 0 2px 5px var(--tooltip-shadow);
 }
 body.popup-body.light-theme::-webkit-scrollbar-track { background: var(--border-color); }
 body.popup-body.light-theme::-webkit-scrollbar-thumb { background-color: #B0B0B0; border-color: var(--border-color); }
 body.popup-body.light-theme .btn-preset { border-color: var(--border-color); background: var(--input-bg-color); color: var(--text-secondary); }
-body.popup-body.light-theme .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--success-text-on-blue); }
+body.popup-body.light-theme .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--text-text-on-blue); }
 body.popup-body.light-theme .btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); }
 body.popup-body.light-theme .btn-link { color: var(--text-secondary); }
 body.popup-body.light-theme .btn-link .feather { color: var(--text-secondary); }
@@ -453,6 +483,9 @@ body.popup-body.light-theme .tooltip-text {
     opacity: 1;
     transform: translateY(0) scale(1);
     pointer-events: auto;
+}
+#customButtonsContainer.position-right {
+    margin-right: 2px;
 }
 #customButtonsContainer .ytp-custom-button {
   width: 40px;
@@ -721,4 +754,68 @@ body.popup-body.light-theme .tooltip-text {
 }
 .preset-spinner {
     width: 50px;
+}
+
+#button-skip-card .card-header {
+  position: relative;
+  margin-bottom: 17px;
+}
+
+#button-skip-card .header-spacer {
+  display: none;
+}
+
+#button-skip-card .btn-pos {
+  height: 27px;
+  min-width: 28px;
+  padding: 0 5px;
+}
+
+#button-skip-card .position-toggle-group {
+  position: absolute;
+  top: 2px;
+  right: 30px;
+}
+
+#button-skip-card .tooltip-wrapper {
+  position: absolute;
+  top: 3px;
+  right: 0px;
+}
+
+#button-skip-card.is-disabled .position-toggle-group {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+#action-timing-card .btn-reset-card,
+#action-timing-card .tooltip-trigger-button {
+  position: static;
+}
+
+#action-timing-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#action-timing-card .card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+#action-timing-card .tooltip-trigger-button:hover + .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+#button-skip-card .tooltip-text,
+#keyboard-skip-card .tooltip-text {
+  bottom: auto;
+  top: 100%;
+  left: auto;
+  right: 0;
+  transform: none;
+  margin-top: 6px;
 }

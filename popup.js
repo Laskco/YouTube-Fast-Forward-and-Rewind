@@ -63,6 +63,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actionTimingStatusLabel = document.getElementById('actionTimingStatusLabel');
     const actionDelayInput = document.getElementById('actionDelay');
     const resetActionTimingBtn = document.getElementById('resetActionTiming');
+    
+    const posLeftBtn = document.getElementById('pos-left-btn');
+    const posRightBtn = document.getElementById('pos-right-btn');
 
     const warningOverlay = document.getElementById('advanced-warning-overlay');
     const proceedBtn = document.getElementById('proceed-ack');
@@ -79,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       keyboardBackwardKey: 'ArrowLeft',
       actionTimingEnabled: true,
       actionDelay: 50,
+      buttonPosition: 'left',
       advancedWarningAcknowledged: false,
       btnFwdPreset1Value: 5, btnFwdPreset2Value: 10, btnFwdPreset3Value: 15, btnFwdPreset4Value: 30,
       btnBwdPreset1Value: 5, btnBwdPreset2Value: 10, btnBwdPreset3Value: 15, btnBwdPreset4Value: 30,
@@ -352,21 +356,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function applySettingsToUI(settings) {
-         if (toggle) toggle.checked = settings.extensionEnabled;
-         if (buttonToggle) buttonToggle.checked = settings.buttonSkipEnabled;
-         if (keyboardToggle) keyboardToggle.checked = settings.keyboardShortcutsEnabled;
-         if (forwardTimeInput) forwardTimeInput.value = enforceMinMax({ value: settings.forwardSkipTime });
-         if (backwardTimeInput) backwardTimeInput.value = enforceMinMax({ value: settings.backwardSkipTime });
-         if (keyboardForwardInput) keyboardForwardInput.value = enforceMinMax({ value: settings.keyboardForward });
-         if (keyboardBackwardInput) keyboardBackwardInput.value = enforceMinMax({ value: settings.keyboardBackward });
-         if (keyboardForwardKeyBtn) keyboardForwardKeyBtn.textContent = formatKeyForDisplay(settings.keyboardForwardKey);
-         if (keyboardBackwardKeyBtn) keyboardBackwardKeyBtn.textContent = formatKeyForDisplay(settings.keyboardBackwardKey);
-         
-         if(actionTimingEnabledToggle) actionTimingEnabledToggle.checked = settings.actionTimingEnabled;
-         if(actionDelayInput) actionDelayInput.value = enforceMinMax({ value: settings.actionDelay }, 0, 2000);
+        if (toggle) toggle.checked = settings.extensionEnabled;
+        if (buttonToggle) buttonToggle.checked = settings.buttonSkipEnabled;
+        if (keyboardToggle) keyboardToggle.checked = settings.keyboardShortcutsEnabled;
+        if (forwardTimeInput) forwardTimeInput.value = enforceMinMax({ value: settings.forwardSkipTime });
+        if (backwardTimeInput) backwardTimeInput.value = enforceMinMax({ value: settings.backwardSkipTime });
+        if (keyboardForwardInput) keyboardForwardInput.value = enforceMinMax({ value: settings.keyboardForward });
+        if (keyboardBackwardInput) keyboardBackwardInput.value = enforceMinMax({ value: settings.keyboardBackward });
+        if (keyboardForwardKeyBtn) keyboardForwardKeyBtn.textContent = formatKeyForDisplay(settings.keyboardForwardKey);
+        if (keyboardBackwardKeyBtn) keyboardBackwardKeyBtn.textContent = formatKeyForDisplay(settings.keyboardBackwardKey);
+        
+        if(actionTimingEnabledToggle) actionTimingEnabledToggle.checked = settings.actionTimingEnabled;
+        if(actionDelayInput) actionDelayInput.value = enforceMinMax({ value: settings.actionDelay }, 0, 2000);
+       
+        if (posLeftBtn && posRightBtn) {
+            if (settings.buttonPosition === 'right') {
+                posRightBtn.classList.add('active');
+                posLeftBtn.classList.remove('active');
+            } else {
+                posLeftBtn.classList.add('active');
+                posRightBtn.classList.remove('active');
+            }
+        }
 
-         updateStatusUI();
-         updatePresetUI();
+        updateStatusUI();
+        updatePresetUI();
     }
 
     async function saveSettings(showSuccess = true) {
@@ -381,6 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             keyboardBackward: enforceMinMax(keyboardBackwardInput),
             actionTimingEnabled: actionTimingEnabledToggle.checked,
             actionDelay: enforceMinMax(actionDelayInput, 0, 2000),
+            buttonPosition: posRightBtn.classList.contains('active') ? 'right' : 'left',
         };
         
         try {
@@ -483,6 +498,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (error) {
                 console.error("Error saving theme setting:", error);
             }
+        });
+    }
+    
+    if (posLeftBtn && posRightBtn) {
+        posLeftBtn.addEventListener('click', () => {
+            if (posLeftBtn.classList.contains('active')) return;
+            posLeftBtn.classList.add('active');
+            posRightBtn.classList.remove('active');
+            saveSettings();
+        });
+
+        posRightBtn.addEventListener('click', () => {
+            if (posRightBtn.classList.contains('active')) return;
+            posRightBtn.classList.add('active');
+            posLeftBtn.classList.remove('active');
+            saveSettings();
         });
     }
 
