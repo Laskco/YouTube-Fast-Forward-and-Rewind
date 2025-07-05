@@ -41,8 +41,11 @@
         </symbol>
         <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></symbol>
         <symbol id="icon-activity" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></symbol>
+        <symbol id="icon-check-circle" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></symbol>
+        <symbol id="icon-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></symbol>
+        <symbol id="icon-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></symbol>
+        <symbol id="icon-bar-chart-2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></symbol>
     </svg>
-
     <div id="main-view" class="popup-view active">
         <div class="popup-container">
             <header class="popup-header">
@@ -74,7 +77,6 @@
                      </button>
                 </div>
             </header>
-
             <section class="status-section">
                  <div class="status-label">
                     <svg class="feather"><use href="#icon-zap"></use></svg>
@@ -85,7 +87,6 @@
                     <span class="slider"></span>
                 </label>
             </section>
-
             <section class="settings-card" id="button-skip-card">
                  <div class="card-header">
                      <h2 class="card-title">
@@ -134,6 +135,9 @@
                             </div>
                         </div>
                         <div class="preset-editor">
+                           <button type="button" class="btn-reset-presets" title="Reset Forward Button presets to default">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                           </button>
                            <div class="preset-editor-item">
                                 <label class="preset-editor-label" for="btnFwd_p1">P1:</label>
                                 <div class="custom-spinner-container preset-spinner">
@@ -205,6 +209,9 @@
                             </div>
                         </div>
                         <div class="preset-editor">
+                            <button type="button" class="btn-reset-presets" title="Reset Backward Button presets to default">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                            </button>
                            <div class="preset-editor-item">
                                 <label class="preset-editor-label" for="btnBwd_p1">P1:</label>
                                 <div class="custom-spinner-container preset-spinner">
@@ -259,7 +266,6 @@
                      </label>
                  </div>
             </section>
-
              <section class="settings-card" id="keyboard-skip-card">
                 <div class="card-header">
                     <h2 class="card-title">
@@ -304,6 +310,9 @@
                             </div>
                         </div>
                          <div class="preset-editor">
+                            <button type="button" class="btn-reset-presets" title="Reset Forward Keyboard presets to default">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                            </button>
                            <div class="preset-editor-item">
                                 <label class="preset-editor-label" for="kbdFwd_p1">P1:</label>
                                  <div class="custom-spinner-container preset-spinner">
@@ -375,6 +384,9 @@
                             </div>
                         </div>
                           <div class="preset-editor">
+                            <button type="button" class="btn-reset-presets" title="Reset Backward Keyboard presets to default">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                            </button>
                            <div class="preset-editor-item">
                                 <label class="preset-editor-label" for="kbdBwd_p1">P1:</label>
                                  <div class="custom-spinner-container preset-spinner">
@@ -417,7 +429,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="popup-toggle-row sub-toggle">
                         <label class="toggle-label">Hotkeys (← / →)</label>
                         <div class="hotkey-actions">
@@ -438,7 +449,6 @@
                         <button type="button" id="keyboardBackwardKey" class="btn-hotkey" title="Click to change hotkey"></button>
                     </div>
                 </div>
-
                  <div class="popup-toggle-row">
                      <label for="keyboardEnableToggle" class="toggle-label" id="keyboardStatusLabel">
                          <svg class="feather"><use href="#icon-toggle-right"></use></svg>
@@ -450,11 +460,8 @@
                      </label>
                  </div>
              </section>
-
-            <div id="saveStatus" aria-live="polite"></div>
         </div>
     </div>
-    
     <div id="settings-view" class="popup-view">
         <div class="popup-container">
             <header class="popup-header">
@@ -463,17 +470,15 @@
                 </button>
                 <h1 style="flex-grow: 1;">Advanced Settings</h1>
             </header>
-            
             <div class="advanced-settings-group">
-                <div id="advanced-warning-overlay">
-                    <div class="warning-content">
-                        <h3>Experimental Settings</h3>
-                        <p>A low delay (like 0ms) feels instant, but can cause stuttering on some systems. If your video buffers after skipping, try a small increase (50-100ms) to give the player time to load.</p>
-                        <button type="button" id="proceed-ack" class="btn btn-primary">I Understand, Proceed</button>
-                    </div>
-                </div>
-
                 <section class="settings-card" id="action-timing-card">
+                    <div id="advanced-warning-overlay">
+                        <div class="warning-content">
+                            <h3>Experimental Settings</h3>
+                            <p>A low delay (like 0ms) feels instant, but can cause stuttering on some systems. If your video buffers after skipping, try a small increase (50-100ms) to give the player time to load.</p>
+                            <button type="button" id="proceed-ack" class="btn btn-primary">I Understand, Proceed</button>
+                        </div>
+                    </div>
                     <div class="card-header">
                         <h2 class="card-title">
                             <svg class="feather"><use href="#icon-activity"></use></svg>
@@ -514,17 +519,52 @@
                          </label>
                      </div>
                 </section>
+                <section class="settings-card" id="statistics-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <svg class="feather"><use href="#icon-bar-chart-2"></use></svg>
+                            Statistics
+                        </h2>
+                        <button type="button" id="resetStatsBtn" class="btn-link btn-reset-card" title="Reset Statistics">
+                            <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                        </button>
+                    </div>
+                    <div class="card-content-wrapper">
+                        <div class="stat-row">
+                            <span class="stat-label">Total Time Skipped:</span>
+                            <span id="statsTotalTime" class="stat-value">0s</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Formatted Time:</span>
+                            <span id="statsFormattedTime" class="stat-value">0s</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Button Skips:</span>
+                            <span id="statsButtonSkips" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Keyboard Skips:</span>
+                            <span id="statsKeyboardSkips" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total Skips:</span>
+                            <span id="statsTotalSkips" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </section>
             </div>
-            
             <footer class="popup-footer">
                 <p class="creator-text">
                     Made with <svg class="feather heart-icon"><use href="#icon-heart"></use></svg> by Laskco
                 </p>
-                <span class="version-text">v4.1.1</span>
+                <span class="version-text">v4.2</span>
             </footer>
         </div>
     </div>
-
+    <div id="toast-notification" class="toast-container" aria-live="polite">
+        <svg class="feather toast-icon"><use href=""></use></svg>
+        <span class="toast-message"></span>
+    </div>
     <script src="popup.js"></script>
 </body>
 </html>

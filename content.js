@@ -73,7 +73,13 @@ const state = {
   actionTimeout: null,
   cachedMoviePlayer: null,
   seekIntervalId: null,
-  activeSeekKey: null
+  activeSeekKey: null,
+  skipIndicatorElement: null,
+  skipIndicatorTimeout: null,
+  preventAutoHide: false,
+  autoHideGuardTimeout: null,
+  isHolding: false,
+  holdTransitionTimeout: null,
 };
 
 let retryTimeout = null;
@@ -86,31 +92,40 @@ const debouncedResizeCheck = debounce(() => {
     if(isWatchPage() && state.settings.buttonSkipEnabled) tryInjectButtons(0);
 }, CONFIG.DEFAULT_DEBOUNCE.RESIZE);
 
-function performSeek(skipTime) {
-    if (state.actionTimeout) {
-        clearTimeout(state.actionTimeout);
-        state.actionTimeout = null;
+async function trackSkip(amount, type) {
+    try {
+        const data = await browser.storage.local.get([
+            'stats_totalSecondsSkipped',
+            'stats_totalSkips',
+            'stats_buttonSkips',
+            'stats_keyboardSkips'
+        ]);
+        const stats = {
+            stats_totalSecondsSkipped: (data.stats_totalSecondsSkipped || 0) + Math.abs(amount),
+            stats_totalSkips: (data.stats_totalSkips || 0) + 1,
+            stats_buttonSkips: (data.stats_buttonSkips || 0) + (type === 'button' ? 1 : 0),
+            stats_keyboardSkips: (data.stats_keyboardSkips || 0) + (type === 'keyboard' ? 1 : 0)
+        };
+        await browser.storage.local.set(stats);
+    } catch(e) {
+        logErrorToStorage('Failed to track skip', e);
     }
+}
 
+function performSeek(skipTime) {
+    if (state.actionTimeout) clearTimeout(state.actionTimeout);
     const currentVideoPlayer = findVideoPlayerElement();
-
-    if (!currentVideoPlayer || currentVideoPlayer.readyState < HTMLMediaElement.HAVE_METADATA || currentVideoPlayer.seeking || state.isBuffering) {
+    if (!currentVideoPlayer || currentVideoPlayer.seeking || state.isBuffering) {
         return;
     }
-
     const delay = state.settings.actionTimingEnabled ? (state.settings.actionDelay || 0) : 0;
     const newTime = Math.max(0, Math.min(currentVideoPlayer.duration || Infinity, currentVideoPlayer.currentTime + skipTime));
-
     if (delay > 0 && !state.seekIntervalId) {
         state.actionTimeout = setTimeout(() => {
-            if (currentVideoPlayer && !currentVideoPlayer.seeking) {
-                currentVideoPlayer.currentTime = newTime;
-            }
+            currentVideoPlayer.currentTime = newTime;
         }, delay);
     } else {
-        if (currentVideoPlayer && !currentVideoPlayer.seeking) {
-            currentVideoPlayer.currentTime = newTime;
-        }
+        currentVideoPlayer.currentTime = newTime;
     }
 }
 
@@ -195,6 +210,20 @@ function findVideoPlayerElement() {
   return null;
 }
 
+function showPlayerControlsAndSetGuard() {
+    const moviePlayer = findMoviePlayerContainerElement();
+    if (moviePlayer) {
+        moviePlayer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
+        state.preventAutoHide = true;
+        if (state.autoHideGuardTimeout) {
+            clearTimeout(state.autoHideGuardTimeout);
+        }
+        state.autoHideGuardTimeout = setTimeout(() => {
+            state.preventAutoHide = false;
+        }, 2500);
+    }
+}
+
 function keepControlsVisible() {
     state.isHoveringOverCustomButtons = true;
     const playerContainer = document.querySelector(CONFIG.SELECTORS.AUTOHIDE_CLASS_TARGET);
@@ -252,7 +281,6 @@ function createButtonsContainer() {
   container.id = CONFIG.IDS.CONTAINER;
   const rewindButton = createButton(CONFIG.IDS.REWIND_BUTTON, CONFIG.ICONS.REWIND);
   const forwardButton = createButton(CONFIG.IDS.FORWARD_BUTTON, CONFIG.ICONS.FORWARD);
-
   container.appendChild(rewindButton);
   container.appendChild(forwardButton);
   container.addEventListener('click', handleButtonClick, { capture: true });
@@ -279,93 +307,74 @@ function handleButtonClick(event) {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
-
     const moviePlayerContainer = findMoviePlayerContainerElement();
     const isAdShowing = moviePlayerContainer && moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AD_SHOWING_CLASS);
     let skipTimeValue = 0;
-
     if (isAdShowing && button.id === CONFIG.IDS.FORWARD_BUTTON) {
         if (clickYouTubeSkipButton()) return;
-
         const currentVideoPlayer = findVideoPlayerElement();
         if (currentVideoPlayer && currentVideoPlayer.duration && isFinite(currentVideoPlayer.duration)) {
              currentVideoPlayer.currentTime = currentVideoPlayer.duration;
              return;
         }
     }
-
     if (button.id === CONFIG.IDS.FORWARD_BUTTON) {
         skipTimeValue = state.settings.forwardSkipTime || CONFIG.DEFAULT_SETTINGS.forwardSkipTime;
     } else if (button.id === CONFIG.IDS.REWIND_BUTTON) {
         skipTimeValue = -(state.settings.backwardSkipTime || CONFIG.DEFAULT_SETTINGS.backwardSkipTime);
     }
-
     if (skipTimeValue !== 0) {
+        showPlayerControlsAndSetGuard();
         performSeek(skipTimeValue);
+        trackSkip(skipTimeValue, 'button');
     }
 }
 
 function injectButtons() {
-    if (!state.settings.extensionEnabled || !state.settings.buttonSkipEnabled || !isWatchPage()) {
-        removeButtons();
-        return false;
-    }
-
-    const moviePlayer = findMoviePlayerContainerElement();
-    if (!moviePlayer) {
-        removeButtons();
-        return false;
-    }
-
-    let buttonsContainer = document.getElementById(CONFIG.IDS.CONTAINER);
-    const position = state.settings.buttonPosition || 'left';
-
-    if (!buttonsContainer) {
-        buttonsContainer = createButtonsContainer();
-        state.buttonsInjected = true;
-    }
-
-    updateButtonCounters(buttonsContainer);
-    buttonsContainer.classList.toggle('position-right', position === 'right');
-
-    let correctParent = null;
-    let anchorElement = null;
-
-    if (position === 'right') {
-        const chromeControls = moviePlayer.querySelector(CONFIG.SELECTORS.CHROME_CONTROLS);
-        correctParent = chromeControls;
-        anchorElement = chromeControls ? chromeControls.querySelector(CONFIG.SELECTORS.CONTROLS_RIGHT) : null;
-    } else {
-        correctParent = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS);
-        const timeDisplay = correctParent ? correctParent.querySelector(CONFIG.SELECTORS.TIME_DISPLAY) : null;
-        anchorElement = timeDisplay ? timeDisplay.nextSibling : null;
-    }
-
-    if (!correctParent) {
-        removeButtons();
-        return false;
-    }
-
-    if (buttonsContainer.parentElement !== correctParent) {
-        try {
-            if (position === 'right' && anchorElement) {
-                correctParent.insertBefore(buttonsContainer, anchorElement);
-            } else if (position === 'left' && anchorElement) {
+    try {
+        if (!state.settings.buttonSkipEnabled || !isWatchPage()) {
+            removeButtons();
+            return false;
+        }
+        const moviePlayer = findMoviePlayerContainerElement();
+        if (!moviePlayer) {
+            removeButtons();
+            return false;
+        }
+        let buttonsContainer = document.getElementById(CONFIG.IDS.CONTAINER);
+        if (!buttonsContainer) {
+            buttonsContainer = createButtonsContainer();
+        }
+        const position = state.settings.buttonPosition || 'left';
+        buttonsContainer.classList.toggle('position-right', position === 'right');
+        updateButtonCounters(buttonsContainer);
+        let correctParent;
+        let anchorElement;
+        if (position === 'right') {
+            correctParent = moviePlayer.querySelector(CONFIG.SELECTORS.CHROME_CONTROLS);
+            anchorElement = correctParent ? correctParent.querySelector(CONFIG.SELECTORS.CONTROLS_RIGHT) : null;
+        } else {
+            correctParent = moviePlayer.querySelector(CONFIG.SELECTORS.CONTROLS);
+            anchorElement = correctParent ? correctParent.querySelector(CONFIG.SELECTORS.TIME_DISPLAY)?.nextSibling : null;
+        }
+        if (!correctParent) {
+            removeButtons();
+            return false;
+        }
+        if (buttonsContainer.parentElement !== correctParent) {
+            if (anchorElement) {
                 correctParent.insertBefore(buttonsContainer, anchorElement);
             } else {
                 correctParent.appendChild(buttonsContainer);
             }
-        } catch (e) {
-            logErrorToStorage("Error moving/injecting buttons container:", e);
-            removeButtons();
-            return false;
         }
+        requestAnimationFrame(() => buttonsContainer.classList.add('visible'));
+        state.buttonsInjected = true;
+        return true;
+    } catch (e) {
+        logErrorToStorage("Error in injectButtons", e);
+        return false;
     }
-
-    requestAnimationFrame(() => buttonsContainer.classList.add('visible'));
-
-    state.buttonsInjected = true;
-    return true;
 }
 
 function removeButtons() {
@@ -413,7 +422,67 @@ function stopContinuousSeek() {
         clearInterval(state.seekIntervalId);
         state.seekIntervalId = null;
     }
+    if (state.holdTransitionTimeout) {
+        clearTimeout(state.holdTransitionTimeout);
+        state.holdTransitionTimeout = null;
+    }
+    state.isHolding = false;
+    if (state.skipIndicatorElement) {
+        state.skipIndicatorElement.classList.remove('holding');
+        if (state.skipIndicatorTimeout) clearTimeout(state.skipIndicatorTimeout);
+        state.skipIndicatorTimeout = setTimeout(() => {
+            if (state.skipIndicatorElement) {
+                state.skipIndicatorElement.classList.remove('visible');
+            }
+        }, 500);
+    }
     state.activeSeekKey = null;
+}
+
+function showSkipIndicator(seconds, direction = 'forward') {
+  const moviePlayer = findMoviePlayerContainerElement();
+  if (!moviePlayer) return;
+
+  if (!state.skipIndicatorElement || !state.skipIndicatorElement.isConnected) {
+    state.skipIndicatorElement = document.createElement('div');
+    state.skipIndicatorElement.id = 'yt-ffrw-skip-indicator';
+    state.skipIndicatorElement.innerHTML = `
+      <svg id="yt-ffrw-skip-indicator-arrows" viewBox="0 0 32 24">
+        <polyline class="yt-ffrw-arrow-chevron" points="6,0 12,6 6,12" />
+        <polyline class="yt-ffrw-arrow-chevron" points="14,0 20,6 14,12" />
+        <polyline class="yt-ffrw-arrow-chevron" points="22,0 28,6 22,12" />
+      </svg>
+      <span id="yt-ffrw-skip-indicator-text"></span>
+    `;
+    moviePlayer.appendChild(state.skipIndicatorElement);
+  }
+
+  const textContainer = state.skipIndicatorElement.querySelector('#yt-ffrw-skip-indicator-text');
+  if (!textContainer) return;
+  textContainer.textContent = `${seconds}s`;
+
+  state.skipIndicatorElement.classList.remove('position-left', 'position-right');
+  if (direction === 'forward') {
+    state.skipIndicatorElement.classList.add('position-right');
+  } else {
+    state.skipIndicatorElement.classList.add('position-left');
+  }
+
+  if (state.isHolding) {
+    state.skipIndicatorElement.classList.add('holding');
+  } else {
+    state.skipIndicatorElement.classList.remove('holding');
+    state.skipIndicatorElement.classList.remove('anim-forward', 'anim-backward');
+    void state.skipIndicatorElement.offsetWidth;
+    state.skipIndicatorElement.classList.add(direction === 'forward' ? 'anim-forward' : 'anim-backward');
+  }
+  
+  state.skipIndicatorElement.classList.add('visible');
+
+  if (state.skipIndicatorTimeout) {
+    clearTimeout(state.skipIndicatorTimeout);
+    state.skipIndicatorTimeout = null;
+  }
 }
 
 function handleKeyUp(event) {
@@ -430,33 +499,43 @@ function handleKeyDown(event) {
         stopContinuousSeek();
         return;
     }
-
     const isForward = event.key === state.settings.keyboardForwardKey;
     const isBackward = event.key === state.settings.keyboardBackwardKey;
-
     if (!isForward && !isBackward) return;
-
     const shouldOverride = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
     if (shouldOverride) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-
+        
         if (state.activeSeekKey === event.key) {
             return;
         }
-
         stopContinuousSeek();
         state.activeSeekKey = event.key;
 
-        const skipTimeValue = isForward
+        const skipAmount = isForward
             ? (state.settings.keyboardForward || CONFIG.DEFAULT_SETTINGS.keyboardForward)
-            : -(state.settings.keyboardBackward || CONFIG.DEFAULT_SETTINGS.keyboardBackward);
+            : (state.settings.keyboardBackward || CONFIG.DEFAULT_SETTINGS.keyboardBackward);
 
+        const skipTimeValue = isForward ? skipAmount : -skipAmount;
+        const direction = isForward ? 'forward' : 'backward';
+
+        showPlayerControlsAndSetGuard();
+        
+        state.isHolding = false;
         performSeek(skipTimeValue);
+        trackSkip(skipTimeValue, 'keyboard');
+        showSkipIndicator(skipAmount, direction);
+
+        state.holdTransitionTimeout = setTimeout(() => {
+            state.isHolding = true;
+            showSkipIndicator(skipAmount, direction);
+        }, 400);
 
         state.seekIntervalId = setInterval(() => {
             performSeek(skipTimeValue);
+            trackSkip(skipTimeValue, 'keyboard');
         }, CONFIG.SEEK_INTERVAL_DELAY);
     }
 }
@@ -472,6 +551,7 @@ function addKeyListeners() {
         logErrorToStorage("Failed to attach key listeners:", e);
     }
 }
+
 function removeKeyListeners() {
     if (!state.keyListenersAttached) return;
     try {
@@ -507,47 +587,30 @@ function tryInjectButtons(attempt = 0) {
 }
 
 function playerMutationCallback(mutationsList, observer) {
-  let relevantChange = false;
-  let autohideAddedWhileHovering = false;
   const moviePlayerContainer = findMoviePlayerContainerElement();
+  let hasRelevantChange = false;
 
   for (const mutation of mutationsList) {
-      if (mutation.type === 'attributes' &&
-          mutation.attributeName === 'class' &&
-          mutation.target === moviePlayerContainer) {
-          if (moviePlayerContainer && moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS) && state.isHoveringOverCustomButtons) {
-              autohideAddedWhileHovering = true;
-          }
-          relevantChange = true;
+    if (
+        state.preventAutoHide &&
+        mutation.type === 'attributes' &&
+        mutation.attributeName === 'class' &&
+        mutation.target === moviePlayerContainer &&
+        moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)
+    ) {
+        moviePlayerContainer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
+    }
+
+    if (!hasRelevantChange) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        hasRelevantChange = true;
+      } else if (mutation.type === 'childList') {
+        hasRelevantChange = true;
       }
-      else if (mutation.type === 'childList') {
-          const checkNodes = (nodes) => {
-              for (const node of nodes) {
-                  if (node.nodeType === Node.ELEMENT_NODE) {
-                      if (node.matches(CONFIG.SELECTORS.CONTROLS) || node.querySelector(CONFIG.SELECTORS.CONTROLS) ||
-                          node.matches(CONFIG.SELECTORS.TIME_DISPLAY) || node.querySelector(CONFIG.SELECTORS.TIME_DISPLAY) ||
-                          CONFIG.SELECTORS.VIDEO_PLAYERS.some(sel => node.matches(sel) || node.querySelector(sel))
-                      ) {
-                          return true;
-                      }
-                  }
-              }
-              return false;
-          };
-          if (checkNodes(mutation.addedNodes) || checkNodes(mutation.removedNodes)) {
-              relevantChange = true;
-          }
-      }
-      if (relevantChange) break;
+    }
   }
-  if (autohideAddedWhileHovering && moviePlayerContainer) {
-        requestAnimationFrame(() => {
-             if (state.isHoveringOverCustomButtons && moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)) {
-                  moviePlayerContainer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
-             }
-        });
-   }
-  if (relevantChange) {
+  
+  if (hasRelevantChange) {
     debouncedTryInjectCheck();
   }
 }
@@ -562,9 +625,9 @@ function observePlayerChanges() {
   }
   const moviePlayerContainerToObserve = findMoviePlayerContainerElement();
   if (!moviePlayerContainerToObserve) {
+      setTimeout(observePlayerChanges, 250);
       return;
   }
-
   state.playerObserver = new MutationObserver(playerMutationCallback);
   state.playerObserver.observe(moviePlayerContainerToObserve, {
       childList: true,
@@ -572,13 +635,13 @@ function observePlayerChanges() {
       attributes: true,
       attributeFilter: ['class']
   });
+  tryInjectButtons(0);
 }
 
 function onNavigation() {
     const currentUrl = window.location.href;
     const oldPath = state.lastUrl ? (new URL(state.lastUrl).pathname + new URL(state.lastUrl).search) : null;
     const newPath = window.location.pathname + window.location.search;
-
     if (currentUrl !== state.lastUrl) {
         if (newPath !== oldPath || (isWatchPage() && currentUrl !== state.lastUrl) ) {
             state.lastUrl = currentUrl;
@@ -598,10 +661,8 @@ function handleNavigation() {
     }
     state.retryAttempts = 0;
     if (retryTimeout) clearTimeout(retryTimeout);
-
     state.cachedMoviePlayer = null;
     state.lastVideoElement = null;
-
     if (!state.settings.extensionEnabled) {
         cleanup();
         return;
@@ -618,7 +679,6 @@ function handleNavigation() {
                 }
                 return;
             }
-
             const newVideoElement = findVideoPlayerElement();
             if (newVideoElement) {
                 addBufferingListeners(newVideoElement);
@@ -626,9 +686,7 @@ function handleNavigation() {
             } else {
                 state.isBuffering = false;
             }
-
             observePlayerChanges();
-
             if (state.settings.buttonSkipEnabled) {
                 tryInjectButtons(0);
             } else {
@@ -660,11 +718,29 @@ function cleanup() {
   retryTimeout = null;
   if (state.actionTimeout) clearTimeout(state.actionTimeout);
   state.actionTimeout = null;
+  if (state.skipIndicatorElement) {
+    state.skipIndicatorElement.remove();
+    state.skipIndicatorElement = null;
+  }
+  if (state.skipIndicatorTimeout) {
+    clearTimeout(state.skipIndicatorTimeout);
+    state.skipIndicatorTimeout = null;
+  }
+  if (state.autoHideGuardTimeout) {
+    clearTimeout(state.autoHideGuardTimeout);
+    state.autoHideGuardTimeout = null;
+  }
+  if (state.holdTransitionTimeout) {
+      clearTimeout(state.holdTransitionTimeout);
+      state.holdTransitionTimeout = null;
+  }
   state.buttonsInjected = false;
   state.retryAttempts = 0;
   state.isBuffering = false;
   state.keyListenersAttached = false;
   state.isHoveringOverCustomButtons = false;
+  state.preventAutoHide = false;
+  state.isHolding = false;
 }
 
 async function initializeExtension() {
@@ -672,7 +748,6 @@ async function initializeExtension() {
     try {
         const stored = await browser.storage.local.get(Object.keys(CONFIG.DEFAULT_SETTINGS));
         state.settings = sanitizeSettings({ ...CONFIG.DEFAULT_SETTINGS, ...stored });
-
         if (!state.settings.extensionEnabled) {
             return;
         }
@@ -697,7 +772,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'updateSettings') {
     const oldSettings = { ...state.settings };
     state.settings = sanitizeSettings({ ...CONFIG.DEFAULT_SETTINGS, ...message.settings });
-
     if (!state.settings.extensionEnabled && oldSettings.extensionEnabled) {
         cleanup();
         sendResponse({ status: "Extension disabled and cleaned up" });
@@ -714,7 +788,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else if (!state.settings.keyboardShortcutsEnabled && oldSettings.keyboardShortcutsEnabled) {
             removeKeyListeners();
         }
-
         if (isWatchPage()) {
             tryInjectButtons(0);
         } else {
