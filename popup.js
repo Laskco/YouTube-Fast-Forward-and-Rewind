@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       keyboardForwardKey: 'ArrowRight',
       keyboardBackwardKey: 'ArrowLeft',
       actionTimingEnabled: true,
-      actionDelay: 50,
+      actionDelay: 20,
       buttonPosition: 'left',
       advancedWarningAcknowledged: false,
       btnFwdPreset1Value: 5, btnFwdPreset2Value: 10, btnFwdPreset3Value: 15, btnFwdPreset4Value: 30,
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     const resetStatsBtn = document.getElementById('resetStatsBtn');
     let currentSettings = { ...defaultSettings };
-    
+
     function showToast(message, type = 'success', duration = 2500) {
         if (!toastElement || !toastIconUse || !toastMessage) return;
         clearTimeout(toastTimeout);
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             toastElement.classList.remove('show');
         }, duration);
     }
-    
+
     function resetCardEditState(cardElement) {
         if (!cardElement) return;
         const openPresetEditors = cardElement.querySelectorAll('.input-row.is-editing-presets');
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     }
-    
+
     function initializeSpinner(container) {
         const input = container.querySelector('.custom-spinner-input');
         const upBtn = container.querySelector('.spinner-btn-up');
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             editButton.setAttribute('aria-label', `Save ${ariaLabelBase}`);
         }
     }
-    
+
     function formatTime(totalSeconds) {
         if (isNaN(totalSeconds) || totalSeconds <= 0) return '0s';
         totalSeconds = Math.round(totalSeconds);
@@ -350,11 +350,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadSettings() {
         try {
-            const stored = await browser.storage.local.get(null);
+            const stored = await browser.storage.local.get(Object.keys(defaultSettings));
             const newSettings = { ...defaultSettings, ...stored };
-            if (Object.keys(stored).length !== Object.keys(newSettings).length) {
-                await browser.storage.local.set(newSettings);
-            }
             currentSettings = newSettings;
             if (currentSettings.advancedWarningAcknowledged) {
                 warningOverlay.classList.add('hidden');
@@ -407,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function saveSettings(showSuccessToast = false, toastMessageText = 'Settings Saved', toastType = 'success') {
-        currentSettings = {
+        const newSettings = {
             ...currentSettings,
             extensionEnabled: toggle.checked,
             buttonSkipEnabled: buttonToggle.checked,
@@ -420,6 +417,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             actionDelay: enforceMinMax(actionDelayInput, 0, 2000),
             buttonPosition: posRightBtn.classList.contains('active') ? 'right' : 'left',
         };
+        currentSettings = newSettings;
+        
         try {
             await browser.storage.local.set(currentSettings);
             if (showSuccessToast) {
@@ -519,7 +518,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-    
+
     if (posLeftBtn && posRightBtn) {
         posLeftBtn.addEventListener('click', () => {
             if (posLeftBtn.classList.contains('active')) return;
@@ -535,7 +534,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    toggle.addEventListener('change', () => { 
+    toggle.addEventListener('change', () => {
         updateStatusUI();
         const enabled = toggle.checked;
         saveSettings(true, `Extension ${enabled ? 'Enabled' : 'Disabled'}`, enabled ? 'success' : 'warning');
@@ -545,8 +544,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    buttonToggle.addEventListener('change', () => { 
-        updateStatusUI(); 
+    buttonToggle.addEventListener('change', () => {
+        updateStatusUI();
         const enabled = buttonToggle.checked;
         saveSettings(true, `Button Skips ${enabled ? 'Enabled' : 'Disabled'}`, enabled ? 'success' : 'warning');
         if (!enabled) {
@@ -554,15 +553,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    keyboardToggle.addEventListener('change', () => { 
-        updateStatusUI(); 
+    keyboardToggle.addEventListener('change', () => {
+        updateStatusUI();
         const enabled = keyboardToggle.checked;
         saveSettings(true, `Keyboard Shortcuts ${enabled ? 'Enabled' : 'Disabled'}`, enabled ? 'success' : 'warning');
         if (!enabled) {
             resetCardEditState(keyboardCard);
         }
     });
-    
+
     document.querySelectorAll('.skip-time-input, #actionDelay').forEach(input => {
         input.addEventListener('change', () => {
             if (input.id === 'actionDelay') {
@@ -598,25 +597,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     presetButtonContainers.forEach(container => {
-        container.addEventListener('click', (event) => {
-            if (event.target.classList.contains('btn-preset')) {
-                const button = event.target;
-                const targetInput = document.getElementById(container.dataset.target);
-                if (targetInput) {
-                    if (targetInput.value === button.dataset.value) {
-                        const card = container.closest('.settings-card');
-                        let prefix = 'Skip time'; 
-                        if (card) {
-                            const cardType = card.id === 'button-skip-card' ? 'Button' : 'Keyboard';
-                            const direction = targetInput.id.toLowerCase().includes('forward') ? 'Forward' : 'Backward';
-                            prefix = `${cardType} ${direction}`;
-                        }
-                        showToast(`${prefix}: Already ${button.dataset.value}s`, 'warning');
-                        return;
-                    }
-                    targetInput.value = button.dataset.value;
-                    saveSettings(true, 'Skip Time Saved');
+        container.addEventListener('click', async (event) => {
+            if (!event.target.classList.contains('btn-preset')) return;
+
+            const button = event.target;
+            const targetInputId = container.dataset.target;
+            const targetInput = document.getElementById(targetInputId);
+            if (!targetInput) return;
+
+            const newValue = parseInt(button.dataset.value, 10);
+            if (parseInt(targetInput.value, 10) === newValue) {
+                const card = container.closest('.settings-card');
+                let prefix = 'Skip time';
+                if (card) {
+                    const cardType = card.id === 'button-skip-card' ? 'Button' : 'Keyboard';
+                    const direction = targetInputId.toLowerCase().includes('forward') ? 'Forward' : 'Backward';
+                    prefix = `${cardType} ${direction}`;
                 }
+                showToast(`${prefix}: Already ${newValue}s`, 'warning');
+                return;
+            }
+
+            targetInput.value = newValue;
+            currentSettings[targetInputId] = newValue;
+
+            try {
+                await browser.storage.local.set({ [targetInputId]: newValue });
+                const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
+                tabs.forEach(tab => {
+                    if (tab.id) {
+                        browser.tabs.sendMessage(tab.id, {
+                            action: 'updateSettings',
+                            settings: currentSettings
+                        }).catch(err => {});
+                    }
+                });
+                showToast('Skip Time Saved');
+            } catch (error) {
+                console.error('Error saving setting:', error);
+                showToast('Failed to save setting', 'error');
             }
         });
     });
@@ -628,7 +647,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await browser.storage.local.set({ advancedWarningAcknowledged: true });
         });
     }
-    
+
     actionTimingEnabledToggle.addEventListener('change', () => {
         updateStatusUI();
         const enabled = actionTimingEnabledToggle.checked;
@@ -684,7 +703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-    
+
     await loadInitialTheme(bodyElement, themeToggleButton);
     await loadSettings();
 });

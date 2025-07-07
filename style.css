@@ -491,8 +491,8 @@ body.popup-body.light-theme .tooltip-text {
   height: 100%;
   z-index: 1000;
   opacity: 0;
-  transform: translateY(5px) scale(0.95);
-  transition: opacity 0.15s ease-out 0.05s, transform 0.15s ease-out;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   will-change: opacity, transform;
   pointer-events: none;
 }

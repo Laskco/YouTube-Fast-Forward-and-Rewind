@@ -1,11 +1,6 @@
 const CONFIG = {
   SELECTORS: {
-    VIDEO_PLAYERS: [
-      'video.html5-main-video',
-      '.html5-video-player video',
-      '.html5-video-player .html5-main-video',
-      '#movie_player video'
-    ],
+    VIDEO_PLAYER: '#movie_player video',
     CONTROLS: '.ytp-left-controls',
     CONTROLS_RIGHT: '.ytp-right-controls',
     CHROME_CONTROLS: '.ytp-chrome-controls',
@@ -43,7 +38,7 @@ const CONFIG = {
     keyboardForwardKey: 'ArrowRight',
     keyboardBackwardKey: 'ArrowLeft',
     actionTimingEnabled: true,
-    actionDelay: 0,
+    actionDelay: 20,
     buttonPosition: 'left'
   },
   ICONS: {
@@ -56,7 +51,8 @@ const CONFIG = {
     CONTAINER: 'customButtonsContainer'
   },
   MAX_STORED_ERRORS: 10,
-  SEEK_INTERVAL_DELAY: 150
+  SEEK_INTERVAL_DELAY: 150,
+  SEEK_THROTTLE: 100
 };
 
 const state = {
@@ -80,6 +76,7 @@ const state = {
   autoHideGuardTimeout: null,
   isHolding: false,
   holdTransitionTimeout: null,
+  lastSeekTime: 0,
 };
 
 let retryTimeout = null;
@@ -113,13 +110,21 @@ async function trackSkip(amount, type) {
 }
 
 function performSeek(skipTime) {
+    if (Date.now() - state.lastSeekTime < CONFIG.SEEK_THROTTLE) {
+        return;
+    }
+    
     if (state.actionTimeout) clearTimeout(state.actionTimeout);
+
     const currentVideoPlayer = findVideoPlayerElement();
     if (!currentVideoPlayer || currentVideoPlayer.seeking || state.isBuffering) {
         return;
     }
+    
+    state.lastSeekTime = Date.now();
     const delay = state.settings.actionTimingEnabled ? (state.settings.actionDelay || 0) : 0;
     const newTime = Math.max(0, Math.min(currentVideoPlayer.duration || Infinity, currentVideoPlayer.currentTime + skipTime));
+
     if (delay > 0 && !state.seekIntervalId) {
         state.actionTimeout = setTimeout(() => {
             currentVideoPlayer.currentTime = newTime;
@@ -193,15 +198,11 @@ function findVideoPlayerElement() {
   if (state.lastVideoElement && state.lastVideoElement.isConnected && typeof state.lastVideoElement.currentTime === 'number' && state.lastVideoElement.videoWidth > 0) {
       return state.lastVideoElement;
   }
-  for (const selector of CONFIG.SELECTORS.VIDEO_PLAYERS) {
-    try {
-        const player = document.querySelector(selector);
-        if (player && player.tagName === 'VIDEO' && typeof player.currentTime === 'number' && player.videoWidth > 0) {
-            state.lastVideoElement = player;
-            addBufferingListeners(player);
-            return player;
-        }
-    } catch(e) { }
+  const player = document.querySelector(CONFIG.SELECTORS.VIDEO_PLAYER);
+  if (player && player.tagName === 'VIDEO' && typeof player.currentTime === 'number' && player.videoWidth > 0) {
+      state.lastVideoElement = player;
+      addBufferingListeners(player);
+      return player;
   }
   if (state.lastVideoElement) {
       removeBufferingListeners(state.lastVideoElement);
@@ -220,6 +221,12 @@ function showPlayerControlsAndSetGuard() {
         }
         state.autoHideGuardTimeout = setTimeout(() => {
             state.preventAutoHide = false;
+            if (moviePlayer) {
+                moviePlayer.dispatchEvent(new MouseEvent('mousemove', {
+                    bubbles: true,
+                    cancelable: true
+                }));
+            }
         }, 2500);
     }
 }
@@ -385,7 +392,13 @@ function removeButtons() {
   state.buttonsInjected = false;
 }
 
-function handleVideoWaiting() { state.isBuffering = true; }
+function handleVideoWaiting() { 
+    state.isBuffering = true;
+    if (state.actionTimeout) {
+        clearTimeout(state.actionTimeout);
+        state.actionTimeout = null;
+    }
+}
 function handleVideoPlaying() { state.isBuffering = false; }
 
 function addBufferingListeners(videoElement) {
