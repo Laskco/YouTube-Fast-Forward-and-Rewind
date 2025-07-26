@@ -72,8 +72,8 @@ const state = {
   activeSeekKey: null,
   skipIndicatorElement: null,
   skipIndicatorTimeout: null,
-  preventAutoHide: false,
-  autoHideGuardTimeout: null,
+//   preventAutoHide: false,
+//   autoHideGuardTimeout: null,
   isHolding: false,
   holdTransitionTimeout: null,
   lastSeekTime: 0,
@@ -214,19 +214,12 @@ function findVideoPlayerElement() {
 function showPlayerControlsAndSetGuard() {
     const moviePlayer = findMoviePlayerContainerElement();
     if (moviePlayer) {
-        moviePlayer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
-        state.preventAutoHide = true;
+        keepControlsVisible();
         if (state.autoHideGuardTimeout) {
             clearTimeout(state.autoHideGuardTimeout);
         }
         state.autoHideGuardTimeout = setTimeout(() => {
-            state.preventAutoHide = false;
-            if (moviePlayer) {
-                moviePlayer.dispatchEvent(new MouseEvent('mousemove', {
-                    bubbles: true,
-                    cancelable: true
-                }));
-            }
+            hideControls();
         }, 2500);
     }
 }
@@ -239,8 +232,10 @@ function keepControlsVisible() {
     }
 }
 
-function handleMouseLeaveCustomButtons() {
+function hideControls() {
     state.isHoveringOverCustomButtons = false;
+    const playerContainer = document.querySelector(CONFIG.SELECTORS.AUTOHIDE_CLASS_TARGET);
+    playerContainer.classList.add(CONFIG.SELECTORS.AUTOHIDE_CLASS);
 }
 
 function createButton(id, iconPath) {
@@ -292,7 +287,7 @@ function createButtonsContainer() {
   container.appendChild(forwardButton);
   container.addEventListener('click', handleButtonClick, { capture: true });
   container.addEventListener('mouseenter', keepControlsVisible);
-  container.addEventListener('mouseleave', handleMouseLeaveCustomButtons);
+  container.addEventListener('mouseleave', hideControls);
   return container;
 }
 
@@ -507,7 +502,7 @@ function handleKeyUp(event) {
 }
 
 function handleKeyDown(event) {
-    if (!state.settings.extensionEnabled || !state.settings.keyboardShortcutsEnabled) return;
+    showPlayerControlsAndSetGuard();
     if (isEditable(document.activeElement) || event.target.closest('[contenteditable="true"]')) {
         stopContinuousSeek();
         return;
@@ -518,8 +513,8 @@ function handleKeyDown(event) {
     const shouldOverride = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
     if (shouldOverride) {
         event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        // event.stopPropagation();
+        // event.stopImmediatePropagation();
         
         if (state.activeSeekKey === event.key) {
             return;
@@ -533,8 +528,6 @@ function handleKeyDown(event) {
 
         const skipTimeValue = isForward ? skipAmount : -skipAmount;
         const direction = isForward ? 'forward' : 'backward';
-
-        showPlayerControlsAndSetGuard();
         
         state.isHolding = false;
         performSeek(skipTimeValue);
@@ -739,10 +732,10 @@ function cleanup() {
     clearTimeout(state.skipIndicatorTimeout);
     state.skipIndicatorTimeout = null;
   }
-  if (state.autoHideGuardTimeout) {
-    clearTimeout(state.autoHideGuardTimeout);
-    state.autoHideGuardTimeout = null;
-  }
+//   if (state.autoHideGuardTimeout) {
+//     clearTimeout(state.autoHideGuardTimeout);
+//     state.autoHideGuardTimeout = null;
+//   }
   if (state.holdTransitionTimeout) {
       clearTimeout(state.holdTransitionTimeout);
       state.holdTransitionTimeout = null;
