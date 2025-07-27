@@ -77,6 +77,7 @@ const state = {
   isHolding: false,
   holdTransitionTimeout: null,
   lastSeekTime: 0,
+  controlsRefreshInterval: null,
 };
 
 let retryTimeout = null;
@@ -109,6 +110,31 @@ async function trackSkip(amount, type) {
     }
 }
 
+function forceProgressBarUpdate() {
+    const moviePlayer = findMoviePlayerContainerElement();
+    if (!moviePlayer) return;
+    
+    
+    const progressSelectors = [
+        '.ytp-progress-bar-container',
+        '.ytp-progress-bar',
+        '.ytp-scrubber-container',
+        '.ytp-chrome-controls'
+    ];
+    
+    progressSelectors.forEach(selector => {
+        const element = moviePlayer.querySelector(selector);
+        if (element) {
+            element.dispatchEvent(new MouseEvent('mousemove', {
+                bubbles: true,
+                cancelable: true,
+                clientX: element.offsetWidth / 2,
+                clientY: element.offsetHeight / 2
+            }));
+        }
+    });
+}
+
 function performSeek(skipTime) {
     if (Date.now() - state.lastSeekTime < CONFIG.SEEK_THROTTLE) {
         return;
@@ -128,9 +154,17 @@ function performSeek(skipTime) {
     if (delay > 0 && !state.seekIntervalId) {
         state.actionTimeout = setTimeout(() => {
             currentVideoPlayer.currentTime = newTime;
+            
+            setTimeout(() => {
+                forceProgressBarUpdate();
+            }, 10);
         }, delay);
     } else {
         currentVideoPlayer.currentTime = newTime;
+        
+        setTimeout(() => {
+            forceProgressBarUpdate();
+        }, 10);
     }
 }
 
@@ -211,22 +245,119 @@ function findVideoPlayerElement() {
   return null;
 }
 
+function showPlayerControlsAndKeepVisible() {
+    const moviePlayer = findMoviePlayerContainerElement();
+    if (!moviePlayer) return;
+
+    
+    moviePlayer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
+    
+    
+    const keepVisible = () => {
+        moviePlayer.dispatchEvent(new MouseEvent('mousemove', {
+            bubbles: true,
+            cancelable: true,
+            clientX: moviePlayer.offsetWidth / 2,
+            clientY: moviePlayer.offsetHeight / 2
+        }));
+        
+        
+        forceProgressBarUpdate();
+    };
+    
+    keepVisible();
+    
+    
+    state.preventAutoHide = true;
+    
+    if (state.autoHideGuardTimeout) {
+        clearTimeout(state.autoHideGuardTimeout);
+    }
+    
+    
+    if (state.controlsRefreshInterval) {
+        clearInterval(state.controlsRefreshInterval);
+    }
+    
+    state.controlsRefreshInterval = setInterval(() => {
+        if (state.isHolding || state.activeSeekKey) {
+            keepVisible();
+        } else {
+            clearInterval(state.controlsRefreshInterval);
+            state.controlsRefreshInterval = null;
+        }
+    }, 500); 
+    
+    
+    state.autoHideGuardTimeout = setTimeout(() => {
+        state.preventAutoHide = false;
+        if (state.controlsRefreshInterval) {
+            clearInterval(state.controlsRefreshInterval);
+            state.controlsRefreshInterval = null;
+        }
+        keepVisible(); 
+    }, 5000); 
+}
+
 function showPlayerControlsAndSetGuard() {
     const moviePlayer = findMoviePlayerContainerElement();
     if (moviePlayer) {
+        
         moviePlayer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
-        state.preventAutoHide = true;
-        if (state.autoHideGuardTimeout) {
-            clearTimeout(state.autoHideGuardTimeout);
-        }
-        state.autoHideGuardTimeout = setTimeout(() => {
-            state.preventAutoHide = false;
-            if (moviePlayer) {
-                moviePlayer.dispatchEvent(new MouseEvent('mousemove', {
+        
+        
+        const triggerProgressUpdate = () => {
+            
+            moviePlayer.dispatchEvent(new MouseEvent('mousemove', {
+                bubbles: true,
+                cancelable: true,
+                clientX: moviePlayer.offsetWidth / 2,
+                clientY: moviePlayer.offsetHeight / 2
+            }));
+            
+            
+            moviePlayer.dispatchEvent(new MouseEvent('mouseenter', {
+                bubbles: true,
+                cancelable: true
+            }));
+            
+            
+            const progressBar = moviePlayer.querySelector('.ytp-progress-bar-container, .ytp-progress-bar');
+            if (progressBar) {
+                progressBar.dispatchEvent(new MouseEvent('mousemove', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: progressBar.offsetWidth / 2,
+                    clientY: progressBar.offsetHeight / 2
+                }));
+            }
+            
+            
+            const chromeControls = moviePlayer.querySelector('.ytp-chrome-controls');
+            if (chromeControls) {
+                chromeControls.dispatchEvent(new MouseEvent('mousemove', {
                     bubbles: true,
                     cancelable: true
                 }));
             }
+        };
+        
+        
+        triggerProgressUpdate();
+        
+        
+        setTimeout(triggerProgressUpdate, 50);
+        
+        state.preventAutoHide = true;
+        
+        if (state.autoHideGuardTimeout) {
+            clearTimeout(state.autoHideGuardTimeout);
+        }
+        
+        state.autoHideGuardTimeout = setTimeout(() => {
+            state.preventAutoHide = false;
+            
+            triggerProgressUpdate();
         }, 2500);
     }
 }
@@ -439,6 +570,13 @@ function stopContinuousSeek() {
         clearTimeout(state.holdTransitionTimeout);
         state.holdTransitionTimeout = null;
     }
+    
+    
+    if (state.controlsRefreshInterval) {
+        clearInterval(state.controlsRefreshInterval);
+        state.controlsRefreshInterval = null;
+    }
+    
     state.isHolding = false;
     if (state.skipIndicatorElement) {
         state.skipIndicatorElement.classList.remove('holding');
@@ -450,6 +588,20 @@ function stopContinuousSeek() {
         }, 500);
     }
     state.activeSeekKey = null;
+    
+    
+    setTimeout(() => {
+        state.preventAutoHide = false;
+        const moviePlayer = findMoviePlayerContainerElement();
+        if (moviePlayer) {
+            moviePlayer.dispatchEvent(new MouseEvent('mousemove', {
+                bubbles: true,
+                cancelable: true,
+                clientX: moviePlayer.offsetWidth / 2,
+                clientY: moviePlayer.offsetHeight / 2
+            }));
+        }
+    }, 1000);
 }
 
 function showSkipIndicator(seconds, direction = 'forward') {
@@ -512,9 +664,11 @@ function handleKeyDown(event) {
         stopContinuousSeek();
         return;
     }
+    
     const isForward = event.key === state.settings.keyboardForwardKey;
     const isBackward = event.key === state.settings.keyboardBackwardKey;
     if (!isForward && !isBackward) return;
+    
     const shouldOverride = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
     if (shouldOverride) {
         event.preventDefault();
@@ -534,7 +688,8 @@ function handleKeyDown(event) {
         const skipTimeValue = isForward ? skipAmount : -skipAmount;
         const direction = isForward ? 'forward' : 'backward';
 
-        showPlayerControlsAndSetGuard();
+        
+        showPlayerControlsAndKeepVisible();
         
         state.isHolding = false;
         performSeek(skipTimeValue);
@@ -549,6 +704,8 @@ function handleKeyDown(event) {
         state.seekIntervalId = setInterval(() => {
             performSeek(skipTimeValue);
             trackSkip(skipTimeValue, 'keyboard');
+            
+            showPlayerControlsAndKeepVisible();
         }, CONFIG.SEEK_INTERVAL_DELAY);
     }
 }
@@ -731,6 +888,10 @@ function cleanup() {
   retryTimeout = null;
   if (state.actionTimeout) clearTimeout(state.actionTimeout);
   state.actionTimeout = null;
+  if (state.controlsRefreshInterval) {
+    clearInterval(state.controlsRefreshInterval);
+    state.controlsRefreshInterval = null;
+  }
   if (state.skipIndicatorElement) {
     state.skipIndicatorElement.remove();
     state.skipIndicatorElement = null;
