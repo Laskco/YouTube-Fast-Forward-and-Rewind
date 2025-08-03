@@ -1,5 +1,10 @@
 browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === "install" || details.reason === "update") {
+        const url = browser.runtime.getURL("whats-new/whats-new.html"); 
+        await browser.tabs.create({ url });
+    }
+
+    if (details.reason === "install" || details.reason === "update") {
         const defaultSettings = {
           extensionEnabled: true,
           buttonSkipEnabled: true,
@@ -12,7 +17,11 @@ browser.runtime.onInstalled.addListener(async (details) => {
           keyboardBackwardKey: 'ArrowLeft',
           actionTimingEnabled: true,
           actionDelay: 20,
+          seekThrottle: 100,
+          controlsVisibleDuration: 2500,
+          seekIntervalDelay: 150,
           buttonPosition: 'left',
+          enhancedAdSkipEnabled: true,
           advancedWarningAcknowledged: false,
           btnFwdPreset1Value: 5, btnFwdPreset2Value: 10, btnFwdPreset3Value: 15, btnFwdPreset4Value: 30,
           btnBwdPreset1Value: 5, btnBwdPreset2Value: 10, btnBwdPreset3Value: 15, btnBwdPreset4Value: 30,
@@ -26,7 +35,6 @@ browser.runtime.onInstalled.addListener(async (details) => {
         };
 
         const storedSettings = await browser.storage.local.get(null);
-
         const newSettings = { ...defaultSettings, ...storedSettings };
 
         newSettings.stats_totalSecondsSkipped = storedSettings.stats_totalSecondsSkipped || 0;

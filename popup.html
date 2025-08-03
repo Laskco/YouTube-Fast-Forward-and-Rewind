@@ -45,6 +45,8 @@
         <symbol id="icon-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></symbol>
         <symbol id="icon-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></symbol>
         <symbol id="icon-bar-chart-2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></symbol>
+        <symbol id="icon-chevrons-down" viewBox="0 0 24 24"><polyline points="7 13 12 18 17 13"></polyline><polyline points="7 6 12 11 17 6"></polyline></symbol>
+        <symbol id="icon-chevrons-up" viewBox="0 0 24 24"><polyline points="17 11 12 6 7 11"></polyline><polyline points="17 18 12 13 7 18"></polyline></symbol>
     </svg>
     <div id="main-view" class="popup-view active">
         <div class="popup-container">
@@ -208,13 +210,13 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="preset-editor">
+                          <div class="preset-editor">
                             <button type="button" class="btn-reset-presets" title="Reset Backward Button presets to default">
                                 <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                             </button>
                            <div class="preset-editor-item">
                                 <label class="preset-editor-label" for="btnBwd_p1">P1:</label>
-                                <div class="custom-spinner-container preset-spinner">
+                                 <div class="custom-spinner-container preset-spinner">
                                    <input type="number" id="btnBwd_p1" class="custom-spinner-input preset-value-input" data-preset-index="0" value="5" min="1" max="99">
                                    <div class="custom-spinner-buttons">
                                        <button type="button" class="spinner-btn-up">▲</button>
@@ -469,13 +471,17 @@
                     <svg class="feather"><use href="#icon-arrow-left"></use></svg>
                 </button>
                 <h1 style="flex-grow: 1;">Advanced Settings</h1>
+                <a href="whats-new/whats-new.html" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="See what's new in this version" style="border-radius: 6px; padding: 4px 8px; font-size: 12px;">
+                    <svg class="feather"><use href="#icon-zap"></use></svg>
+                    <span>What's New</span>
+                </a>
             </header>
             <div class="advanced-settings-group">
                 <section class="settings-card" id="action-timing-card">
                     <div id="advanced-warning-overlay">
                         <div class="warning-content">
-                            <h3>Experimental Settings</h3>
-                            <p>A low delay (like 0ms) feels instant, but can cause stuttering on some systems. If your video buffers after skipping, try a small increase (50-100ms) to give the player time to load.</p>
+                            <h3>Experimental & Advanced Settings</h3>
+                            <p>Changing these settings can impact player performance. Adjusting "Action Delay" helps prevent stuttering, while other options can alter how the extension interacts with the video player's buffer. Use with caution.</p>
                             <button type="button" id="proceed-ack" class="btn btn-primary">I Understand, Proceed</button>
                         </div>
                     </div>
@@ -485,39 +491,101 @@
                             Action & Player Timing
                         </h2>
                         <div class="card-header-actions">
-                            <button type="button" class="btn-link tooltip-trigger-button" aria-label="Action Delay Info" aria-describedby="action-delay-tooltip-desc">
-                                <svg class="feather"><use href="#icon-alert-circle"></use></svg>
-                            </button>
-                            <span class="tooltip-text" id="action-delay-tooltip-desc" role="tooltip">A low delay (like 0ms) feels instant, but can cause stuttering on some systems. If your video buffers after skipping, try a small increase (50-100ms) to give the player time to load.</span>
+                            <div class="tooltip-wrapper">
+                                <button type="button" class="btn-link tooltip-trigger-button" aria-label="Action Delay Info" aria-describedby="action-delay-tooltip-desc">
+                                    <svg class="feather"><use href="#icon-alert-circle"></use></svg>
+                                </button>
+                                <span class="tooltip-text" id="action-delay-tooltip-desc" role="tooltip">
+                                    A low Action Delay (like 0ms) feels instant, but can cause stuttering on some systems.
+                                    Seek Throttle prevents spamming by setting a minimum time between skips.
+                                    The Seek Interval is the speed of continuous hotkey seeking.
+                                    Ignore Buffering Protection forces skips even when the video is still loading, which may cause crashes or black screens.
+                                </span>
+                            </div>
                             <button type="button" id="resetActionTiming" class="btn-link btn-reset-card" title="Reset Action Timing Settings">
                                 <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                             </button>
                         </div>
                     </div>
                     <div class="card-content-wrapper">
-                        <div class="ff-setting-group">
-                            <label for="actionDelay">Action Delay (ms):</label>
-                            <div class="custom-spinner-container wide">
-                                <input type="number" id="actionDelay" class="custom-spinner-input" value="50" min="0" max="2000">
-                                <div class="custom-spinner-buttons">
-                                    <button type="button" class="spinner-btn-up">▲</button>
-                                    <button type="button" class="spinner-btn-down">▼</button>
+                        <div class="popup-toggle-row sub-toggle">
+                             <label for="actionTimingEnabledToggle" class="toggle-label" id="actionTimingStatusLabel">
+                                 <svg class="feather"><use href="#icon-toggle-right"></use></svg>
+                                 Action Delay Enabled
+                             </label>
+                             <label class="toggle-switch">
+                                 <input type="checkbox" id="actionTimingEnabledToggle" checked aria-labelledby="actionTimingStatusLabel">
+                                 <span class="slider"></span>
+                             </label>
+                         </div>
+                        <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Master toggle for the action delay feature. Enabling this can help prevent player stuttering on some systems.</p>
+                        <div class="popup-toggle-row sub-toggle">
+                             <label for="ignoreBufferingToggle" class="toggle-label" id="ignoreBufferingStatusLabel">
+                                 <svg class="feather"><use href="#icon-toggle-left"></use></svg>
+                                 Buffering Protection Enabled
+                             </label>
+                             <label class="toggle-switch">
+                                 <input type="checkbox" id="ignoreBufferingToggle" aria-labelledby="ignoreBufferingStatusLabel">
+                                 <span class="slider"></span>
+                             </label>
+                         </div>
+                        <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Prevents seeking while the video buffers to improve stability. Disable this to force seeking at any time, which may cause player errors.</p>
+                        <div class="advanced-settings-toggle-container">
+                            <button type="button" id="openMoreSettingsBtn" class="btn btn-secondary btn-icon-right" aria-expanded="false" aria-controls="moreTimingSettings">
+                                <span>More settings</span>
+                                <svg class="feather icon-more"><use href="#icon-chevrons-down"></use></svg>
+                                <svg class="feather icon-less" style="display: none;"><use href="#icon-chevrons-up"></use></svg>
+                            </button>
+                        </div>
+                        <div id="moreTimingSettings" class="more-settings-panel">
+                            <div class="panel-content-wrapper">
+                                <div class="ff-setting-group">
+                                    <label for="actionDelay">Action Delay (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="actionDelay" class="custom-spinner-input" value="20" min="0" max="2000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
                                 </div>
+                                <p class="description">Delay after a skip command before it's executed, allowing the player to buffer. Default: 20ms.</p>
+                                <div class="ff-setting-group">
+                                    <label for="seekThrottle">Seek Throttle (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="seekThrottle" class="custom-spinner-input" value="100" min="0" max="2000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">Minimum time between individual seek actions to prevent spamming. Default: 100ms.</p>
+                                <div class="ff-setting-group">
+                                    <label for="seekInterval">Seek Interval (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="seekInterval" class="custom-spinner-input" value="150" min="0" max="2000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">Time between seeks when holding down a hotkey. Default: 150ms.</p>
+                                <div class="ff-setting-group">
+                                    <label for="controlsVisibleDuration">Controls Visible Duration (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="controlsVisibleDuration" class="custom-spinner-input" value="2500" min="0" max="10000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">How long player controls stay visible after skipping. Default: 2500ms.</p>
                             </div>
                         </div>
-                        <p class="description">Delay after a skip command before it's executed, allowing the player to buffer.</p>
-                        <p class="editor-tip">Default is 20ms.</p>
                     </div>
-                    <div class="popup-toggle-row">
-                         <label for="actionTimingEnabledToggle" class="toggle-label" id="actionTimingStatusLabel">
-                             <svg class="feather"><use href="#icon-toggle-right"></use></svg>
-                             Action Delay Enabled
-                         </label>
-                         <label class="toggle-switch">
-                             <input type="checkbox" id="actionTimingEnabledToggle" checked aria-labelledby="actionTimingStatusLabel">
-                             <span class="slider"></span>
-                         </label>
-                     </div>
                 </section>
                 <section class="settings-card" id="statistics-card">
                     <div class="card-header">
@@ -557,7 +625,7 @@
                 <p class="creator-text">
                     Made with <svg class="feather heart-icon"><use href="#icon-heart"></use></svg> by Laskco
                 </p>
-                <span class="version-text">v4.2.3</span>
+                <span class="version-text">v4.2.4</span>
             </footer>
         </div>
     </div>

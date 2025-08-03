@@ -701,9 +701,7 @@ body.popup-body.light-theme .tooltip-text {
     width: 26px;
 }
 #action-timing-card .tooltip-trigger-button {
-    position: absolute;
-    top: -3px;
-    right: 28px;
+    position: static;
 }
 #action-timing-card .tooltip-text {
     bottom: auto;
@@ -801,17 +799,14 @@ body.popup-body.light-theme .tooltip-text {
   pointer-events: none;
 }
 #action-timing-card .btn-reset-card,
-#action-timing-card .tooltip-trigger-button {
-  position: static;
+#statistics-card .btn-reset-card {
+    position: static;
 }
 #action-timing-card .card-header,
 #statistics-card .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-#statistics-card .btn-reset-card {
-    position: static;
 }
 #action-timing-card .card-header-actions {
   display: flex;
@@ -904,4 +899,57 @@ body.popup-body.light-theme .toast-container.warning {
 .stat-value {
     color: var(--text-primary);
     font-weight: 600;
+}
+.advanced-settings-toggle-container {
+    display: flex;
+    justify-content: center;
+    margin: 4px 0 -4px;
+}
+.advanced-settings-toggle-container .btn-secondary {
+    padding: 6px 10px;
+    color: var(--text-secondary);
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-weight: 500;
+}
+.advanced-settings-toggle-container .btn-secondary:hover {
+    color: var(--text-primary);
+    background-color: var(--button-hover-bg);
+}
+.advanced-settings-toggle-container .btn-secondary.open {
+    color: var(--success-color);
+    border-color: var(--success-color);
+    background-color: color-mix(in srgb, var(--success-color) 10%, transparent);
+}
+.advanced-settings-toggle-container .btn-secondary.open:hover {
+    color: var(--success-color);
+    background-color: color-mix(in srgb, var(--success-color) 15%, transparent);
+}
+.advanced-settings-toggle-container .btn-icon-right .feather {
+    transition: transform var(--transition-speed);
+}
+.advanced-settings-toggle-container .btn-icon-right.open .icon-more {
+    display: none;
+}
+.advanced-settings-toggle-container .btn-icon-right.open .icon-less {
+    display: inline-block;
+}
+.more-settings-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-out, padding-top 0.3s ease-out;
+    padding-top: 0;
+}
+.more-settings-panel.visible {
+    grid-template-rows: 1fr;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+.panel-content-wrapper {
+    overflow: hidden;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
 }

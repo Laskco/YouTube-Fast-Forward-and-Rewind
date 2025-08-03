@@ -61,6 +61,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actionTimingEnabledToggle = document.getElementById('actionTimingEnabledToggle');
     const actionTimingStatusLabel = document.getElementById('actionTimingStatusLabel');
     const actionDelayInput = document.getElementById('actionDelay');
+    const seekThrottleInput = document.getElementById('seekThrottle');
+    const seekIntervalInput = document.getElementById('seekInterval');
+    const controlsVisibleDurationInput = document.getElementById('controlsVisibleDuration');
+    const ignoreBufferingToggle = document.getElementById('ignoreBufferingToggle');
+    const ignoreBufferingStatusLabel = document.getElementById('ignoreBufferingStatusLabel');
     const resetActionTimingBtn = document.getElementById('resetActionTiming');
     const posLeftBtn = document.getElementById('pos-left-btn');
     const posRightBtn = document.getElementById('pos-right-btn');
@@ -69,6 +74,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toastElement = document.getElementById('toast-notification');
     const toastIconUse = toastElement.querySelector('.toast-icon use');
     const toastMessage = toastElement.querySelector('.toast-message');
+    const openMoreSettingsBtn = document.getElementById('openMoreSettingsBtn');
+    const moreTimingSettingsPanel = document.getElementById('moreTimingSettings');
     let toastTimeout;
     const statsTotalTime = document.getElementById('statsTotalTime');
     const statsTotalSkips = document.getElementById('statsTotalSkips');
@@ -87,6 +94,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       keyboardBackwardKey: 'ArrowLeft',
       actionTimingEnabled: true,
       actionDelay: 20,
+      seekThrottle: 100,
+      seekInterval: 150,
+      controlsVisibleDuration: 2500,
+      ignoreBufferingProtection: false,
       buttonPosition: 'left',
       advancedWarningAcknowledged: false,
       btnFwdPreset1Value: 5, btnFwdPreset2Value: 10, btnFwdPreset3Value: 15, btnFwdPreset4Value: 30,
@@ -198,6 +209,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (closeSettingsBtn) {
         closeSettingsBtn.addEventListener('click', () => {
+            if (moreTimingSettingsPanel && moreTimingSettingsPanel.classList.contains('visible')) {
+                moreTimingSettingsPanel.classList.remove('visible');
+                openMoreSettingsBtn.classList.remove('open');
+                openMoreSettingsBtn.setAttribute('aria-expanded', 'false');
+            }
             settingsView.classList.remove('active');
             mainView.classList.add('active');
         });
@@ -207,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isEnabled = toggle.checked;
         if (buttonSkipCard) buttonSkipCard.classList.toggle('is-disabled', !isEnabled || !buttonToggle.checked);
         if (keyboardCard) keyboardCard.classList.toggle('is-disabled', !isEnabled || !keyboardToggle.checked);
-        if (actionTimingCard) actionTimingCard.classList.toggle('is-disabled', !isEnabled || !actionTimingEnabledToggle.checked);
+        if (actionTimingCard) actionTimingCard.classList.toggle('is-disabled', !isEnabled);
         statusText.textContent = isEnabled ? 'Extension Enabled' : 'Extension Disabled';
         statusText.classList.toggle('enabled', isEnabled);
         statusText.classList.toggle('disabled', !isEnabled);
@@ -228,6 +244,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (atLabelIconUse && atLabelTextNode) {
             atLabelTextNode.nodeValue = actionTimingEnabledToggle.checked ? ' Action Delay Enabled' : ' Action Delay Disabled';
             atLabelIconUse.setAttribute('href', actionTimingEnabledToggle.checked ? '#icon-toggle-right' : '#icon-toggle-left');
+        }
+        const ibpLabelIconUse = ignoreBufferingStatusLabel.querySelector('svg use');
+        const ibpLabelTextNode = ignoreBufferingStatusLabel.childNodes[2];
+        if (ibpLabelIconUse && ibpLabelTextNode) {
+            ibpLabelTextNode.nodeValue = ignoreBufferingToggle.checked ? ' Buffering Protection Enabled' : ' Buffering Protection Disabled';
+            ibpLabelIconUse.setAttribute('href', ignoreBufferingToggle.checked ? '#icon-toggle-right' : '#icon-toggle-left');
         }
     }
 
@@ -389,6 +411,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (keyboardBackwardKeyBtn) keyboardBackwardKeyBtn.textContent = formatKeyForDisplay(settings.keyboardBackwardKey);
         if(actionTimingEnabledToggle) actionTimingEnabledToggle.checked = settings.actionTimingEnabled;
         if(actionDelayInput) actionDelayInput.value = enforceMinMax({ value: settings.actionDelay }, 0, 2000);
+        if(seekThrottleInput) seekThrottleInput.value = enforceMinMax({ value: settings.seekThrottle }, 0, 2000);
+        if(seekIntervalInput) seekIntervalInput.value = enforceMinMax({ value: settings.seekInterval }, 0, 2000);
+        if(controlsVisibleDurationInput) controlsVisibleDurationInput.value = enforceMinMax({ value: settings.controlsVisibleDuration }, 0, 10000);
+        if(ignoreBufferingToggle) ignoreBufferingToggle.checked = !settings.ignoreBufferingProtection;
         if (posLeftBtn && posRightBtn) {
             if (settings.buttonPosition === 'right') {
                 posRightBtn.classList.add('active');
@@ -415,6 +441,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             keyboardBackward: enforceMinMax(keyboardBackwardInput),
             actionTimingEnabled: actionTimingEnabledToggle.checked,
             actionDelay: enforceMinMax(actionDelayInput, 0, 2000),
+            seekThrottle: enforceMinMax(seekThrottleInput, 0, 2000),
+            seekInterval: enforceMinMax(seekIntervalInput, 0, 2000),
+            controlsVisibleDuration: enforceMinMax(controlsVisibleDurationInput, 0, 10000),
+            ignoreBufferingProtection: !ignoreBufferingToggle.checked,
             buttonPosition: posRightBtn.classList.contains('active') ? 'right' : 'left',
         };
         currentSettings = newSettings;
@@ -562,10 +592,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    document.querySelectorAll('.skip-time-input, #actionDelay').forEach(input => {
+    document.querySelectorAll('.skip-time-input, #actionDelay, #seekThrottle, #seekInterval, #controlsVisibleDuration').forEach(input => {
         input.addEventListener('change', () => {
-            if (input.id === 'actionDelay') {
+            if (input.id === 'actionDelay' || input.id === 'seekThrottle' || input.id === 'seekInterval') {
                 enforceMinMax(input, 0, 2000);
+            } else if (input.id === 'controlsVisibleDuration') {
+                enforceMinMax(input, 0, 10000);
             } else {
                 enforceMinMax(input);
             }
@@ -648,16 +680,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    ignoreBufferingToggle.addEventListener('change', () => {
+        updateStatusUI();
+        const enabled = ignoreBufferingToggle.checked;
+        saveSettings(true, `Buffering Protection ${enabled ? 'Enabled' : 'Disabled'}`, enabled ? 'success' : 'warning');
+    });
+    
     actionTimingEnabledToggle.addEventListener('change', () => {
         updateStatusUI();
         const enabled = actionTimingEnabledToggle.checked;
         saveSettings(true, `Action Delay ${enabled ? 'Enabled' : 'Disabled'}`, enabled ? 'success' : 'warning');
     });
 
+    if (openMoreSettingsBtn) {
+        openMoreSettingsBtn.addEventListener('click', () => {
+            const isMoreOpen = moreTimingSettingsPanel.classList.toggle('visible');
+            openMoreSettingsBtn.classList.toggle('open', isMoreOpen);
+            openMoreSettingsBtn.setAttribute('aria-expanded', isMoreOpen);
+        });
+    }
+
     if (resetActionTimingBtn) {
         resetActionTimingBtn.addEventListener('click', () => {
             currentSettings.actionTimingEnabled = defaultSettings.actionTimingEnabled;
             currentSettings.actionDelay = defaultSettings.actionDelay;
+            currentSettings.seekThrottle = defaultSettings.seekThrottle;
+            currentSettings.seekInterval = defaultSettings.seekInterval;
+            currentSettings.controlsVisibleDuration = defaultSettings.controlsVisibleDuration;
+            currentSettings.ignoreBufferingProtection = defaultSettings.ignoreBufferingProtection;
             applySettingsToUI(currentSettings);
             saveSettings();
             showToast('Action Timing Reset', 'warning');

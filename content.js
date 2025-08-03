@@ -39,6 +39,10 @@ const CONFIG = {
     keyboardBackwardKey: 'ArrowLeft',
     actionTimingEnabled: true,
     actionDelay: 20,
+    seekThrottle: 100,
+    seekInterval: 150,
+    controlsVisibleDuration: 2500,
+    ignoreBufferingProtection: false,
     buttonPosition: 'left'
   },
   ICONS: {
@@ -50,9 +54,7 @@ const CONFIG = {
     REWIND_BUTTON: 'rewindButton',
     CONTAINER: 'customButtonsContainer'
   },
-  MAX_STORED_ERRORS: 10,
-  SEEK_INTERVAL_DELAY: 150,
-  SEEK_THROTTLE: 100
+  MAX_STORED_ERRORS: 10
 };
 
 const state = {
@@ -136,15 +138,22 @@ function forceProgressBarUpdate() {
 }
 
 function performSeek(skipTime) {
-    if (Date.now() - state.lastSeekTime < CONFIG.SEEK_THROTTLE) {
+    if (Date.now() - state.lastSeekTime < state.settings.seekThrottle) {
         return;
     }
     
     if (state.actionTimeout) clearTimeout(state.actionTimeout);
 
     const currentVideoPlayer = findVideoPlayerElement();
-    if (!currentVideoPlayer || currentVideoPlayer.seeking || state.isBuffering) {
+    if (!currentVideoPlayer) {
         return;
+    }
+
+    // Only check for seeking/buffering if the protection is NOT ignored
+    if (!state.settings.ignoreBufferingProtection) {
+        if (currentVideoPlayer.seeking || state.isBuffering) {
+            return;
+        }
     }
     
     state.lastSeekTime = Date.now();
@@ -296,7 +305,7 @@ function showPlayerControlsAndKeepVisible() {
             state.controlsRefreshInterval = null;
         }
         keepVisible(); 
-    }, 5000); 
+    }, state.settings.controlsVisibleDuration); 
 }
 
 function showPlayerControlsAndSetGuard() {
@@ -358,7 +367,7 @@ function showPlayerControlsAndSetGuard() {
             state.preventAutoHide = false;
             
             triggerProgressUpdate();
-        }, 2500);
+        }, state.settings.controlsVisibleDuration);
     }
 }
 
@@ -706,7 +715,7 @@ function handleKeyDown(event) {
             trackSkip(skipTimeValue, 'keyboard');
             
             showPlayerControlsAndKeepVisible();
-        }, CONFIG.SEEK_INTERVAL_DELAY);
+        }, state.settings.seekInterval);
     }
 }
 
