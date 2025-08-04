@@ -1,3 +1,7 @@
+if (typeof browser === "undefined") {
+    var browser = chrome;
+}
+
 async function applyTheme(theme, bodyElement, themeToggleButton) {
     if (theme === 'light') {
         bodyElement.classList.add('light-theme');
@@ -69,8 +73,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetActionTimingBtn = document.getElementById('resetActionTiming');
     const posLeftBtn = document.getElementById('pos-left-btn');
     const posRightBtn = document.getElementById('pos-right-btn');
-    const warningOverlay = document.getElementById('advanced-warning-overlay');
-    const proceedBtn = document.getElementById('proceed-ack');
     const toastElement = document.getElementById('toast-notification');
     const toastIconUse = toastElement.querySelector('.toast-icon use');
     const toastMessage = toastElement.querySelector('.toast-message');
@@ -99,7 +101,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       controlsVisibleDuration: 2500,
       ignoreBufferingProtection: false,
       buttonPosition: 'left',
-      advancedWarningAcknowledged: false,
       btnFwdPreset1Value: 5, btnFwdPreset2Value: 10, btnFwdPreset3Value: 15, btnFwdPreset4Value: 30,
       btnBwdPreset1Value: 5, btnBwdPreset2Value: 10, btnBwdPreset3Value: 15, btnBwdPreset4Value: 30,
       kbdFwdPreset1Value: 5, kbdFwdPreset2Value: 10, kbdFwdPreset3Value: 15, kbdFwdPreset4Value: 30,
@@ -375,11 +376,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const stored = await browser.storage.local.get(Object.keys(defaultSettings));
             const newSettings = { ...defaultSettings, ...stored };
             currentSettings = newSettings;
-            if (currentSettings.advancedWarningAcknowledged) {
-                warningOverlay.classList.add('hidden');
-            } else {
-                warningOverlay.classList.remove('hidden');
-            }
             applySettingsToUI(currentSettings);
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -672,14 +668,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    if (proceedBtn) {
-        proceedBtn.addEventListener('click', async () => {
-            warningOverlay.classList.add('hidden');
-            currentSettings.advancedWarningAcknowledged = true;
-            await browser.storage.local.set({ advancedWarningAcknowledged: true });
-        });
-    }
-
     ignoreBufferingToggle.addEventListener('change', () => {
         updateStatusUI();
         const enabled = ignoreBufferingToggle.checked;
@@ -736,7 +724,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 stats_keyboardSkips: currentSettings.stats_keyboardSkips,
             };
             currentSettings = { ...defaultSettings, theme: themeToKeep, ...statsToKeep };
-            warningOverlay.classList.remove('hidden');
             applySettingsToUI(currentSettings);
             await browser.storage.local.set(currentSettings);
             showToast('All Settings Reset (Excluding Stats)', 'warning');

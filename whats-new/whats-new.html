@@ -102,73 +102,84 @@
 </head>
 <body>
 
-    <h1>What's New in Version 4.2.4</h1>
-    <p class="version-date">August 3rd, 2025</p>
+    <h1>What's New in YouTube FF/RW</h1>
 
-    <h2>Advanced Settings Rework</h2>
-    <p>
-        The "Action & Player Timing" panel has been updated with the following key features for a cleaner, more intuitive experience:
-    </p>
+    <h2>Version 4.2.5</h2>
+    <p class="version-date" style="text-align: left; margin-top: 1rem; margin-bottom: 1rem;">August 3rd, 2025</p>
     <ul>
-        <li>
-            <b>New Collapsible Panel:</b> For a cleaner interface, advanced controls are now located in a "More settings" section. This includes:
-            <ul style="margin-top: 0.5rem; font-size: 0.9em;">
-                <li><b>Action Delay:</b> A small delay before seeking to prevent stuttering.</li>
-                <li><b>Seek Throttle:</b> Prevents spamming rapid skip commands.</li>
-                <li><b>Seek Interval:</b> Controls the speed of continuous seeking when a hotkey is held down.</li>
-                <li><b>Controls Visible Duration:</b> Sets how long player controls stay visible after a skip.</li>
-            </ul>
-        </li>
-        <li>
-            <b>Buffering Protection Toggle:</b> Added a new toggle to control the buffering protection feature, allowing you to enable or disable protection against YouTube's problematic black screen buffering state. Disabling will allow you to seek through even when the player is buffering.
-        </li>
+        <li>Readjusted the Action & Player Timing card for a more compact and clear layout.</li>
     </ul>
 
-    <img src="whats-new.png" alt="The new Action & Player Timing settings panel.">
+    <details open>
+        <summary>Previous Version: 4.2.4</summary>
+        <div class="details-content">
+            <p class="version-date" style="text-align: left; margin-top: 1rem;">August 3rd, 2025</p>
+            <h3>Advanced Settings Rework</h3>
+            <p>
+                The "Action & Player Timing" panel has been updated with the following key features for a cleaner, more intuitive experience:
+            </p>
+            <ul>
+                <li>
+                    <b>New Collapsible Panel:</b> For a cleaner interface, advanced controls are now located in a "More settings" section. This includes:
+                    <ul style="margin-top: 0.5rem; font-size: 0.9em;">
+                        <li><b>Action Delay:</b> A small delay before seeking to prevent stuttering.</li>
+                        <li><b>Seek Throttle:</b> Prevents spamming rapid skip commands.</li>
+                        <li><b>Seek Interval:</b> Controls the speed of continuous seeking when a hotkey is held down.</li>
+                        <li><b>Controls Visible Duration:</b> Sets how long player controls stay visible after a skip.</li>
+                    </ul>
+                </li>
+                <li>
+                    <b>Buffering Protection Toggle:</b> Added a new toggle to control the buffering protection feature, allowing you to enable or disable protection against YouTube's problematic black screen buffering state. Disabling will allow you to seek through even when the player is buffering.
+                </li>
+            </ul>
 
-    <div class="settings-explanation">
-        <h3>Understanding the Advanced Settings</h3>
-        
-        <div class="setting-item">
-            <div class="setting-name">Action Delay</div>
-            <div class="setting-description">
-                Adds a small delay between when you press a hotkey and when the seek happens. Helps prevent stuttering on some systems by giving YouTube's player time to handle the seek request. Increase if you notice video stuttering when skipping, decrease for more immediate seeking on fast systems.
+            <img src="whats-new.png" alt="The new Action & Player Timing settings panel.">
+
+            <div class="settings-explanation">
+                <h3>Understanding the Advanced Settings</h3>
+                
+                <div class="setting-item">
+                    <div class="setting-name">Action Delay</div>
+                    <div class="setting-description">
+                        Adds a small delay between when you press a hotkey and when the seek happens. Helps prevent stuttering on some systems by giving YouTube's player time to handle the seek request. Increase if you notice video stuttering when skipping, decrease for more immediate seeking on fast systems.
+                    </div>
+                    <div class="default-value">Default: 20ms</div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-name">Seek Throttle</div>
+                    <div class="setting-description">
+                        Minimum time between separate skip commands to prevent overwhelming YouTube's player. Lower values allow faster key presses to register, higher values provide more stability on slower systems or connections.
+                    </div>
+                    <div class="default-value">Default: 100ms</div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-name">Seek Interval</div>
+                    <div class="setting-description">
+                        Controls how fast continuous seeking happens when you hold down a hotkey. Lower values = faster scanning through videos, higher values = more precise, controlled seeking.
+                    </div>
+                    <div class="default-value">Default: 150ms</div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-name">Controls Visible Duration</div>
+                    <div class="setting-description">
+                        How long YouTube's player controls stay visible after you skip. Ensures you can see the progress bar and time display after seeking. Set higher to see controls longer, or lower for a cleaner viewing experience.
+                    </div>
+                    <div class="default-value">Default: 2500ms</div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-name">Buffering Protection</div>
+                    <div class="setting-description">
+                        Prevents seeks that might trigger YouTube's black screen buffering state, which can cause the player to lock up or restart the video. This protection was always active before - now you can choose to disable it if you prefer unrestricted seeking.
+                    </div>
+                    <div class="default-value">Default: Enabled</div>
+                </div>
             </div>
-            <div class="default-value">Default: 20ms</div>
         </div>
-        
-        <div class="setting-item">
-            <div class="setting-name">Seek Throttle</div>
-            <div class="setting-description">
-                Minimum time between separate skip commands to prevent overwhelming YouTube's player. Lower values allow faster key presses to register, higher values provide more stability on slower systems or connections.
-            </div>
-            <div class="default-value">Default: 100ms</div>
-        </div>
-        
-        <div class="setting-item">
-            <div class="setting-name">Seek Interval</div>
-            <div class="setting-description">
-                Controls how fast continuous seeking happens when you hold down a hotkey. Lower values = faster scanning through videos, higher values = more precise, controlled seeking.
-            </div>
-            <div class="default-value">Default: 150ms</div>
-        </div>
-        
-        <div class="setting-item">
-            <div class="setting-name">Controls Visible Duration</div>
-            <div class="setting-description">
-                How long YouTube's player controls stay visible after you skip. Ensures you can see the progress bar and time display after seeking. Set higher to see controls longer, or lower for a cleaner viewing experience.
-            </div>
-            <div class="default-value">Default: 2500ms</div>
-        </div>
-        
-        <div class="setting-item">
-            <div class="setting-name">Buffering Protection</div>
-            <div class="setting-description">
-                Prevents seeks that might trigger YouTube's black screen buffering state, which can cause the player to lock up or restart the video. This protection was always active before - now you can choose to disable it if you prefer unrestricted seeking.
-            </div>
-            <div class="default-value">Default: Enabled</div>
-        </div>
-    </div>
+    </details>
 
     <details>
         <summary>Previous Version: 4.2.3</summary>

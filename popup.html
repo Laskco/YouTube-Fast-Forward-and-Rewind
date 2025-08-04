@@ -478,13 +478,6 @@
             </header>
             <div class="advanced-settings-group">
                 <section class="settings-card" id="action-timing-card">
-                    <div id="advanced-warning-overlay">
-                        <div class="warning-content">
-                            <h3>Experimental & Advanced Settings</h3>
-                            <p>Changing these settings can impact player performance. Adjusting "Action Delay" helps prevent stuttering, while other options can alter how the extension interacts with the video player's buffer. Use with caution.</p>
-                            <button type="button" id="proceed-ack" class="btn btn-primary">I Understand, Proceed</button>
-                        </div>
-                    </div>
                     <div class="card-header">
                         <h2 class="card-title">
                             <svg class="feather"><use href="#icon-activity"></use></svg>
@@ -493,7 +486,7 @@
                         <div class="card-header-actions">
                             <div class="tooltip-wrapper">
                                 <button type="button" class="btn-link tooltip-trigger-button" aria-label="Action Delay Info" aria-describedby="action-delay-tooltip-desc">
-                                    <svg class="feather"><use href="#icon-alert-circle"></use></svg>
+                                    <svg class="feather"><use href="#icon-help-circle"></use></svg>
                                 </button>
                                 <span class="tooltip-text" id="action-delay-tooltip-desc" role="tooltip">
                                     A low Action Delay (like 0ms) feels instant, but can cause stuttering on some systems.
@@ -508,37 +501,44 @@
                         </div>
                     </div>
                     <div class="card-content-wrapper">
-                        <div class="popup-toggle-row sub-toggle">
-                             <label for="actionTimingEnabledToggle" class="toggle-label" id="actionTimingStatusLabel">
-                                 <svg class="feather"><use href="#icon-toggle-right"></use></svg>
-                                 Action Delay Enabled
-                             </label>
-                             <label class="toggle-switch">
-                                 <input type="checkbox" id="actionTimingEnabledToggle" checked aria-labelledby="actionTimingStatusLabel">
-                                 <span class="slider"></span>
-                             </label>
-                         </div>
-                        <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Master toggle for the action delay feature. Enabling this can help prevent player stuttering on some systems.</p>
-                        <div class="popup-toggle-row sub-toggle">
-                             <label for="ignoreBufferingToggle" class="toggle-label" id="ignoreBufferingStatusLabel">
-                                 <svg class="feather"><use href="#icon-toggle-left"></use></svg>
-                                 Buffering Protection Enabled
-                             </label>
-                             <label class="toggle-switch">
-                                 <input type="checkbox" id="ignoreBufferingToggle" aria-labelledby="ignoreBufferingStatusLabel">
-                                 <span class="slider"></span>
-                             </label>
-                         </div>
-                        <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Prevents seeking while the video buffers to improve stability. Disable this to force seeking at any time, which may cause player errors.</p>
+                        <div class="card-warning-message">
+                            <svg class="feather"><use href="#icon-alert-triangle"></use></svg>
+                            <div class="warning-text-content">
+                                <strong>Experimental & Advanced Settings</strong>
+                                <p>Changing these settings can impact player performance. Adjusting "Action Delay" helps prevent stuttering, while other options can alter how the extension interacts with the video player's buffer. Use with caution.</p>
+                            </div>
+                        </div>
                         <div class="advanced-settings-toggle-container">
                             <button type="button" id="openMoreSettingsBtn" class="btn btn-secondary btn-icon-right" aria-expanded="false" aria-controls="moreTimingSettings">
-                                <span>More settings</span>
+                                <span>View Settings</span>
                                 <svg class="feather icon-more"><use href="#icon-chevrons-down"></use></svg>
-                                <svg class="feather icon-less" style="display: none;"><use href="#icon-chevrons-up"></use></svg>
+                                <svg class="feather icon-less"><use href="#icon-chevrons-up"></use></svg>
                             </button>
                         </div>
                         <div id="moreTimingSettings" class="more-settings-panel">
                             <div class="panel-content-wrapper">
+                                <div class="popup-toggle-row sub-toggle">
+                                     <label for="actionTimingEnabledToggle" class="toggle-label" id="actionTimingStatusLabel">
+                                         <svg class="feather"><use href="#icon-toggle-right"></use></svg>
+                                         Action Delay Enabled
+                                     </label>
+                                     <label class="toggle-switch">
+                                         <input type="checkbox" id="actionTimingEnabledToggle" checked aria-labelledby="actionTimingStatusLabel">
+                                         <span class="slider"></span>
+                                     </label>
+                                 </div>
+                                <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Master toggle for the action delay feature. Enabling this can help prevent player stuttering on some systems.</p>
+                                <div class="popup-toggle-row sub-toggle">
+                                     <label for="ignoreBufferingToggle" class="toggle-label" id="ignoreBufferingStatusLabel">
+                                         <svg class="feather"><use href="#icon-toggle-left"></use></svg>
+                                         Buffering Protection Enabled
+                                     </label>
+                                     <label class="toggle-switch">
+                                         <input type="checkbox" id="ignoreBufferingToggle" aria-labelledby="ignoreBufferingStatusLabel">
+                                         <span class="slider"></span>
+                                     </label>
+                                 </div>
+                                <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Prevents seeking while the video buffers to improve stability. Disable this to force seeking at any time, which may cause player errors.</p>
                                 <div class="ff-setting-group">
                                     <label for="actionDelay">Action Delay (ms):</label>
                                     <div class="custom-spinner-container wide">
@@ -625,7 +625,7 @@
                 <p class="creator-text">
                     Made with <svg class="feather heart-icon"><use href="#icon-heart"></use></svg> by Laskco
                 </p>
-                <span class="version-text">v4.2.4</span>
+                <span class="version-text">v4.2.5</span>
             </footer>
         </div>
     </div>

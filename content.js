@@ -149,7 +149,6 @@ function performSeek(skipTime) {
         return;
     }
 
-    // Only check for seeking/buffering if the protection is NOT ignored
     if (!state.settings.ignoreBufferingProtection) {
         if (currentVideoPlayer.seeking || state.isBuffering) {
             return;
