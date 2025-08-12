@@ -1,96 +1,146 @@
 const CONFIG = {
-  SELECTORS: {
-    VIDEO_PLAYER: '#movie_player video',
-    CONTROLS: '.ytp-left-controls',
-    CONTROLS_RIGHT: '.ytp-right-controls',
-    CHROME_CONTROLS: '.ytp-chrome-controls',
-    TIME_DISPLAY: '.ytp-time-display.notranslate',
-    MOVIE_PLAYER: '#movie_player',
-    AUTOHIDE_CLASS_TARGET: '#movie_player',
-    AUTOHIDE_CLASS: 'ytp-autohide',
-    AD_SHOWING_CLASS: 'ad-showing',
-    SKIP_AD_BUTTONS: [
-        '.ytp-ad-skip-button-modern button',
-        '.ytp-ad-skip-button-modern',
-        '.ytp-ad-skip-button button',
-        '.ytp-ad-skip-button',
-        '.ytp-skip-ad-button'
-    ]
-  },
-  RETRY: {
-    INTERVAL: 150,
-    MAX_ATTEMPTS: 25
-  },
-  DEFAULT_DEBOUNCE: {
-    NAVIGATION: 200,
-    MUTATION: 400,
-    FULLSCREEN: 100,
-    RESIZE: 150
-  },
-  DEFAULT_SETTINGS: {
-    extensionEnabled: true,
-    buttonSkipEnabled: true,
-    keyboardShortcutsEnabled: true,
-    forwardSkipTime: 10,
-    backwardSkipTime: 10,
-    keyboardForward: 5,
-    keyboardBackward: 5,
-    keyboardForwardKey: 'ArrowRight',
-    keyboardBackwardKey: 'ArrowLeft',
-    actionTimingEnabled: true,
-    actionDelay: 20,
-    seekThrottle: 100,
-    seekInterval: 150,
-    controlsVisibleDuration: 2500,
-    ignoreBufferingProtection: false,
-    buttonPosition: 'left'
-  },
-  ICONS: {
-    FORWARD: 'icons/alt-forward.png',
-    REWIND: 'icons/alt-rewind.png'
-  },
-  IDS: {
-    FORWARD_BUTTON: 'fastForwardButton',
-    REWIND_BUTTON: 'rewindButton',
-    CONTAINER: 'customButtonsContainer'
-  },
-  MAX_STORED_ERRORS: 10
+    SELECTORS: {
+        VIDEO_PLAYER: '#movie_player video',
+        CONTROLS: '.ytp-left-controls',
+        CONTROLS_RIGHT: '.ytp-right-controls',
+        CHROME_CONTROLS: '.ytp-chrome-controls',
+        TIME_DISPLAY: '.ytp-time-display.notranslate',
+        MOVIE_PLAYER: '#movie_player',
+        AUTOHIDE_CLASS_TARGET: '#movie_player',
+        AUTOHIDE_CLASS: 'ytp-autohide',
+        AD_SHOWING_CLASS: 'ad-showing',
+        SKIP_AD_BUTTONS: [
+            '.ytp-ad-skip-button-modern button',
+            '.ytp-ad-skip-button-modern',
+            '.ytp-ad-skip-button button',
+            '.ytp-ad-skip-button',
+            '.ytp-skip-ad-button'
+        ]
+    },
+    RETRY: {
+        INTERVAL: 150,
+        MAX_ATTEMPTS: 25
+    },
+    DEFAULT_DEBOUNCE: {
+        NAVIGATION: 200,
+        MUTATION: 400,
+        FULLSCREEN: 100,
+        RESIZE: 150
+    },
+    ICONS: {
+        FORWARD: 'icons/alt-forward.png',
+        REWIND: 'icons/alt-rewind.png'
+    },
+    IDS: {
+        FORWARD_BUTTON: 'fastForwardButton',
+        REWIND_BUTTON: 'rewindButton',
+        CONTAINER: 'customButtonsContainer'
+    },
+    MAX_STORED_ERRORS: 10
 };
 
 const state = {
-  buttonsInjected: false,
-  retryAttempts: 0,
-  navigationObserver: null,
-  playerObserver: null,
-  lastVideoElement: null,
-  lastUrl: window.location.href,
-  settings: { ...CONFIG.DEFAULT_SETTINGS },
-  isBuffering: false,
-  keyListenersAttached: false,
-  isHoveringOverCustomButtons: false,
-  actionTimeout: null,
-  cachedMoviePlayer: null,
-  seekIntervalId: null,
-  activeSeekKey: null,
-  skipIndicatorElement: null,
-  skipIndicatorTimeout: null,
-  preventAutoHide: false,
-  autoHideGuardTimeout: null,
-  isHolding: false,
-  holdTransitionTimeout: null,
-  lastSeekTime: 0,
-  controlsRefreshInterval: null,
+    buttonsInjected: false,
+    retryAttempts: 0,
+    navigationObserver: null,
+    playerObserver: null,
+    lastVideoElement: null,
+    lastUrl: window.location.href,
+    settings: {},
+    isBuffering: false,
+    keyListenersAttached: false,
+    isHoveringOverCustomButtons: false,
+    actionTimeout: null,
+    cachedMoviePlayer: null,
+    seekIntervalId: null,
+    activeSeekKey: null,
+    skipIndicatorElement: null,
+    skipIndicatorTimeout: null,
+    preventAutoHide: false,
+    autoHideGuardTimeout: null,
+    isHolding: false,
+    holdTransitionTimeout: null,
+    lastSeekTime: 0,
+    controlsRefreshInterval: null,
 };
 
+class PerformanceOptimizer {
+    constructor() {
+        this.debounceTimers = new Map();
+        this.cachedElements = new Map();
+        this.lastCleanup = Date.now();
+        this.cleanupInterval = 30000;
+    }
+    
+    debounce(key, func, wait, immediate = false) {
+        const context = this;
+        
+        return function executedFunction(...args) {
+            const later = () => {
+                context.debounceTimers.delete(key);
+                if (!immediate) func.apply(this, args);
+            };
+            
+            const callNow = immediate && !context.debounceTimers.has(key);
+            
+            if (context.debounceTimers.has(key)) {
+                clearTimeout(context.debounceTimers.get(key));
+            }
+            
+            context.debounceTimers.set(key, setTimeout(later, wait));
+            
+            if (callNow) func.apply(this, args);
+        };
+    }
+    
+    getCachedElement(selector, ttl = 5000) {
+        const now = Date.now();
+        const cached = this.cachedElements.get(selector);
+        
+        if (cached && (now - cached.timestamp < ttl) && cached.element.isConnected) {
+            return cached.element;
+        }
+        
+        const element = document.querySelector(selector);
+        if (element) {
+            this.cachedElements.set(selector, {
+                element,
+                timestamp: now
+            });
+        } else {
+            this.cachedElements.delete(selector);
+        }
+        
+        if (now - this.lastCleanup > this.cleanupInterval) {
+            this.cleanup(now, ttl);
+        }
+        
+        return element;
+    }
+    
+    cleanup(now = Date.now(), ttl = 5000) {
+        for (const [selector, cached] of this.cachedElements.entries()) {
+            if (now - cached.timestamp > ttl || !cached.element.isConnected) {
+                this.cachedElements.delete(selector);
+            }
+        }
+        this.lastCleanup = now;
+    }
+}
+
+const perfOptimizer = new PerformanceOptimizer();
+
 let retryTimeout = null;
-const debouncedTryInjectCheck = debounce(() => tryInjectButtons(0), CONFIG.DEFAULT_DEBOUNCE.MUTATION);
-const debouncedNavigationHandler = debounce(onNavigation, CONFIG.DEFAULT_DEBOUNCE.NAVIGATION);
-const debouncedFullscreenCheck = debounce(() => {
+const debouncedTryInjectCheck = perfOptimizer.debounce('inject-check', () => tryInjectButtons(0), CONFIG.DEFAULT_DEBOUNCE.MUTATION);
+const debouncedNavigationHandler = perfOptimizer.debounce('navigation', onNavigation, CONFIG.DEFAULT_DEBOUNCE.NAVIGATION);
+const debouncedFullscreenCheck = perfOptimizer.debounce('fullscreen', () => {
     if(isWatchPage() && state.settings.buttonSkipEnabled) tryInjectButtons(0);
 }, CONFIG.DEFAULT_DEBOUNCE.FULLSCREEN);
-const debouncedResizeCheck = debounce(() => {
+const debouncedResizeCheck = perfOptimizer.debounce('resize', () => {
     if(isWatchPage() && state.settings.buttonSkipEnabled) tryInjectButtons(0);
 }, CONFIG.DEFAULT_DEBOUNCE.RESIZE);
+
+const videoListenerMap = new WeakMap();
 
 async function trackSkip(amount, type) {
     try {
@@ -116,7 +166,6 @@ function forceProgressBarUpdate() {
     const moviePlayer = findMoviePlayerContainerElement();
     if (!moviePlayer) return;
     
-    
     const progressSelectors = [
         '.ytp-progress-bar-container',
         '.ytp-progress-bar',
@@ -138,7 +187,9 @@ function forceProgressBarUpdate() {
 }
 
 function performSeek(skipTime) {
-    if (Date.now() - state.lastSeekTime < state.settings.seekThrottle) {
+    const now = Date.now();
+    
+    if (now - state.lastSeekTime < state.settings.seekThrottle) {
         return;
     }
     
@@ -155,24 +206,25 @@ function performSeek(skipTime) {
         }
     }
     
-    state.lastSeekTime = Date.now();
+    state.lastSeekTime = now;
     const delay = state.settings.actionTimingEnabled ? (state.settings.actionDelay || 0) : 0;
     const newTime = Math.max(0, Math.min(currentVideoPlayer.duration || Infinity, currentVideoPlayer.currentTime + skipTime));
 
-    if (delay > 0 && !state.seekIntervalId) {
-        state.actionTimeout = setTimeout(() => {
+    const executeSeek = () => {
+        try {
             currentVideoPlayer.currentTime = newTime;
-            
             setTimeout(() => {
                 forceProgressBarUpdate();
             }, 10);
-        }, delay);
+        } catch (error) {
+            logErrorToStorage('Seek operation failed', error);
+        }
+    };
+
+    if (delay > 0 && !state.seekIntervalId) {
+        state.actionTimeout = setTimeout(executeSeek, delay);
     } else {
-        currentVideoPlayer.currentTime = newTime;
-        
-        setTimeout(() => {
-            forceProgressBarUpdate();
-        }, 10);
+        executeSeek();
     }
 }
 
@@ -206,11 +258,11 @@ async function logErrorToStorage(context, ...args) {
 }
 
 function debounce(func, wait) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
 }
 
 function isEditable(element) {
@@ -225,7 +277,7 @@ function isEditable(element) {
 function isWatchPage() {
    try {
     return window.location.pathname === '/watch';
-  } catch(e) { return false; }
+   } catch(e) { return false; }
 }
 
 function findMoviePlayerContainerElement() {
@@ -237,29 +289,65 @@ function findMoviePlayerContainerElement() {
 }
 
 function findVideoPlayerElement() {
-  if (state.lastVideoElement && state.lastVideoElement.isConnected && typeof state.lastVideoElement.currentTime === 'number' && state.lastVideoElement.videoWidth > 0) {
-      return state.lastVideoElement;
-  }
-  const player = document.querySelector(CONFIG.SELECTORS.VIDEO_PLAYER);
-  if (player && player.tagName === 'VIDEO' && typeof player.currentTime === 'number' && player.videoWidth > 0) {
-      state.lastVideoElement = player;
-      addBufferingListeners(player);
-      return player;
-  }
-  if (state.lastVideoElement) {
-      removeBufferingListeners(state.lastVideoElement);
-      state.lastVideoElement = null;
-  }
-  return null;
+    if (state.lastVideoElement) {
+        try {
+            const isValid = state.lastVideoElement.isConnected &&
+                                  state.lastVideoElement.tagName === 'VIDEO' &&
+                                  typeof state.lastVideoElement.currentTime === 'number' &&
+                                  state.lastVideoElement.videoWidth > 0 &&
+                                  !state.lastVideoElement.ended;
+            
+            if (isValid) {
+                return state.lastVideoElement;
+            } else {
+                removeBufferingListeners(state.lastVideoElement);
+                state.lastVideoElement = null;
+            }
+        } catch (error) {
+            logErrorToStorage('Error validating cached video element', error);
+            state.lastVideoElement = null;
+        }
+    }
+    
+    const candidates = document.querySelectorAll(CONFIG.SELECTORS.VIDEO_PLAYER);
+    let bestCandidate = null;
+    
+    for (const player of candidates) {
+        try {
+            if (player && 
+                player.tagName === 'VIDEO' && 
+                typeof player.currentTime === 'number' && 
+                player.videoWidth > 0 &&
+                player.readyState >= 1) {
+                
+                const moviePlayer = player.closest('#movie_player');
+                if (moviePlayer && !moviePlayer.classList.contains('ad-showing')) {
+                    bestCandidate = player;
+                    break;
+                } else if (!bestCandidate) {
+                    bestCandidate = player;
+                }
+            }
+        } catch (error) {
+            logErrorToStorage('Error evaluating video candidate', error);
+            continue;
+        }
+    }
+    
+    if (bestCandidate) {
+        state.lastVideoElement = bestCandidate;
+        addBufferingListeners(bestCandidate);
+        return bestCandidate;
+    }
+    
+    return null;
 }
 
 function showPlayerControlsAndKeepVisible() {
     const moviePlayer = findMoviePlayerContainerElement();
     if (!moviePlayer) return;
 
-    
     moviePlayer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
-    
     
     const keepVisible = () => {
         moviePlayer.dispatchEvent(new MouseEvent('mousemove', {
@@ -269,19 +357,16 @@ function showPlayerControlsAndKeepVisible() {
             clientY: moviePlayer.offsetHeight / 2
         }));
         
-        
         forceProgressBarUpdate();
     };
     
     keepVisible();
-    
     
     state.preventAutoHide = true;
     
     if (state.autoHideGuardTimeout) {
         clearTimeout(state.autoHideGuardTimeout);
     }
-    
     
     if (state.controlsRefreshInterval) {
         clearInterval(state.controlsRefreshInterval);
@@ -294,8 +379,7 @@ function showPlayerControlsAndKeepVisible() {
             clearInterval(state.controlsRefreshInterval);
             state.controlsRefreshInterval = null;
         }
-    }, 500); 
-    
+    }, 500);
     
     state.autoHideGuardTimeout = setTimeout(() => {
         state.preventAutoHide = false;
@@ -303,19 +387,16 @@ function showPlayerControlsAndKeepVisible() {
             clearInterval(state.controlsRefreshInterval);
             state.controlsRefreshInterval = null;
         }
-        keepVisible(); 
-    }, state.settings.controlsVisibleDuration); 
+        keepVisible();
+    }, state.settings.controlsVisibleDuration);
 }
 
 function showPlayerControlsAndSetGuard() {
     const moviePlayer = findMoviePlayerContainerElement();
     if (moviePlayer) {
-        
         moviePlayer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
         
-        
         const triggerProgressUpdate = () => {
-            
             moviePlayer.dispatchEvent(new MouseEvent('mousemove', {
                 bubbles: true,
                 cancelable: true,
@@ -323,12 +404,10 @@ function showPlayerControlsAndSetGuard() {
                 clientY: moviePlayer.offsetHeight / 2
             }));
             
-            
             moviePlayer.dispatchEvent(new MouseEvent('mouseenter', {
                 bubbles: true,
                 cancelable: true
             }));
-            
             
             const progressBar = moviePlayer.querySelector('.ytp-progress-bar-container, .ytp-progress-bar');
             if (progressBar) {
@@ -340,7 +419,6 @@ function showPlayerControlsAndSetGuard() {
                 }));
             }
             
-            
             const chromeControls = moviePlayer.querySelector('.ytp-chrome-controls');
             if (chromeControls) {
                 chromeControls.dispatchEvent(new MouseEvent('mousemove', {
@@ -350,10 +428,7 @@ function showPlayerControlsAndSetGuard() {
             }
         };
         
-        
         triggerProgressUpdate();
-        
-        
         setTimeout(triggerProgressUpdate, 50);
         
         state.preventAutoHide = true;
@@ -364,7 +439,6 @@ function showPlayerControlsAndSetGuard() {
         
         state.autoHideGuardTimeout = setTimeout(() => {
             state.preventAutoHide = false;
-            
             triggerProgressUpdate();
         }, state.settings.controlsVisibleDuration);
     }
@@ -383,20 +457,20 @@ function handleMouseLeaveCustomButtons() {
 }
 
 function createButton(id, iconPath) {
-  const button = document.createElement('button');
-  button.id = id;
-  button.classList.add('ytp-custom-button');
-  try {
-    button.style.backgroundImage = `url(${browser.runtime.getURL(iconPath)})`;
-    button.style.backgroundColor = 'transparent';
-  } catch (e) {
-    logErrorToStorage("Failed to set background image for button", id, iconPath, e);
-  }
-  const counter = document.createElement('div');
-  counter.id = `${id}-counter`;
-  counter.classList.add('ytp-custom-button-counter');
-  button.appendChild(counter);
-  return button;
+    const button = document.createElement('button');
+    button.id = id;
+    button.classList.add('ytp-custom-button');
+    try {
+        button.style.backgroundImage = `url(${browser.runtime.getURL(iconPath)})`;
+        button.style.backgroundColor = 'transparent';
+    } catch (e) {
+        logErrorToStorage("Failed to set background image for button", id, iconPath, e);
+    }
+    const counter = document.createElement('div');
+    counter.id = `${id}-counter`;
+    counter.classList.add('ytp-custom-button-counter');
+    button.appendChild(counter);
+    return button;
 }
 
 function updateButtonCounters(container) {
@@ -406,8 +480,8 @@ function updateButtonCounters(container) {
     const forwardCounter = forwardButton ? forwardButton.querySelector(`#${CONFIG.IDS.FORWARD_BUTTON}-counter`) : null;
     const backwardCounter = backwardButton ? backwardButton.querySelector(`#${CONFIG.IDS.REWIND_BUTTON}-counter`) : null;
     const showElements = state.settings.extensionEnabled && state.settings.buttonSkipEnabled;
-    const forwardTime = state.settings.forwardSkipTime || CONFIG.DEFAULT_SETTINGS.forwardSkipTime;
-    const backwardTime = state.settings.backwardSkipTime || CONFIG.DEFAULT_SETTINGS.backwardSkipTime;
+    const forwardTime = state.settings.forwardSkipTime || 10;
+    const backwardTime = state.settings.backwardSkipTime || 10;
     if (forwardCounter) forwardCounter.textContent = showElements ? forwardTime : '';
     if (backwardCounter) backwardCounter.textContent = showElements ? backwardTime : '';
     if (forwardButton) {
@@ -423,16 +497,16 @@ function updateButtonCounters(container) {
 }
 
 function createButtonsContainer() {
-  const container = document.createElement('div');
-  container.id = CONFIG.IDS.CONTAINER;
-  const rewindButton = createButton(CONFIG.IDS.REWIND_BUTTON, CONFIG.ICONS.REWIND);
-  const forwardButton = createButton(CONFIG.IDS.FORWARD_BUTTON, CONFIG.ICONS.FORWARD);
-  container.appendChild(rewindButton);
-  container.appendChild(forwardButton);
-  container.addEventListener('click', handleButtonClick, { capture: true });
-  container.addEventListener('mouseenter', keepControlsVisible);
-  container.addEventListener('mouseleave', handleMouseLeaveCustomButtons);
-  return container;
+    const container = document.createElement('div');
+    container.id = CONFIG.IDS.CONTAINER;
+    const rewindButton = createButton(CONFIG.IDS.REWIND_BUTTON, CONFIG.ICONS.REWIND);
+    const forwardButton = createButton(CONFIG.IDS.FORWARD_BUTTON, CONFIG.ICONS.FORWARD);
+    container.appendChild(rewindButton);
+    container.appendChild(forwardButton);
+    container.addEventListener('click', handleButtonClick, { capture: true });
+    container.addEventListener('mouseenter', keepControlsVisible);
+    container.addEventListener('mouseleave', handleMouseLeaveCustomButtons);
+    return container;
 }
 
 function clickYouTubeSkipButton() {
@@ -465,9 +539,9 @@ function handleButtonClick(event) {
         }
     }
     if (button.id === CONFIG.IDS.FORWARD_BUTTON) {
-        skipTimeValue = state.settings.forwardSkipTime || CONFIG.DEFAULT_SETTINGS.forwardSkipTime;
+        skipTimeValue = state.settings.forwardSkipTime || 10;
     } else if (button.id === CONFIG.IDS.REWIND_BUTTON) {
-        skipTimeValue = -(state.settings.backwardSkipTime || CONFIG.DEFAULT_SETTINGS.backwardSkipTime);
+        skipTimeValue = -(state.settings.backwardSkipTime || 10);
     }
     if (skipTimeValue !== 0) {
         showPlayerControlsAndSetGuard();
@@ -524,11 +598,11 @@ function injectButtons() {
 }
 
 function removeButtons() {
-  const container = document.getElementById(CONFIG.IDS.CONTAINER);
-  if (container) {
-    container.remove();
-  }
-  state.buttonsInjected = false;
+    const container = document.getElementById(CONFIG.IDS.CONTAINER);
+    if (container) {
+        container.remove();
+    }
+    state.buttonsInjected = false;
 }
 
 function handleVideoWaiting() { 
@@ -542,31 +616,49 @@ function handleVideoPlaying() { state.isBuffering = false; }
 
 function addBufferingListeners(videoElement) {
     if (!videoElement) return;
+    
     removeBufferingListeners(videoElement);
-    videoElement.addEventListener('waiting', handleVideoWaiting);
-    videoElement.addEventListener('playing', handleVideoPlaying);
-    videoElement.addEventListener('stalled', handleVideoWaiting);
-    videoElement.addEventListener('canplay', handleVideoPlaying);
-    state.isBuffering = videoElement.readyState < HTMLMediaElement.HAVE_FUTURE_DATA ||
-                        (videoElement.seeking && !videoElement.paused);
+    
+    const listeners = {
+        waiting: () => handleVideoWaiting(),
+        playing: () => handleVideoPlaying(),
+        stalled: () => handleVideoWaiting(),
+        canplay: () => handleVideoPlaying(),
+        loadstart: () => handleVideoWaiting(),
+        error: (e) => logErrorToStorage('Video error event', e)
+    };
+    
+    Object.entries(listeners).forEach(([event, handler]) => {
+        try {
+            videoElement.addEventListener(event, handler);
+        } catch (error) {
+            logErrorToStorage(`Failed to add ${event} listener`, error);
+        }
+    });
+    
+    videoListenerMap.set(videoElement, listeners);
+    
+    try {
+        state.isBuffering = videoElement.readyState < HTMLMediaElement.HAVE_FUTURE_DATA ||
+                                 (videoElement.seeking && !videoElement.paused);
+    } catch (error) {
+        state.isBuffering = false;
+    }
 }
 
 function removeBufferingListeners(videoElement) {
     if (!videoElement) return;
-    videoElement.removeEventListener('waiting', handleVideoWaiting);
-    videoElement.removeEventListener('playing', handleVideoPlaying);
-    videoElement.removeEventListener('stalled', handleVideoWaiting);
-    videoElement.removeEventListener('canplay', handleVideoPlaying);
-}
-
-function sanitizeSettings(settingsObject) {
-    const newSettings = { ...settingsObject };
-    for (const key in CONFIG.DEFAULT_SETTINGS) {
-        if (newSettings[key] === undefined || typeof newSettings[key] !== typeof CONFIG.DEFAULT_SETTINGS[key]) {
-            newSettings[key] = CONFIG.DEFAULT_SETTINGS[key];
-        }
+    
+    const listeners = videoListenerMap.get(videoElement);
+    if (listeners) {
+        Object.entries(listeners).forEach(([event, handler]) => {
+            try {
+                videoElement.removeEventListener(event, handler);
+            } catch (error) {
+            }
+        });
+        videoListenerMap.delete(videoElement);
     }
-    return newSettings;
 }
 
 function stopContinuousSeek() {
@@ -578,7 +670,6 @@ function stopContinuousSeek() {
         clearTimeout(state.holdTransitionTimeout);
         state.holdTransitionTimeout = null;
     }
-    
     
     if (state.controlsRefreshInterval) {
         clearInterval(state.controlsRefreshInterval);
@@ -597,7 +688,6 @@ function stopContinuousSeek() {
     }
     state.activeSeekKey = null;
     
-    
     setTimeout(() => {
         state.preventAutoHide = false;
         const moviePlayer = findMoviePlayerContainerElement();
@@ -613,49 +703,49 @@ function stopContinuousSeek() {
 }
 
 function showSkipIndicator(seconds, direction = 'forward') {
-  const moviePlayer = findMoviePlayerContainerElement();
-  if (!moviePlayer) return;
+    const moviePlayer = findMoviePlayerContainerElement();
+    if (!moviePlayer) return;
 
-  if (!state.skipIndicatorElement || !state.skipIndicatorElement.isConnected) {
-    state.skipIndicatorElement = document.createElement('div');
-    state.skipIndicatorElement.id = 'yt-ffrw-skip-indicator';
-    state.skipIndicatorElement.innerHTML = `
-      <svg id="yt-ffrw-skip-indicator-arrows" viewBox="0 0 32 24">
-        <polyline class="yt-ffrw-arrow-chevron" points="6,0 12,6 6,12" />
-        <polyline class="yt-ffrw-arrow-chevron" points="14,0 20,6 14,12" />
-        <polyline class="yt-ffrw-arrow-chevron" points="22,0 28,6 22,12" />
-      </svg>
-      <span id="yt-ffrw-skip-indicator-text"></span>
-    `;
-    moviePlayer.appendChild(state.skipIndicatorElement);
-  }
+    if (!state.skipIndicatorElement || !state.skipIndicatorElement.isConnected) {
+        state.skipIndicatorElement = document.createElement('div');
+        state.skipIndicatorElement.id = 'yt-ffrw-skip-indicator';
+        state.skipIndicatorElement.innerHTML = `
+            <svg id="yt-ffrw-skip-indicator-arrows" viewBox="0 0 32 24">
+                <polyline class="yt-ffrw-arrow-chevron" points="6,0 12,6 6,12" />
+                <polyline class="yt-ffrw-arrow-chevron" points="14,0 20,6 14,12" />
+                <polyline class="yt-ffrw-arrow-chevron" points="22,0 28,6 22,12" />
+            </svg>
+            <span id="yt-ffrw-skip-indicator-text"></span>
+        `;
+        moviePlayer.appendChild(state.skipIndicatorElement);
+    }
 
-  const textContainer = state.skipIndicatorElement.querySelector('#yt-ffrw-skip-indicator-text');
-  if (!textContainer) return;
-  textContainer.textContent = `${seconds}s`;
+    const textContainer = state.skipIndicatorElement.querySelector('#yt-ffrw-skip-indicator-text');
+    if (!textContainer) return;
+    textContainer.textContent = `${seconds}s`;
 
-  state.skipIndicatorElement.classList.remove('position-left', 'position-right');
-  if (direction === 'forward') {
-    state.skipIndicatorElement.classList.add('position-right');
-  } else {
-    state.skipIndicatorElement.classList.add('position-left');
-  }
+    state.skipIndicatorElement.classList.remove('position-left', 'position-right');
+    if (direction === 'forward') {
+        state.skipIndicatorElement.classList.add('position-right');
+    } else {
+        state.skipIndicatorElement.classList.add('position-left');
+    }
 
-  if (state.isHolding) {
-    state.skipIndicatorElement.classList.add('holding');
-  } else {
-    state.skipIndicatorElement.classList.remove('holding');
-    state.skipIndicatorElement.classList.remove('anim-forward', 'anim-backward');
-    void state.skipIndicatorElement.offsetWidth;
-    state.skipIndicatorElement.classList.add(direction === 'forward' ? 'anim-forward' : 'anim-backward');
-  }
-  
-  state.skipIndicatorElement.classList.add('visible');
+    if (state.isHolding) {
+        state.skipIndicatorElement.classList.add('holding');
+    } else {
+        state.skipIndicatorElement.classList.remove('holding');
+        state.skipIndicatorElement.classList.remove('anim-forward', 'anim-backward');
+        void state.skipIndicatorElement.offsetWidth;
+        state.skipIndicatorElement.classList.add(direction === 'forward' ? 'anim-forward' : 'anim-backward');
+    }
+    
+    state.skipIndicatorElement.classList.add('visible');
 
-  if (state.skipIndicatorTimeout) {
-    clearTimeout(state.skipIndicatorTimeout);
-    state.skipIndicatorTimeout = null;
-  }
+    if (state.skipIndicatorTimeout) {
+        clearTimeout(state.skipIndicatorTimeout);
+        state.skipIndicatorTimeout = null;
+    }
 }
 
 function handleKeyUp(event) {
@@ -690,13 +780,12 @@ function handleKeyDown(event) {
         state.activeSeekKey = event.key;
 
         const skipAmount = isForward
-            ? (state.settings.keyboardForward || CONFIG.DEFAULT_SETTINGS.keyboardForward)
-            : (state.settings.keyboardBackward || CONFIG.DEFAULT_SETTINGS.keyboardBackward);
+            ? (state.settings.keyboardForward || 5)
+            : (state.settings.keyboardBackward || 5);
 
         const skipTimeValue = isForward ? skipAmount : -skipAmount;
         const direction = isForward ? 'forward' : 'backward';
 
-        
         showPlayerControlsAndKeepVisible();
         
         state.isHolding = false;
@@ -712,7 +801,6 @@ function handleKeyDown(event) {
         state.seekIntervalId = setInterval(() => {
             performSeek(skipTimeValue);
             trackSkip(skipTimeValue, 'keyboard');
-            
             showPlayerControlsAndKeepVisible();
         }, state.settings.seekInterval);
     }
@@ -724,6 +812,11 @@ function addKeyListeners() {
         document.addEventListener('keydown', handleKeyDown, true);
         document.addEventListener('keyup', handleKeyUp, true);
         window.addEventListener('blur', stopContinuousSeek);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopContinuousSeek();
+            }
+        });
         state.keyListenersAttached = true;
     } catch (e) {
         logErrorToStorage("Failed to attach key listeners:", e);
@@ -736,6 +829,7 @@ function removeKeyListeners() {
         document.removeEventListener('keydown', handleKeyDown, true);
         document.removeEventListener('keyup', handleKeyUp, true);
         window.removeEventListener('blur', stopContinuousSeek);
+        document.removeEventListener('visibilitychange', stopContinuousSeek);
         state.keyListenersAttached = false;
         stopContinuousSeek();
     } catch(e) {
@@ -765,55 +859,55 @@ function tryInjectButtons(attempt = 0) {
 }
 
 function playerMutationCallback(mutationsList, observer) {
-  const moviePlayerContainer = findMoviePlayerContainerElement();
-  let hasRelevantChange = false;
+    const moviePlayerContainer = findMoviePlayerContainerElement();
+    let hasRelevantChange = false;
 
-  for (const mutation of mutationsList) {
-    if (
-        state.preventAutoHide &&
-        mutation.type === 'attributes' &&
-        mutation.attributeName === 'class' &&
-        mutation.target === moviePlayerContainer &&
-        moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)
-    ) {
-        moviePlayerContainer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
-    }
+    for (const mutation of mutationsList) {
+        if (
+            state.preventAutoHide &&
+            mutation.type === 'attributes' &&
+            mutation.attributeName === 'class' &&
+            mutation.target === moviePlayerContainer &&
+            moviePlayerContainer.classList.contains(CONFIG.SELECTORS.AUTOHIDE_CLASS)
+        ) {
+            moviePlayerContainer.classList.remove(CONFIG.SELECTORS.AUTOHIDE_CLASS);
+        }
 
-    if (!hasRelevantChange) {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-        hasRelevantChange = true;
-      } else if (mutation.type === 'childList') {
-        hasRelevantChange = true;
-      }
+        if (!hasRelevantChange) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                hasRelevantChange = true;
+            } else if (mutation.type === 'childList') {
+                hasRelevantChange = true;
+            }
+        }
     }
-  }
-  
-  if (hasRelevantChange) {
-    debouncedTryInjectCheck();
-  }
+    
+    if (hasRelevantChange) {
+        debouncedTryInjectCheck();
+    }
 }
 
 function observePlayerChanges() {
-  if (state.playerObserver) {
-      state.playerObserver.disconnect();
-      state.playerObserver = null;
-  }
-  if (!state.settings.extensionEnabled || !isWatchPage()) {
-      return;
-  }
-  const moviePlayerContainerToObserve = findMoviePlayerContainerElement();
-  if (!moviePlayerContainerToObserve) {
-      setTimeout(observePlayerChanges, 250);
-      return;
-  }
-  state.playerObserver = new MutationObserver(playerMutationCallback);
-  state.playerObserver.observe(moviePlayerContainerToObserve, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class']
-  });
-  tryInjectButtons(0);
+    if (state.playerObserver) {
+        state.playerObserver.disconnect();
+        state.playerObserver = null;
+    }
+    if (!state.settings.extensionEnabled || !isWatchPage()) {
+        return;
+    }
+    const moviePlayerContainerToObserve = findMoviePlayerContainerElement();
+    if (!moviePlayerContainerToObserve) {
+        setTimeout(observePlayerChanges, 250);
+        return;
+    }
+    state.playerObserver = new MutationObserver(playerMutationCallback);
+    state.playerObserver.observe(moviePlayerContainerToObserve, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class']
+    });
+    tryInjectButtons(0);
 }
 
 function onNavigation() {
@@ -884,52 +978,53 @@ function handleFullscreenChange() {
 }
 
 function cleanup() {
-  removeButtons();
-  if(state.lastVideoElement) removeBufferingListeners(state.lastVideoElement);
-  state.lastVideoElement = null;
-  removeKeyListeners();
-  if (state.navigationObserver) {state.navigationObserver.disconnect(); state.navigationObserver = null;}
-  if (state.playerObserver) {state.playerObserver.disconnect(); state.playerObserver = null;}
-  document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  window.removeEventListener('resize', debouncedResizeCheck);
-  if (retryTimeout) clearTimeout(retryTimeout);
-  retryTimeout = null;
-  if (state.actionTimeout) clearTimeout(state.actionTimeout);
-  state.actionTimeout = null;
-  if (state.controlsRefreshInterval) {
-    clearInterval(state.controlsRefreshInterval);
-    state.controlsRefreshInterval = null;
-  }
-  if (state.skipIndicatorElement) {
-    state.skipIndicatorElement.remove();
-    state.skipIndicatorElement = null;
-  }
-  if (state.skipIndicatorTimeout) {
-    clearTimeout(state.skipIndicatorTimeout);
-    state.skipIndicatorTimeout = null;
-  }
-  if (state.autoHideGuardTimeout) {
-    clearTimeout(state.autoHideGuardTimeout);
-    state.autoHideGuardTimeout = null;
-  }
-  if (state.holdTransitionTimeout) {
-      clearTimeout(state.holdTransitionTimeout);
-      state.holdTransitionTimeout = null;
-  }
-  state.buttonsInjected = false;
-  state.retryAttempts = 0;
-  state.isBuffering = false;
-  state.keyListenersAttached = false;
-  state.isHoveringOverCustomButtons = false;
-  state.preventAutoHide = false;
-  state.isHolding = false;
+    removeButtons();
+    if(state.lastVideoElement) removeBufferingListeners(state.lastVideoElement);
+    state.lastVideoElement = null;
+    removeKeyListeners();
+    if (state.navigationObserver) {state.navigationObserver.disconnect(); state.navigationObserver = null;}
+    if (state.playerObserver) {state.playerObserver.disconnect(); state.playerObserver = null;}
+    document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    window.removeEventListener('resize', debouncedResizeCheck);
+    if (retryTimeout) clearTimeout(retryTimeout);
+    retryTimeout = null;
+    if (state.actionTimeout) clearTimeout(state.actionTimeout);
+    state.actionTimeout = null;
+    if (state.controlsRefreshInterval) {
+        clearInterval(state.controlsRefreshInterval);
+        state.controlsRefreshInterval = null;
+    }
+    if (state.skipIndicatorElement) {
+        state.skipIndicatorElement.remove();
+        state.skipIndicatorElement = null;
+    }
+    if (state.skipIndicatorTimeout) {
+        clearTimeout(state.skipIndicatorTimeout);
+        state.skipIndicatorTimeout = null;
+    }
+    if (state.autoHideGuardTimeout) {
+        clearTimeout(state.autoHideGuardTimeout);
+        state.autoHideGuardTimeout = null;
+    }
+    if (state.holdTransitionTimeout) {
+        clearTimeout(state.holdTransitionTimeout);
+        state.holdTransitionTimeout = null;
+    }
+    state.buttonsInjected = false;
+    state.retryAttempts = 0;
+    state.isBuffering = false;
+    state.keyListenersAttached = false;
+    state.isHoveringOverCustomButtons = false;
+    state.preventAutoHide = false;
+    state.isHolding = false;
 }
 
 async function initializeExtension() {
     cleanup();
     try {
-        const stored = await browser.storage.local.get(Object.keys(CONFIG.DEFAULT_SETTINGS));
-        state.settings = sanitizeSettings({ ...CONFIG.DEFAULT_SETTINGS, ...stored });
+        const stored = await browser.storage.local.get(null);
+        state.settings = stored;
+        
         if (!state.settings.extensionEnabled) {
             return;
         }
@@ -951,35 +1046,36 @@ async function initializeExtension() {
 }
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'updateSettings') {
-    const oldSettings = { ...state.settings };
-    state.settings = sanitizeSettings({ ...CONFIG.DEFAULT_SETTINGS, ...message.settings });
-    if (!state.settings.extensionEnabled && oldSettings.extensionEnabled) {
-        cleanup();
-        sendResponse({ status: "Extension disabled and cleaned up" });
+    if (message.action === 'updateSettings') {
+        const oldSettings = { ...state.settings };
+        state.settings = message.settings; 
+        
+        if (!state.settings.extensionEnabled && oldSettings.extensionEnabled) {
+            cleanup();
+            sendResponse({ status: "Extension disabled and cleaned up" });
+            return true;
+        }
+        if (state.settings.extensionEnabled && !oldSettings.extensionEnabled) {
+            initializeExtension();
+            sendResponse({ status: "Extension enabled and initialized" });
+            return true;
+        }
+        if (state.settings.extensionEnabled) {
+            if (state.settings.keyboardShortcutsEnabled && !oldSettings.keyboardShortcutsEnabled) {
+                addKeyListeners();
+            } else if (!state.settings.keyboardShortcutsEnabled && oldSettings.keyboardShortcutsEnabled) {
+                removeKeyListeners();
+            }
+            if (isWatchPage()) {
+                tryInjectButtons(0);
+            } else {
+                removeButtons();
+            }
+        }
+        sendResponse({ status: "Settings applied" });
         return true;
     }
-    if (state.settings.extensionEnabled && !oldSettings.extensionEnabled) {
-        initializeExtension();
-        sendResponse({ status: "Extension enabled and initialized" });
-        return true;
-    }
-    if (state.settings.extensionEnabled) {
-        if (state.settings.keyboardShortcutsEnabled && !oldSettings.keyboardShortcutsEnabled) {
-            addKeyListeners();
-        } else if (!state.settings.keyboardShortcutsEnabled && oldSettings.keyboardShortcutsEnabled) {
-            removeKeyListeners();
-        }
-        if (isWatchPage()) {
-            tryInjectButtons(0);
-        } else {
-            removeButtons();
-        }
-    }
-    sendResponse({ status: "Settings applied" });
-    return true;
-  }
-  return false;
+    return false;
 });
 
 if (document.readyState === "loading") {
