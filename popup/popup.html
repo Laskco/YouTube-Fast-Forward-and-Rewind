@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube FF/RW Settings</title>
+    <style>
+        html {
+            background-color: #0a0a0a;
+        }
+        html.light-theme-html-override {
+            background-color: #E0E0E0;
+        }
+    </style>
+    <link rel="stylesheet" href="../content/css/style.css">
+</head>
+<body class="popup-body">
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-power" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></symbol>
+        <symbol id="icon-fast-forward" viewBox="0 0 24 24"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></symbol>
+        <symbol id="icon-rewind" viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon></symbol>
+        <symbol id="icon-skip-forward" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></symbol>
+        <symbol id="icon-skip-back" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></symbol>
+        <symbol id="icon-keyboard" viewBox="0 0 24 24"><path d="M2.5 7.5a1 1 0 0 1 1-1h17a1 1 0 0 1 1 1v9a1 1 0 0 1-1-1h-17a1 1 0 0 1-1-1zM4 12.5h2M8 12.5h2M12 12.5h2M16 12.5h4M8 15.5h8M6 9.5h2M10 9.5h2M14 9.5h2"></path></symbol>
+        <symbol id="icon-github" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></symbol>
+        <symbol id="icon-coffee" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></symbol>
+        <symbol id="icon-rotate-ccw" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></symbol>
+        <symbol id="icon-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></symbol>
+        <symbol id="icon-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></symbol>
+        <symbol id="icon-edit-3" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></symbol>
+        <symbol id="icon-toggle-left" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="8" cy="12" r="3"></circle></symbol>
+        <symbol id="icon-toggle-right" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="16" cy="12" r="3"></circle></symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></symbol>
+        <symbol id="icon-help-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></symbol>
+        <symbol id="icon-alert-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></symbol>
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></symbol>
+        <symbol id="icon-paypal" viewBox="0 0 24 24">
+            <path d="M20.43705,7.10449a3.82273,3.82273,0,0,0-.57281-.5238,4.72529,4.72529,0,0,0-1.15766-3.73987C17.6226,1.61914,15.77494,1,13.2144,1H7.00053A1.89234,1.89234,0,0,0,5.13725,2.5918L2.5474,18.99805A1.53317,1.53317,0,0,0,4.063,20.7832H6.72709l-.082.52051A1.46684,1.46684,0,0,0,8.0933,23h3.23438a1.76121,1.76121,0,0,0,1.751-1.46973l.64063-4.03125.01074-.05468h.29883c4.03223,0,6.55078-1.99317,7.28516-5.7627A5.149,5.149,0,0,0,20.43705,7.10449ZM7.84233,13.7041l-.71448,4.53528-.08631.54382H4.606L7.09721,3H13.2144c1.93554,0,3.31738.4043,3.99218,1.16406a2.96675,2.96675,0,0,1,.60791,2.73334l-.01861.11224c-.01215.07648-.0232.15119-.0434.24622a5.84606,5.84606,0,0,1-2.00512,3.67053,6.67728,6.67728,0,0,1-4.21753,1.183H9.70658A1.87969,1.87969,0,0,0,7.84233,13.7041Zm11.50878-2.40527c-.55078,2.82812-2.24218,4.14551-5.32226,4.14551h-.4834a1.76109,1.76109,0,0,0-1.751,1.47265l-.64941,4.07422L8.71733,21l.47815-3.03387.61114-3.85285h1.7193c.1568,0,.29541-.02356.44812-.02893.35883-.01239.71661-.02618,1.05267-.06787.20526-.02557.39362-.07221.59034-.1087.27252-.05036.54522-.10016.80108-.17127.19037-.053.368-.12121.54907-.18561.23926-.0849.4748-.174.69757-.27868.168-.0791.32807-.16706.48658-.25727a6.77125,6.77125,0,0,0,.61236-.39172c.14228-.1026.28192-.20789.415-.321a6.56392,6.56392,0,0,0,.53693-.51892c.113-.12055.2287-.23755.33331-.36725a7.09,7.09,0,0,0,.48-.69263c.07648-.12219.16126-.23523.23163-.36383a8.33175,8.33175,0,0,0,.52075-1.15326c.00867-.02386.02106-.044.02954-.068.004-.01123.00989-.02057.01386-.03186A4.29855,4.29855,0,0,1,19.35111,11.29883Z"></path>
+        </symbol>
+        <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></symbol>
+        <symbol id="icon-activity" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></symbol>
+        <symbol id="icon-check-circle" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></symbol>
+        <symbol id="icon-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></symbol>
+        <symbol id="icon-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></symbol>
+        <symbol id="icon-bar-chart-2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></symbol>
+        <symbol id="icon-chevrons-down" viewBox="0 0 24 24"><polyline points="7 13 12 18 17 13"></polyline><polyline points="7 6 12 11 17 6"></polyline></symbol>
+        <symbol id="icon-chevrons-up" viewBox="0 0 24 24"><polyline points="17 11 12 6 7 11"></polyline><polyline points="17 18 12 13 7 18"></polyline></symbol>
+    </svg>
+    <div id="main-view" class="popup-view active">
+        <div class="popup-container">
+            <header class="popup-header">
+                <div class="header-title-group">
+                    <img src="../assets/FFRWIcons/icon48.png" alt="Extension Icon" class="popup-header-icon icon-dark-theme">
+                    <img src="../assets/FFRWIcons/icon48black.png" alt="Extension Icon" class="popup-header-icon icon-light-theme">
+                    <h1>YouTube FF/RW</h1>
+                </div>
+                <div class="popup-header-actions">
+                     <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="View on GitHub">
+                         <svg class="feather"><use href="#icon-github"></use></svg>
+                     </a>
+                     <a href="https://buymeacoffee.com/laskco" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Buy Me a Coffee">
+                         <svg class="feather"><use href="#icon-coffee"></use></svg>
+                     </a>
+                     <a href="https://www.paypal.com/donate/?hosted_button_id=R87TNQANCT8KN" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Donate with PayPal">
+                        <svg class="feather" style="fill: currentColor; stroke: none;"><use href="#icon-paypal"></use></svg>
+                     </a>
+                     <span class="header-divider"></span>
+                     <button type="button" id="themeToggle" class="btn btn-link" title="Toggle Light/Dark Theme">
+                         <svg class="feather icon-sun"><use href="#icon-sun"></use></svg>
+                         <svg class="feather icon-moon" style="display: none;"><use href="#icon-moon"></use></svg>
+                     </button>
+                     <button type="button" id="resetSettings" class="btn btn-link" title="Reset all settings to default">
+                         <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                     </button>
+                     <button type="button" id="openSettingsBtn" class="btn btn-link" title="Advanced Settings">
+                         <svg class="feather"><use href="#icon-settings"></use></svg>
+                     </button>
+                </div>
+            </header>
+            <section class="status-section">
+                 <div class="status-label">
+                    <svg class="feather"><use href="#icon-zap"></use></svg>
+                    <span id="extensionStatusText" aria-live="polite">Extension Enabled</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="enableToggle" data-toast-message="Extension" checked aria-labelledby="extensionStatusText">
+                    <span class="slider"></span>
+                </label>
+            </section>
+            <section class="settings-card" id="button-skip-card">
+                 <div class="card-header">
+                     <h2 class="card-title">
+                        <svg class="feather"><use href="#icon-skip-forward"></use></svg>
+                        Button Skip Times
+                    </h2>
+                    <div class="header-spacer"></div>
+                    <div class="position-toggle-group">
+                        <button type="button" id="pos-left-btn" class="btn-pos active" title="Position Left">L</button>
+                        <button type="button" id="pos-right-btn" class="btn-pos" title="Position Right">R</button>
+                    </div>
+                    <div class="tooltip-wrapper">
+                        <button type="button" class="btn-link tooltip-trigger-button" aria-label="Preset Info" aria-describedby="button-preset-tooltip-desc">
+                            <svg class="feather"><use href="#icon-help-circle"></use></svg>
+                        </button>
+                        <span class="tooltip-text" id="button-preset-tooltip-desc" role="tooltip" aria-hidden="true">Customize the preset buttons by clicking the pencil edit icon.</span>
+                    </div>
+                 </div>
+                 <div class="card-content-wrapper">
+                    <div class="input-row" data-preset-context="btnFwd">
+                        <div class="input-main-row">
+                            <label for="forwardSkipTime" class="input-label">
+                                <svg class="feather"><use href="#icon-fast-forward"></use></svg>Forward:
+                            </label>
+                            <div class="input-controls-wrapper">
+                                <div class="input-group">
+                                    <div class="custom-spinner-container">
+                                        <input type="number" id="forwardSkipTime" class="custom-spinner-input skip-time-input" value="10" min="1" max="99">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                    <span class="input-divider"></span>
+                                    <div class="preset-buttons" data-target="forwardSkipTime" data-preset-context="btnFwd">
+                                        <button type="button" class="btn-preset" data-preset-index="0"></button>
+                                        <button type="button" class="btn-preset" data-preset-index="1"></button>
+                                        <button type="button" class="btn-preset" data-preset-index="2"></button>
+                                        <button type="button" class="btn-preset" data-preset-index="3"></button>
+                                    </div>
+                                    <button type="button" class="btn-edit-presets" aria-label="Edit Forward Button Presets">
+                                        <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                                        <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="preset-editor">
+                           <button type="button" class="btn-reset-presets" title="Reset Forward Button presets to default">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                           </button>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="btnFwd_p1">P1:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="btnFwd_p1" class="custom-spinner-input preset-value-input" data-preset-index="0" value="5" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                           </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="btnFwd_p2">P2:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="btnFwd_p2" class="custom-spinner-input preset-value-input" data-preset-index="1" value="10" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                           </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="btnFwd_p3">P3:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="btnFwd_p3" class="custom-spinner-input preset-value-input" data-preset-index="2" value="15" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                            </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="btnFwd_p4">P4:</label>
+                                 <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="btnFwd_p4" class="custom-spinner-input preset-value-input" data-preset-index="3" value="30" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                            </div>
+                        </div>
+                   </div>
+                    <div class="input-row" data-preset-context="btnBwd">
+                        <div class="input-main-row">
+                            <label for="backwardSkipTime" class="input-label">
+                                 <svg class="feather"><use href="#icon-rewind"></use></svg>Backward:
+                            </label>
+                            <div class="input-controls-wrapper">
+                                <div class="input-group">
+                                    <div class="custom-spinner-container">
+                                        <input type="number" id="backwardSkipTime" class="custom-spinner-input skip-time-input" value="10" min="1" max="99">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                     <span class="input-divider"></span>
+                                     <div class="preset-buttons" data-target="backwardSkipTime" data-preset-context="btnBwd">
+                                         <button type="button" class="btn-preset" data-preset-index="0"></button>
+                                         <button type="button" class="btn-preset" data-preset-index="1"></button>
+                                         <button type="button" class="btn-preset" data-preset-index="2"></button>
+                                         <button type="button" class="btn-preset" data-preset-index="3"></button>
+                                     </div>
+                                     <button type="button" class="btn-edit-presets" aria-label="Edit Backward Button Presets">
+                                        <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                                        <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                          <div class="preset-editor">
+                            <button type="button" class="btn-reset-presets" title="Reset Backward Button presets to default">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                            </button>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="btnBwd_p1">P1:</label>
+                                 <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="btnBwd_p1" class="custom-spinner-input preset-value-input" data-preset-index="0" value="5" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                           </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="btnBwd_p2">P2:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="btnBwd_p2" class="custom-spinner-input preset-value-input" data-preset-index="1" value="10" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                           </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="btnBwd_p3">P3:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="btnBwd_p3" class="custom-spinner-input preset-value-input" data-preset-index="2" value="15" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                            </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="btnBwd_p4">P4:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="btnBwd_p4" class="custom-spinner-input preset-value-input" data-preset-index="3" value="30" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                            </div>
+                        </div>
+                   </div>
+                 </div>
+                 <div class="popup-toggle-row">
+                     <label for="buttonEnableToggle" class="toggle-label" id="buttonStatusLabel" aria-live="polite">
+                         <svg class="feather"><use href="#icon-toggle-right"></use></svg>
+                         Button Skip Times Enabled
+                     </label>
+                     <label class="toggle-switch">
+                         <input type="checkbox" id="buttonEnableToggle" data-toast-message="Button Skips" data-card-to-reset="button-skip-card" checked aria-labelledby="buttonStatusLabel">
+                         <span class="slider"></span>
+                     </label>
+                 </div>
+            </section>
+             <section class="settings-card" id="keyboard-skip-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <svg class="feather"><use href="#icon-keyboard"></use></svg>
+                        Keyboard Skip Times
+                    </h2>
+                    <div class="header-spacer"></div>
+                    <div class="tooltip-wrapper">
+                        <button type="button" class="btn-link tooltip-trigger-button" aria-label="Preset Info" aria-describedby="keyboard-preset-tooltip-desc">
+                            <svg class="feather"><use href="#icon-help-circle"></use></svg>
+                        </button>
+                        <span class="tooltip-text" id="keyboard-preset-tooltip-desc" role="tooltip" aria-hidden="true">Customize the preset buttons by clicking the pencil edit icon.</span>
+                    </div>
+                </div>
+                <div class="card-content-wrapper">
+                    <div class="input-row" data-preset-context="kbdFwd">
+                        <div class="input-main-row">
+                           <label class="input-label" for="keyboardForward">
+                               <svg class="feather"><use href="#icon-skip-forward"></use></svg>Forward:
+                           </label>
+                            <div class="input-controls-wrapper">
+                                <div class="input-group">
+                                     <div class="custom-spinner-container">
+                                         <input type="number" id="keyboardForward" class="custom-spinner-input skip-time-input" value="5" min="1" max="99">
+                                         <div class="custom-spinner-buttons">
+                                             <button type="button" class="spinner-btn-up">▲</button>
+                                             <button type="button" class="spinner-btn-down">▼</button>
+                                         </div>
+                                     </div>
+                                     <span class="input-divider"></span>
+                                     <div class="preset-buttons" data-target="keyboardForward" data-preset-context="kbdFwd">
+                                          <button type="button" class="btn-preset" data-preset-index="0"></button>
+                                          <button type="button" class="btn-preset" data-preset-index="1"></button>
+                                          <button type="button" class="btn-preset" data-preset-index="2"></button>
+                                          <button type="button" class="btn-preset" data-preset-index="3"></button>
+                                     </div>
+                                     <button type="button" class="btn-edit-presets" aria-label="Edit Forward Keyboard Presets">
+                                        <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                                        <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                         <div class="preset-editor">
+                            <button type="button" class="btn-reset-presets" title="Reset Forward Keyboard presets to default">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                            </button>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="kbdFwd_p1">P1:</label>
+                                 <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="kbdFwd_p1" class="custom-spinner-input preset-value-input" data-preset-index="0" value="5" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                           </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="kbdFwd_p2">P2:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="kbdFwd_p2" class="custom-spinner-input preset-value-input" data-preset-index="1" value="10" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                           </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="kbdFwd_p3">P3:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="kbdFwd_p3" class="custom-spinner-input preset-value-input" data-preset-index="2" value="15" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                            </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="kbdFwd_p4">P4:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="kbdFwd_p4" class="custom-spinner-input preset-value-input" data-preset-index="3" value="30" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="input-row" data-preset-context="kbdBwd">
+                         <div class="input-main-row">
+                            <label class="input-label" for="keyboardBackward">
+                                <svg class="feather"><use href="#icon-skip-back"></use></svg>Backward:
+                            </label>
+                            <div class="input-controls-wrapper">
+                                 <div class="input-group">
+                                      <div class="custom-spinner-container">
+                                         <input type="number" id="keyboardBackward" class="custom-spinner-input skip-time-input" value="5" min="1" max="99">
+                                         <div class="custom-spinner-buttons">
+                                             <button type="button" class="spinner-btn-up">▲</button>
+                                             <button type="button" class="spinner-btn-down">▼</button>
+                                         </div>
+                                     </div>
+                                     <span class="input-divider"></span>
+                                      <div class="preset-buttons" data-target="keyboardBackward" data-preset-context="kbdBwd">
+                                          <button type="button" class="btn-preset" data-preset-index="0"></button>
+                                          <button type="button" class="btn-preset" data-preset-index="1"></button>
+                                          <button type="button" class="btn-preset" data-preset-index="2"></button>
+                                          <button type="button" class="btn-preset" data-preset-index="3"></button>
+                                      </div>
+                                      <button type="button" class="btn-edit-presets" aria-label="Edit Backward Keyboard Presets">
+                                        <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                                        <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                          <div class="preset-editor">
+                            <button type="button" class="btn-reset-presets" title="Reset Backward Keyboard presets to default">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                            </button>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="kbdBwd_p1">P1:</label>
+                                 <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="kbdBwd_p1" class="custom-spinner-input preset-value-input" data-preset-index="0" value="5" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                           </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="kbdBwd_p2">P2:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="kbdBwd_p2" class="custom-spinner-input preset-value-input" data-preset-index="1" value="10" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                           </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="kbdBwd_p3">P3:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="kbdBwd_p3" class="custom-spinner-input preset-value-input" data-preset-index="2" value="15" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                            </div>
+                           <div class="preset-editor-item">
+                                <label class="preset-editor-label" for="kbdBwd_p4">P4:</label>
+                                <div class="custom-spinner-container preset-spinner">
+                                   <input type="number" id="kbdBwd_p4" class="custom-spinner-input preset-value-input" data-preset-index="3" value="30" min="1" max="99">
+                                   <div class="custom-spinner-buttons">
+                                       <button type="button" class="spinner-btn-up">▲</button>
+                                       <button type="button" class="spinner-btn-down">▼</button>
+                                   </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="popup-toggle-row sub-toggle">
+                        <label class="toggle-label">Hotkeys (← / →)</label>
+                        <div class="hotkey-actions">
+                           <button type="button" id="resetHotkeysBtn" class="btn-link btn-reset-hotkeys" title="Reset hotkeys to default">
+                               <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                           </button>
+                           <button type="button" id="hotkeyEditButton" class="btn-link" aria-label="Edit Hotkeys">
+                               <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
+                               <svg class="feather icon-check" style="display: none;"><use href="#icon-check"></use></svg>
+                           </button>
+                        </div>
+                    </div>
+                    <div class="hotkey-editor">
+                        <p class="editor-tip">Tip: You can hold down the keys to seek continuously.</p>
+                        <label>Forward Key:</label>
+                        <button type="button" id="keyboardForwardKey" class="btn-hotkey" title="Click to change hotkey"></button>
+                        <label>Backward Key:</label>
+                        <button type="button" id="keyboardBackwardKey" class="btn-hotkey" title="Click to change hotkey"></button>
+                    </div>
+                </div>
+                 <div class="popup-toggle-row">
+                     <label for="keyboardEnableToggle" class="toggle-label" id="keyboardStatusLabel" aria-live="polite">
+                         <svg class="feather"><use href="#icon-toggle-right"></use></svg>
+                         Keyboard Shortcuts Enabled
+                     </label>
+                     <label class="toggle-switch">
+                         <input type="checkbox" id="keyboardEnableToggle" data-toast-message="Keyboard Shortcuts" data-card-to-reset="keyboard-skip-card" checked aria-labelledby="keyboardStatusLabel">
+                         <span class="slider"></span>
+                     </label>
+                 </div>
+             </section>
+        </div>
+    </div>
+    <div id="settings-view" class="popup-view">
+        <div class="popup-container">
+            <header class="popup-header">
+                <button type="button" id="closeSettingsBtn" class="btn btn-link back-button" title="Go Back">
+                    <svg class="feather"><use href="#icon-arrow-left"></use></svg>
+                </button>
+                <h1 style="flex-grow: 1;">Advanced Settings</h1>
+                <a href="https://laskco.github.io/YouTube-FF-RW-Changelogs/" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="See what's new in this version" style="border-radius: 6px; padding: 4px 8px; font-size: 12px;">
+                    <svg class="feather"><use href="#icon-zap"></use></svg>
+                    <span>What's New</span>
+                </a>
+            </header>
+            <div class="advanced-settings-group">
+                <section class="settings-card" id="action-timing-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <svg class="feather"><use href="#icon-activity"></use></svg>
+                            Action & Player Timing
+                        </h2>
+                        <div class="card-header-actions">
+                            <div class="tooltip-wrapper">
+                                <button type="button" class="btn-link tooltip-trigger-button" aria-label="Action Delay Info" aria-describedby="action-delay-tooltip-desc">
+                                    <svg class="feather"><use href="#icon-help-circle"></use></svg>
+                                </button>
+                                <span class="tooltip-text" id="action-delay-tooltip-desc" role="tooltip" aria-hidden="true">
+                                    A low Action Delay (like 0ms) feels instant, but can cause stuttering on some systems.
+                                    Seek Throttle prevents spamming by setting a minimum time between skips.
+                                    The Seek Interval is the speed of continuous hotkey seeking.
+                                    Ignore Buffering Protection forces skips even when the video is still loading, which may cause crashes or black screens.
+                                </span>
+                            </div>
+                            <button type="button" id="resetActionTiming" class="btn-link btn-reset-card" title="Reset Action Timing Settings">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-content-wrapper">
+                        <div class="card-warning-message">
+                            <svg class="feather"><use href="#icon-alert-triangle"></use></svg>
+                            <div class="warning-text-content">
+                                <strong>Advanced & Experimental Settings</strong>
+                                <p>These options are intended for power users and may affect player stability or performance. Use with caution, and reset to defaults if playback becomes inconsistent.</p>
+                            </div>
+                        </div>
+                        <div class="advanced-settings-toggle-container">
+                            <button type="button" id="openMoreSettingsBtn" class="btn btn-secondary btn-icon-right" aria-expanded="false" aria-controls="moreTimingSettings">
+                                <span>View Settings</span>
+                                <svg class="feather icon-more"><use href="#icon-chevrons-down"></use></svg>
+                                <svg class="feather icon-less"><use href="#icon-chevrons-up"></use></svg>
+                            </button>
+                        </div>
+                        <div id="moreTimingSettings" class="more-settings-panel">
+                            <div class="panel-content-wrapper">
+                                <div class="popup-toggle-row sub-toggle">
+                                     <label for="actionTimingEnabledToggle" class="toggle-label" id="actionTimingStatusLabel" aria-live="polite">
+                                         <svg class="feather"><use href="#icon-toggle-right"></use></svg>
+                                         Action Delay Enabled
+                                     </label>
+                                     <label class="toggle-switch">
+                                         <input type="checkbox" id="actionTimingEnabledToggle" data-toast-message="Action Delay" data-card-to-reset="action-timing-card" checked aria-labelledby="actionTimingStatusLabel">
+                                         <span class="slider"></span>
+                                     </label>
+                                 </div>
+                                <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Master toggle for the action delay feature. Enabling this can help prevent player stuttering on some systems.</p>
+                                <div class="popup-toggle-row sub-toggle">
+                                     <label for="ignoreBufferingToggle" class="toggle-label" id="ignoreBufferingStatusLabel" aria-live="polite">
+                                         <svg class="feather"><use href="#icon-toggle-left"></use></svg>
+                                         Buffering Protection Enabled
+                                     </label>
+                                     <label class="toggle-switch">
+                                         <input type="checkbox" id="ignoreBufferingToggle" data-toast-message="Buffering Protection" data-card-to-reset="action-timing-card" aria-labelledby="ignoreBufferingStatusLabel">
+                                         <span class="slider"></span>
+                                     </label>
+                                 </div>
+                                <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Prevents seeking while the video buffers to improve stability. Disable this to force seeking at any time, which may cause player errors.</p>
+                                <div class="ff-setting-group">
+                                    <label for="actionDelay">Action Delay (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="actionDelay" class="custom-spinner-input" value="20" min="0" max="2000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">Delay before skipping is applied. Higher values can reduce stutter by letting the player buffer first. Default: 20ms.</p>
+                                <div class="ff-setting-group">
+                                    <label for="seekThrottle">Seek Throttle (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="seekThrottle" class="custom-spinner-input" value="100" min="0" max="2000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">Minimum time between skip actions. Prevents spamming during rapid input.</p>
+                                <div class="ff-setting-group">
+                                    <label for="seekInterval">Seek Interval (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="seekInterval" class="custom-spinner-input" value="150" min="0" max="2000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">How often a repeated skip triggers while holding a key. Lower = faster stepping.</p>
+                                <div class="ff-setting-group">
+                                    <label for="controlsVisibleDuration">Controls Visible Duration (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="controlsVisibleDuration" class="custom-spinner-input" value="2500" min="0" max="10000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">How long YouTube’s player controls stay visible after a skip/hold.</p>
+                                <div class="ff-setting-group">
+                                    <label for="progressBarUpdateDelay">Progress Bar Update Delay (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="progressBarUpdateDelay" class="custom-spinner-input" value="10" min="0" max="2000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">Delay before forcing a UI update of the progress bar after a seek.</p>
+                                <div class="ff-setting-group">
+                                    <label for="navigationInitDelay">Navigation Init Delay (ms):</label>
+                                    <div class="custom-spinner-container wide">
+                                        <input type="number" id="navigationInitDelay" class="custom-spinner-input" value="250" min="0" max="5000">
+                                        <div class="custom-spinner-buttons">
+                                            <button type="button" class="spinner-btn-up">▲</button>
+                                            <button type="button" class="spinner-btn-down">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="description">How long to wait after a page navigation before initializing the script.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="settings-card" id="statistics-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <svg class="feather"><use href="#icon-bar-chart-2"></use></svg>
+                            Statistics
+                        </h2>
+                        <button type="button" id="resetStatsBtn" class="btn-link btn-reset-card" title="Reset Statistics">
+                            <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                        </button>
+                    </div>
+                    <div class="card-content-wrapper">
+                        <div class="stat-row">
+                            <span class="stat-label">Total Time Skipped:</span>
+                            <span id="statsTotalTime" class="stat-value">0s</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Formatted Time:</span>
+                            <span id="statsFormattedTime" class="stat-value">0s</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Button Skips:</span>
+                            <span id="statsButtonSkips" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Keyboard Skips:</span>
+                            <span id="statsKeyboardSkips" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total Skips:</span>
+                            <span id="statsTotalSkips" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <footer class="popup-footer">
+                <p class="creator-text">
+                    Made with <svg class="feather heart-icon"><use href="#icon-heart"></use></svg> by Laskco
+                </p>
+                <span class="version-text">v4.2.7</span>
+            </footer>
+        </div>
+    </div>
+    <div id="toast-notification" class="toast-container" aria-live="polite">
+        <svg class="feather toast-icon"><use href=""></use></svg>
+        <span class="toast-message"></span>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

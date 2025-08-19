@@ -1,21 +1,21 @@
 {
   "manifest_version": 3,
   "name": "YouTube Fast Forward & Rewind",
-  "version": "4.2.6",
+  "version": "4.2.7",
   "description": "Fast Forward and Rewind YouTube videos by a customizable amount of seconds!",
   "icons": {
-    "16": "images/icon16.png",
-    "32": "images/icon32.png",
-    "48": "images/icon48.png",
-    "64": "images/icon64.png",
-    "128": "images/icon128.png"
+    "16": "assets/FFRWIcons/icon16.png",
+    "32": "assets/FFRWIcons/icon32.png",
+    "48": "assets/FFRWIcons/icon48.png",
+    "64": "assets/FFRWIcons/icon64.png",
+    "128": "assets/FFRWIcons/icon128.png"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "popup/popup.html",
     "default_icon": {
-      "16": "images/icon16.png",
-      "48": "images/icon48.png",
-      "128": "images/icon128.png"
+      "16": "assets/FFRWIcons/icon16.png",
+      "48": "assets/FFRWIcons/icon48.png",
+      "128": "assets/FFRWIcons/icon128.png"
     }
   },
   "permissions": [
@@ -26,13 +26,13 @@
     "*://*.youtube.com/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background/background.js"]
   },
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*"],
-      "js": ["content.js"],
-      "css": ["style.css", "indicator.css"],
+      "js": ["content/content.js"],
+      "css": ["content/css/style.css", "content/css/indicator.css"],
       "run_at": "document_end",
       "all_frames": false
     }
@@ -40,12 +40,10 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "icons/forward.png",
-        "icons/rewind.png",
-        "icons/alt-forward.png",
-        "icons/alt-rewind.png",
-        "images/icon48.png",
-        "images/icon48black.png"
+        "assets/PlayerIcons/alt-forward.png",
+        "assets/PlayerIcons/alt-rewind.png",
+        "assets/FFRWIcons/icon48.png",
+        "assets/FFRWIcons/icon48black.png"
       ],
       "matches": [
         "*://*.youtube.com/*"

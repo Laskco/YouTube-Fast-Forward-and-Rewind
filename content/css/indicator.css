@@ -13,7 +13,7 @@
   font-size: 22px;
   font-weight: 500;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  z-index: 2147483647;
+  z-index: 9999; 
   display: flex;
   flex-direction: column;
   justify-content: center;
