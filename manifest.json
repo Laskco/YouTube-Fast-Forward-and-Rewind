@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Fast Forward & Rewind",
-  "version": "4.2.7",
+  "version": "4.2.8",
   "description": "Fast Forward and Rewind YouTube videos by a customizable amount of seconds!",
   "icons": {
     "16": "assets/FFRWIcons/icon16.png",

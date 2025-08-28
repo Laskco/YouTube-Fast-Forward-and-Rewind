@@ -25,6 +25,20 @@
     --switch-thumb-color: #FFFFFF;
     --button-hover-bg: rgba(255, 255, 255, 0.08);
 }
+
+/* Improved button press animation - more satisfying but not excessive */
+@keyframes satisfying-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.96) translateY(1px);
+  }
+  100% {
+    transform: scale(0.98);
+  }
+}
+
 .feather { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: middle; }
 use[href="#icon-paypal"] {
     fill: currentColor;
@@ -221,6 +235,9 @@ body.popup-body.light-theme .icon-light-theme {
     border-color: var(--success-color);
     color: var(--text-primary);
 }
+.btn-pos:active {
+    animation: satisfying-press 180ms ease-out forwards;
+}
 .btn-pos.active {
     background-color: var(--success-color);
     color: var(--success-text-on-blue);
@@ -277,6 +294,9 @@ body.popup-body.light-theme .icon-light-theme {
     height: var(--control-height);
     transition: all var(--transition-speed);
 }
+.btn-hotkey:active {
+    animation: satisfying-press 180ms ease-out forwards;
+}
 .btn-hotkey.is-listening {
     border-color: var(--success-color);
     color: var(--success-color);
@@ -290,7 +310,12 @@ body.popup-body.light-theme .icon-light-theme {
     border: 1px solid var(--border-color); background: var(--input-bg-color);
     color: var(--text-secondary); border-radius: 4px; cursor: pointer; flex-shrink: 0;
     min-width: 28px; display: inline-flex; align-items: center; justify-content: center; line-height: 1;
-    transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+    transition: all var(--transition-speed);
+}
+.btn-preset:active {
+    animation: satisfying-press 180ms ease-out forwards;
+    background-color: var(--success-color-dark); 
+    border-color: var(--success-color-dark);
 }
 .tooltip-trigger-button {
     position: relative;
@@ -299,6 +324,9 @@ body.popup-body.light-theme .icon-light-theme {
     cursor: help; display: inline-flex; align-items: center; justify-content: center; line-height: 1; margin: 0;
     transition: color var(--transition-speed), background-color var(--transition-speed);
 }
+.tooltip-trigger-button:active {
+    animation: satisfying-press 160ms ease-out forwards;
+}
 .tooltip-trigger-button .feather { width: 17px; height: 17px; stroke-width: 2.2; }
 .tooltip-trigger-button:hover { color: var(--success-color); background: rgba(74, 144, 226, 0.1); }
 .btn-edit-presets {
@@ -306,20 +334,22 @@ body.popup-body.light-theme .icon-light-theme {
     color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
     flex-shrink: 0; margin-left: 4px; transition: color var(--transition-speed); position: relative;
 }
+.btn-edit-presets:active {
+    animation: satisfying-press 160ms ease-out forwards;
+}
 .btn-edit-presets .feather { width: 16px; height: 16px; stroke-width: 2; }
 .btn-edit-presets:hover { color: var(--success-color); }
 .tooltip-text {
     position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
     background-color: var(--tooltip-bg); color: var(--text-primary); padding: 6px 12px;
     border-radius: 6px; font-size: 11px; font-weight: 500; line-height: 1.4; text-align: center;
-    white-space: normal; width: max-content; max-width: 200px; z-index: 10;
+    white-space: normal; width: max-content; max-width: 220px; z-index: 10;
     border: 1px solid var(--border-color); box-shadow: 0 3px 8px var(--tooltip-shadow);
     visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
     pointer-events: none;
 }
 .tooltip-wrapper:hover .tooltip-text { visibility: visible; opacity: 1; }
 .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--text-primary); }
-.btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); color: var(--text-primary); }
 .preset-editor {
     display: none; background-color: var(--editor-bg-color); padding: 12px; margin-top: 10px;
     border-radius: 10px; border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
@@ -344,6 +374,9 @@ body.popup-body.light-theme .icon-light-theme {
     align-items: center;
     justify-content: center;
     transition: color var(--transition-speed), background-color var(--transition-speed);
+}
+.btn-reset-presets:active {
+    animation: satisfying-press 160ms ease-out forwards;
 }
 .btn-reset-presets .feather { width: 16px; height: 16px; stroke-width: 2; }
 .btn-reset-presets:hover {
@@ -407,17 +440,26 @@ body.popup-body.light-theme .icon-light-theme {
     padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;
     text-decoration: none; transition: all var(--transition-speed); cursor: pointer; border: none;
 }
+.btn:active {
+    animation: satisfying-press 200ms ease-out forwards;
+}
 .btn .feather { width: 14px; height: 14px; stroke-width: 2; }
 .btn-primary { background: linear-gradient(135deg, var(--success-color), var(--success-color-dark)); color: var(--success-text-on-blue); }
 .btn-primary:hover { filter: brightness(1.15); }
-.btn-primary:active { filter: brightness(0.95); }
+.btn-primary:active { 
+    filter: brightness(0.95);
+    animation: satisfying-press 200ms ease-out forwards;
+}
 .btn-secondary { background: var(--surface-color); color: var(--text-secondary); border: 1px solid var(--border-color); }
 .btn-secondary:hover {
     color: var(--success-color);
     border-color: var(--success-color);
     background-color: color-mix(in srgb, var(--success-color) 10%, transparent);
 }
-.btn-secondary:active { background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.btn-secondary:active { 
+    background: color-mix(in srgb, var(--text-primary) 5%, transparent); 
+    animation: satisfying-press 200ms ease-out forwards;
+}
 .btn-link {
     background: none;
     border: none;
@@ -429,6 +471,9 @@ body.popup-body.light-theme .icon-light-theme {
     justify-content: center;
     border-radius: 50%;
     transition: color var(--transition-speed), background-color var(--transition-speed);
+}
+.btn-link:active {
+    animation: satisfying-press 160ms ease-out forwards;
 }
 .btn-link .feather { color: var(--text-secondary); stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; transition: color var(--transition-speed); }
 .btn-link:hover { color: var(--success-color); background: color-mix(in srgb, var(--success-color) 10%, transparent); }
@@ -462,7 +507,11 @@ body.popup-body.light-theme::-webkit-scrollbar-track { background: var(--border-
 body.popup-body.light-theme::-webkit-scrollbar-thumb { background-color: #B0B0B0; border-color: var(--border-color); }
 body.popup-body.light-theme .btn-preset { border-color: var(--border-color); background: var(--input-bg-color); color: var(--text-secondary); }
 body.popup-body.light-theme .btn-preset:hover { background-color: var(--success-color); border-color: var(--success-color); color: var(--success-text-on-blue); }
-body.popup-body.light-theme .btn-preset:active { background-color: var(--success-color-dark); border-color: var(--success-color-dark); }
+body.popup-body.light-theme .btn-preset:active { 
+    background-color: var(--success-color-dark);
+    border-color: var(--success-color-dark);
+    animation: satisfying-press 180ms ease-out forwards;
+}
 body.popup-body.light-theme .btn-link { color: var(--text-secondary); }
 body.popup-body.light-theme .btn-link .feather { color: var(--text-secondary); }
 body.popup-body.light-theme .btn-link:hover { color: var(--success-color); background: color-mix(in srgb, var(--success-color) 8%, transparent); }
@@ -480,7 +529,10 @@ body.popup-body.light-theme .btn-secondary:hover {
     border-color: var(--success-color);
     background: color-mix(in srgb, var(--success-color) 8%, transparent);
 }
-body.popup-body.light-theme .btn-secondary:active { background: rgba(0, 0, 0, 0.08); }
+body.popup-body.light-theme .btn-secondary:active { 
+    background: rgba(0, 0, 0, 0.08);
+    animation: satisfying-press 200ms ease-out forwards;
+}
 body.popup-body.light-theme .custom-spinner-input:focus, body.popup-body.light-theme .custom-spinner-container:focus-within {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--input-focus-border) 20%, transparent);
     border-color: var(--input-focus-border);
@@ -500,7 +552,7 @@ body.popup-body.light-theme .tooltip-text {
   height: 100%;
   z-index: 1000;
   opacity: 0;
-  transform: translateY(8px) scale(0.98);
+  transform: translateY(4px) scale(0.98);
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   will-change: opacity, transform;
   pointer-events: none;
@@ -524,7 +576,7 @@ body.popup-body.light-theme .tooltip-text {
   cursor: pointer;
   padding: 0;
   margin-top: -3px;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.1s;
   opacity: 1;
   position: relative;
   display: flex;
@@ -532,6 +584,9 @@ body.popup-body.light-theme .tooltip-text {
   align-items: center;
   z-index: 999;
   flex-shrink: 0;
+}
+#customButtonsContainer .ytp-custom-button:active {
+    animation: satisfying-press 180ms ease-out forwards;
 }
 #customButtonsContainer .ytp-custom-button:hover { opacity: 0.8; }
 #customButtonsContainer #rewindButton.ytp-custom-button { margin-right: 2px; }
@@ -652,7 +707,10 @@ body.popup-body.light-theme .tooltip-text {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.15s;
+    transition: background-color 0.15s, transform 0.1s;
+}
+.custom-spinner-buttons button:active {
+    animation: satisfying-press 150ms ease-out forwards;
 }
 .custom-spinner-buttons button:hover {
     background: var(--button-hover-bg);
@@ -971,14 +1029,13 @@ body.popup-body.light-theme .toast-container.warning {
     display: grid;
     grid-template-rows: 0fr;
     transition: grid-template-rows 0.3s ease-out;
-    padding-top: 0;
-    margin-top: -11px;
+    margin-top: 0;
 }
 .more-settings-panel.visible {
     grid-template-rows: 1fr;
+    margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--border-color);
-    margin-top: 4px;
 }
 .panel-content-wrapper {
     overflow: hidden;

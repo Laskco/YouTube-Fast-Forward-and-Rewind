@@ -302,6 +302,7 @@ function findVideoPlayerElement() {
                                   state.lastVideoElement.tagName === 'VIDEO' &&
                                   typeof state.lastVideoElement.currentTime === 'number' &&
                                   state.lastVideoElement.videoWidth > 0 &&
+                                  state.lastVideoElement.videoHeight > 0 &&
                                   !state.lastVideoElement.ended;
             
             if (isValid) {
@@ -325,6 +326,7 @@ function findVideoPlayerElement() {
                 player.tagName === 'VIDEO' && 
                 typeof player.currentTime === 'number' && 
                 player.videoWidth > 0 &&
+                player.videoHeight > 0 &&
                 player.readyState >= 1) {
                 
                 const moviePlayer = player.closest('#movie_player');
@@ -595,7 +597,14 @@ function injectButtons() {
                 correctParent.appendChild(buttonsContainer);
             }
         }
-        requestAnimationFrame(() => buttonsContainer.classList.add('visible'));
+        
+        // Force a browser repaint before adding the visible class
+        void buttonsContainer.offsetHeight; 
+
+        requestAnimationFrame(() => {
+            buttonsContainer.classList.add('visible');
+        });
+
         state.buttonsInjected = true;
         return true;
     } catch (e) {

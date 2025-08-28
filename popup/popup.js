@@ -731,7 +731,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const inPanel = evt.target.closest('#moreTimingSettings');
             const inButton = evt.target.closest('#openMoreSettingsBtn');
             const onBackButton = evt.target.closest('#closeSettingsBtn');
-            if (!inPanel && !inButton && !onBackButton) {
+            if (!inPanel && !inButton && !onBackButton && evt.target.closest('.settings-card') !== UI.actionTimingCard) {
                 closeMoreTimingPanel();
             }
         });

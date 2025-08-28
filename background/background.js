@@ -71,8 +71,7 @@ function validateSettingValue(value, definition) {
 function validateSettings(settings) {
     const newSettings = {};
     for (const [key, definition] of Object.entries(SETTING_DEFINITIONS)) {
-        const storedValue = settings[key];
-        newSettings[key] = validateSettingValue(storedValue, definition);
+        newSettings[key] = validateSettingValue(settings[key], definition);
     }
     return newSettings;
 }
