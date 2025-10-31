@@ -1,5 +1,5 @@
-if (typeof browser === "undefined") {
-    var browser = chrome;
+if (typeof chrome === "undefined") {
+    var chrome = chrome;
 }
 
 const DEMO_SETTINGS = {
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function saveAndApplySettings(settingsToSave, showToastNotification = false, toastMessage = '', toastType = 'success') {
-        if (typeof browser === "undefined" || !browser.storage) {
+        if (typeof chrome === "undefined" || !chrome.storage) {
             console.log("Demo mode: Settings updated locally only");
             currentSettings = settingsToSave;
             if (showToastNotification) showToast(toastMessage, toastType);
@@ -334,15 +334,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         return safeAsyncOperation(async () => {
             currentSettings = settingsToSave;
-            await browser.storage.local.set(currentSettings);
+            await chrome.storage.local.set(currentSettings);
             
             if (showToastNotification) showToast(toastMessage, toastType);
 
-            if (browser.tabs) {
-                const tabs = await browser.tabs.query({ url: '*://*.youtube.com/*' });
+            if (chrome.tabs) {
+                const tabs = await chrome.tabs.query({ url: '*://*.youtube.com/*' });
                 tabs.forEach(tab => {
                     if (tab.id) {
-                        browser.tabs.sendMessage(tab.id, {
+                        chrome.tabs.sendMessage(tab.id, {
                             action: 'updateSettings',
                             settings: currentSettings
                         }).catch(err => console.debug('Tab update failed:', err));
@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function loadSettings() {
-        if (typeof browser === "undefined" || !browser.storage) {
+        if (typeof chrome === "undefined" || !chrome.storage) {
             console.log("Demo mode: Using fallback settings");
             currentSettings = { ...DEMO_SETTINGS };
             renderUI(currentSettings);
@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         return safeAsyncOperation(async () => {
-            currentSettings = await browser.storage.local.get(null);
+            currentSettings = await chrome.storage.local.get(null);
             renderUI(currentSettings);
         }, 'Failed to load settings');
     }
@@ -487,13 +487,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function fetchDefaults() {
-        if (typeof browser === "undefined" || !browser.storage || !browser.runtime) {
+        if (typeof chrome === "undefined" || !chrome.storage || !chrome.runtime) {
             console.log("Demo mode: Using fallback defaults");
             return { ...DEMO_SETTINGS };
         }
         
         try {
-            const response = await browser.runtime.sendMessage({ action: 'getDefaultSettings' });
+            const response = await chrome.runtime.sendMessage({ action: 'getDefaultSettings' });
             if (response.success) {
                 return response.settings;
             }
@@ -535,8 +535,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             applyTheme(newTheme);
             await safeAsyncOperation(async () => {
                 currentSettings.theme = newTheme;
-                if (typeof browser !== "undefined" && browser.storage) {
-                    await browser.storage.local.set({ theme: newTheme });
+                if (typeof chrome !== "undefined" && chrome.storage) {
+                    await chrome.storage.local.set({ theme: newTheme });
                 }
             }, "Error saving theme");
         });
@@ -667,8 +667,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.custom-spinner-container').forEach(initializeSpinner);
 
         try {
-            if (typeof browser !== "undefined" && browser.storage) {
-                const data = await browser.storage.local.get('theme');
+            if (typeof chrome !== "undefined" && chrome.storage) {
+                const data = await chrome.storage.local.get('theme');
                 applyTheme(data.theme || 'dark');
             } else {
                  applyTheme('dark');
@@ -786,11 +786,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (heart.__confettiBound) return;
     heart.__confettiBound = true;
     heart.style.cursor = heart.style.cursor || 'pointer';
-    heart.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      launchConfettiBurst(heart);
-    }, { passive: true });
+        heart.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            launchConfettiBurst(heart);
+        });
   }
 
   if (document.readyState === 'loading') {

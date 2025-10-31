@@ -80,16 +80,16 @@ function validateSettings(settings) {
 async function initializeSettings(details) {
     let storedSettings = {};
     try {
-        storedSettings = await browser.storage.local.get(null);
+        storedSettings = await chrome.storage.local.get(null);
         const newSettings = validateSettings(storedSettings);
 
-        await browser.storage.local.set(newSettings);
+        await chrome.storage.local.set(newSettings);
         console.log(`Extension ${details.reason}: Settings initialized successfully`);
 
     } catch (error) {
         console.error('Failed to initialize settings:', error);
         try {
-            await browser.storage.local.set(DEFAULT_SETTINGS);
+            await chrome.storage.local.set(DEFAULT_SETTINGS);
             console.log('Fallback: Default settings saved');
         } catch (fallbackError) {
             console.error('Critical error: Could not save any settings:', fallbackError);
@@ -100,14 +100,14 @@ async function initializeSettings(details) {
 async function openChangelogPage(reason) {
     try {
         const url = "https://laskco.github.io/YouTube-FF-RW-Changelogs/";
-        await browser.tabs.create({ url });
+        await chrome.tabs.create({ url });
         console.log(`Opened changelog for ${reason}`);
     } catch (error) {
         console.error('Failed to open changelog:', error);
     }
 }
 
-browser.runtime.onInstalled.addListener(async (details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
     try {
         if (details.reason === "install" || details.reason === "update") {
             await initializeSettings(details);
@@ -124,10 +124,10 @@ self.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection in background script:', event.reason);
 });
 
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.action) {
         case 'getSettings':
-            browser.storage.local.get(null)
+            chrome.storage.local.get(null)
                 .then(settings => sendResponse({ success: true, settings }))
                 .catch(error => sendResponse({ success: false, error: error.message }));
             return true;
@@ -138,7 +138,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         case 'saveSettings':
             if (message.settings && typeof message.settings === 'object') {
-                browser.storage.local.set(message.settings)
+                chrome.storage.local.set(message.settings)
                     .then(() => sendResponse({ success: true }))
                     .catch(error => sendResponse({ success: false, error: error.message }));
             } else {
