@@ -1,7 +1,3 @@
-if (typeof chrome === "undefined") {
-    var chrome = chrome;
-}
-
 const DEMO_SETTINGS = {
     extensionEnabled: true,
     buttonSkipEnabled: true,
@@ -12,12 +8,9 @@ const DEMO_SETTINGS = {
     keyboardBackward: 5,
     keyboardForwardKey: 'ArrowRight',
     keyboardBackwardKey: 'ArrowLeft',
-    actionTimingEnabled: true,
-    actionDelay: 20,
-    seekThrottle: 100,
     controlsVisibleDuration: 2500,
     seekInterval: 150,
-    progressBarUpdateDelay: 10,
+    progressBarUpdateDelay: 150,
     navigationInitDelay: 250,
     buttonPosition: 'left',
     ignoreBufferingProtection: false,
@@ -94,6 +87,7 @@ async function safeAsyncOperation(operation, errorMessage = 'Operation failed') 
 document.addEventListener('DOMContentLoaded', async () => {
 
     const UI = {
+        html: document.documentElement,
         body: document.body,
         mainView: document.getElementById('main-view'),
         settingsView: document.getElementById('settings-view'),
@@ -104,12 +98,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         enableToggle: document.getElementById('enableToggle'),
         keyboardEnableToggle: document.getElementById('keyboardEnableToggle'),
         buttonEnableToggle: document.getElementById('buttonEnableToggle'),
-        actionTimingEnabledToggle: document.getElementById('actionTimingEnabledToggle'),
         ignoreBufferingToggle: document.getElementById('ignoreBufferingToggle'),
         statusText: document.getElementById('extensionStatusText'),
         keyboardStatusLabel: document.getElementById('keyboardStatusLabel'),
         buttonStatusLabel: document.getElementById('buttonStatusLabel'),
-        actionTimingStatusLabel: document.getElementById('actionTimingStatusLabel'),
         ignoreBufferingStatusLabel: document.getElementById('ignoreBufferingStatusLabel'),
         keyboardSkipCard: document.getElementById('keyboard-skip-card'),
         buttonSkipCard: document.getElementById('button-skip-card'),
@@ -122,8 +114,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         keyboardBackwardKey: document.getElementById('keyboardBackwardKey'),
         hotkeyEditButton: document.getElementById('hotkeyEditButton'),
         resetHotkeysBtn: document.getElementById('resetHotkeysBtn'),
-        actionDelay: document.getElementById('actionDelay'),
-        seekThrottle: document.getElementById('seekThrottle'),
         seekInterval: document.getElementById('seekInterval'),
         controlsVisibleDuration: document.getElementById('controlsVisibleDuration'),
         progressBarUpdateDelay: document.getElementById('progressBarUpdateDelay'),
@@ -183,30 +173,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderUI(settings) {
+        if (!UI.enableToggle || !UI.buttonEnableToggle || !UI.keyboardEnableToggle) return;
+        
         UI.enableToggle.checked = settings.extensionEnabled;
         UI.buttonEnableToggle.checked = settings.buttonSkipEnabled;
         UI.keyboardEnableToggle.checked = settings.keyboardShortcutsEnabled;
-        UI.actionTimingEnabledToggle.checked = settings.actionTimingEnabled;
-        UI.ignoreBufferingToggle.checked = !settings.ignoreBufferingProtection;
+        
+        if (UI.ignoreBufferingToggle) {
+            UI.ignoreBufferingToggle.checked = !settings.ignoreBufferingProtection;
+        }
 
-        UI.forwardSkipTime.value = enforceMinMax({ value: settings.forwardSkipTime });
-        UI.backwardSkipTime.value = enforceMinMax({ value: settings.backwardSkipTime });
-        UI.keyboardForward.value = enforceMinMax({ value: settings.keyboardForward });
-        UI.keyboardBackward.value = enforceMinMax({ value: settings.keyboardBackward });
+        if (UI.forwardSkipTime) UI.forwardSkipTime.value = enforceMinMax({ value: settings.forwardSkipTime });
+        if (UI.backwardSkipTime) UI.backwardSkipTime.value = enforceMinMax({ value: settings.backwardSkipTime });
+        if (UI.keyboardForward) UI.keyboardForward.value = enforceMinMax({ value: settings.keyboardForward });
+        if (UI.keyboardBackward) UI.keyboardBackward.value = enforceMinMax({ value: settings.keyboardBackward });
 
-        UI.actionDelay.value = enforceMinMax({ value: settings.actionDelay }, 0, 2000);
-        UI.seekThrottle.value = enforceMinMax({ value: settings.seekThrottle }, 0, 2000);
-        UI.seekInterval.value = enforceMinMax({ value: settings.seekInterval }, 0, 2000);
-        UI.controlsVisibleDuration.value = enforceMinMax({ value: settings.controlsVisibleDuration }, 0, 10000);
-        UI.progressBarUpdateDelay.value = enforceMinMax({ value: settings.progressBarUpdateDelay }, 0, 2000);
-        UI.navigationInitDelay.value = enforceMinMax({ value: settings.navigationInitDelay }, 0, 5000);
+        if (UI.seekInterval) UI.seekInterval.value = enforceMinMax({ value: settings.seekInterval }, 0, 2000);
+        if (UI.controlsVisibleDuration) UI.controlsVisibleDuration.value = enforceMinMax({ value: settings.controlsVisibleDuration }, 0, 10000);
+        if (UI.progressBarUpdateDelay) UI.progressBarUpdateDelay.value = enforceMinMax({ value: settings.progressBarUpdateDelay }, 0, 2000);
+        if (UI.navigationInitDelay) UI.navigationInitDelay.value = enforceMinMax({ value: settings.navigationInitDelay }, 0, 5000);
 
-        UI.keyboardForwardKey.textContent = formatKeyForDisplay(settings.keyboardForwardKey);
-        UI.keyboardBackwardKey.textContent = formatKeyForDisplay(settings.keyboardBackwardKey);
+        if (UI.keyboardForwardKey) UI.keyboardForwardKey.textContent = formatKeyForDisplay(settings.keyboardForwardKey);
+        if (UI.keyboardBackwardKey) UI.keyboardBackwardKey.textContent = formatKeyForDisplay(settings.keyboardBackwardKey);
 
         const isRight = settings.buttonPosition === 'right';
-        UI.posRightBtn.classList.toggle('active', isRight);
-        UI.posLeftBtn.classList.toggle('active', !isRight);
+        if (UI.posRightBtn && UI.posLeftBtn) {
+            UI.posRightBtn.classList.toggle('active', isRight);
+            UI.posLeftBtn.classList.toggle('active', !isRight);
+        }
 
         updateStatusUI();
         updatePresetUI();
@@ -215,18 +209,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function applyStatsToUI(settings) {
         const totalSeconds = settings.stats_totalSecondsSkipped || 0;
-        UI.statsTotalTime.textContent = `${totalSeconds}s`;
-        UI.statsFormattedTime.textContent = formatTime(totalSeconds);
-        UI.statsTotalSkips.textContent = settings.stats_totalSkips || 0;
-        UI.statsButtonSkips.textContent = settings.stats_buttonSkips || 0;
-        UI.statsKeyboardSkips.textContent = settings.stats_keyboardSkips || 0;
+        if (UI.statsTotalTime) UI.statsTotalTime.textContent = `${totalSeconds}s`;
+        if (UI.statsFormattedTime) UI.statsFormattedTime.textContent = formatTime(totalSeconds);
+        if (UI.statsTotalSkips) UI.statsTotalSkips.textContent = settings.stats_totalSkips || 0;
+        if (UI.statsButtonSkips) UI.statsButtonSkips.textContent = settings.stats_buttonSkips || 0;
+        if (UI.statsKeyboardSkips) UI.statsKeyboardSkips.textContent = settings.stats_keyboardSkips || 0;
     }
 
     function updateStatusUI() {
+        if (!UI.enableToggle || !UI.statusText) return;
+        
         const isEnabled = UI.enableToggle.checked;
-        UI.buttonSkipCard.classList.toggle('is-disabled', !isEnabled || !UI.buttonEnableToggle.checked);
-        UI.keyboardSkipCard.classList.toggle('is-disabled', !isEnabled || !UI.keyboardEnableToggle.checked);
-        UI.actionTimingCard.classList.toggle('is-disabled', !isEnabled);
+        
+        if (UI.buttonSkipCard) {
+            UI.buttonSkipCard.classList.toggle('is-disabled', !isEnabled || !UI.buttonEnableToggle.checked);
+        }
+        if (UI.keyboardSkipCard) {
+            UI.keyboardSkipCard.classList.toggle('is-disabled', !isEnabled || !UI.keyboardEnableToggle.checked);
+        }
+        if (UI.actionTimingCard) {
+            UI.actionTimingCard.classList.toggle('is-disabled', !isEnabled);
+        }
         
         UI.statusText.textContent = isEnabled ? 'Extension Enabled' : 'Extension Disabled';
         UI.statusText.classList.toggle('enabled', isEnabled);
@@ -241,13 +244,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 iconUse.setAttribute('href', isChecked ? '#icon-toggle-right' : '#icon-toggle-left');
             }
         };
-        updateLabel(UI.buttonStatusLabel, UI.buttonEnableToggle.checked, 'Button Skip Times');
-        updateLabel(UI.keyboardStatusLabel, UI.keyboardEnableToggle.checked, 'Keyboard Shortcuts');
-        updateLabel(UI.actionTimingStatusLabel, UI.actionTimingEnabledToggle.checked, 'Action Delay');
-        updateLabel(UI.ignoreBufferingStatusLabel, !UI.ignoreBufferingToggle.checked, 'Buffering Protection');
+        
+        if (UI.buttonStatusLabel && UI.buttonEnableToggle) {
+            updateLabel(UI.buttonStatusLabel, UI.buttonEnableToggle.checked, 'Button Skip Times');
+        }
+        if (UI.keyboardStatusLabel && UI.keyboardEnableToggle) {
+            updateLabel(UI.keyboardStatusLabel, UI.keyboardEnableToggle.checked, 'Keyboard Shortcuts');
+        }
+        if (UI.ignoreBufferingStatusLabel && UI.ignoreBufferingToggle) {
+            updateLabel(UI.ignoreBufferingStatusLabel, !UI.ignoreBufferingToggle.checked, 'Buffering Protection');
+        }
     }
 
     function updatePresetUI() {
+        if (!UI.allInputRows) return;
+        
         UI.allInputRows.forEach(row => {
             const context = row.dataset.presetContext;
             if (!context) return;
@@ -294,32 +305,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     function gatherSettingsFromUI() {
         const settings = {
             ...currentSettings,
-            extensionEnabled: UI.enableToggle.checked,
-            buttonSkipEnabled: UI.buttonEnableToggle.checked,
-            keyboardShortcutsEnabled: UI.keyboardEnableToggle.checked,
-            forwardSkipTime: enforceMinMax(UI.forwardSkipTime),
-            backwardSkipTime: enforceMinMax(UI.backwardSkipTime),
-            keyboardForward: enforceMinMax(UI.keyboardForward),
-            keyboardBackward: enforceMinMax(UI.keyboardBackward),
-            actionTimingEnabled: UI.actionTimingEnabledToggle.checked,
-            actionDelay: enforceMinMax(UI.actionDelay, 0, 2000),
-            seekThrottle: enforceMinMax(UI.seekThrottle, 0, 2000),
-            seekInterval: enforceMinMax(UI.seekInterval, 0, 2000),
-            controlsVisibleDuration: enforceMinMax(UI.controlsVisibleDuration, 0, 10000),
-            progressBarUpdateDelay: enforceMinMax(UI.progressBarUpdateDelay, 0, 2000),
-            navigationInitDelay: enforceMinMax(UI.navigationInitDelay, 0, 5000),
-            ignoreBufferingProtection: !UI.ignoreBufferingToggle.checked,
-            buttonPosition: UI.posRightBtn.classList.contains('active') ? 'right' : 'left',
         };
+        
+        if (UI.enableToggle) settings.extensionEnabled = UI.enableToggle.checked;
+        if (UI.buttonEnableToggle) settings.buttonSkipEnabled = UI.buttonEnableToggle.checked;
+        if (UI.keyboardEnableToggle) settings.keyboardShortcutsEnabled = UI.keyboardEnableToggle.checked;
+        if (UI.forwardSkipTime) settings.forwardSkipTime = enforceMinMax(UI.forwardSkipTime);
+        if (UI.backwardSkipTime) settings.backwardSkipTime = enforceMinMax(UI.backwardSkipTime);
+        if (UI.keyboardForward) settings.keyboardForward = enforceMinMax(UI.keyboardForward);
+        if (UI.keyboardBackward) settings.keyboardBackward = enforceMinMax(UI.keyboardBackward);
+        if (UI.seekInterval) settings.seekInterval = enforceMinMax(UI.seekInterval, 0, 2000);
+        if (UI.controlsVisibleDuration) settings.controlsVisibleDuration = enforceMinMax(UI.controlsVisibleDuration, 0, 10000);
+        if (UI.progressBarUpdateDelay) settings.progressBarUpdateDelay = enforceMinMax(UI.progressBarUpdateDelay, 0, 2000);
+        if (UI.navigationInitDelay) settings.navigationInitDelay = enforceMinMax(UI.navigationInitDelay, 0, 5000);
+        if (UI.ignoreBufferingToggle) settings.ignoreBufferingProtection = !UI.ignoreBufferingToggle.checked;
+        if (UI.posRightBtn && UI.posLeftBtn) {
+            settings.buttonPosition = UI.posRightBtn.classList.contains('active') ? 'right' : 'left';
+        }
 
-        UI.allInputRows.forEach(row => {
-            const context = row.dataset.presetContext;
-            if (!context) return;
-            row.querySelectorAll('.preset-editor .custom-spinner-input').forEach(input => {
-                const settingKey = `${context}Preset${parseInt(input.dataset.presetIndex) + 1}Value`;
-                settings[settingKey] = enforceMinMax(input);
+        if (UI.allInputRows) {
+            UI.allInputRows.forEach(row => {
+                const context = row.dataset.presetContext;
+                if (!context) return;
+                row.querySelectorAll('.preset-editor .custom-spinner-input').forEach(input => {
+                    const settingKey = `${context}Preset${parseInt(input.dataset.presetIndex) + 1}Value`;
+                    settings[settingKey] = enforceMinMax(input);
+                });
             });
-        });
+        }
 
         return settings;
     }
@@ -339,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (showToastNotification) showToast(toastMessage, toastType);
 
             if (chrome.tabs) {
-                const tabs = await chrome.tabs.query({ url: '*://*.youtube.com/*' });
+                const tabs = await chrome.tabs.query({ url: '*://*.youtube.com/*', audible: true });
                 tabs.forEach(tab => {
                     if (tab.id) {
                         chrome.tabs.sendMessage(tab.id, {
@@ -370,6 +383,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const input = container.querySelector('.custom-spinner-input');
         const upBtn = container.querySelector('.spinner-btn-up');
         const downBtn = container.querySelector('.spinner-btn-down');
+        
+        if (!input || !upBtn || !downBtn) return;
+        
         let intervalId = null, timeoutId = null;
         const startChanging = (direction) => {
             stopChanging(false);
@@ -434,6 +450,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handleHotkeyListen(button, settingKey) {
+        if (!button) return;
+        
         const originalText = formatKeyForDisplay(currentSettings[settingKey]);
         const otherSettingKey = settingKey === 'keyboardForwardKey' ? 'keyboardBackwardKey' : 'keyboardForwardKey';
 
@@ -505,16 +523,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     function handleSettingChange(event) {
         const target = event.target;
+        
+        updateStatusUI();
+    
         const toastMessage = target.dataset.toastMessage;
         const cardToResetSelector = target.dataset.cardToReset;
         const cardToReset = cardToResetSelector ? document.getElementById(cardToResetSelector) : null;
-
-        const settings = gatherSettingsFromUI();
-        updateStatusUI();
-
+    
         let toastText = toastMessage;
         let showToastNotification = false;
-
+    
         if (target.type === 'checkbox') {
             const isEnabled = target.checked;
             toastText = `${toastMessage} ${isEnabled ? 'Enabled' : 'Disabled'}`;
@@ -523,26 +541,52 @@ document.addEventListener('DOMContentLoaded', async () => {
                 resetCardEditState(cardToReset);
             }
         }
-        saveAndApplySettings(settings, showToastNotification, toastText, 'success');
+    
+        saveAndApplySettings(gatherSettingsFromUI(), showToastNotification, toastText, 'success');
     }
 
     function setupEventListeners() {
-        UI.openSettingsBtn.addEventListener('click', () => { UI.mainView.classList.remove('active'); UI.settingsView.classList.add('active'); });
-        UI.closeSettingsBtn.addEventListener('click', () => { UI.settingsView.classList.remove('active'); UI.mainView.classList.add('active'); });
-        
-        UI.themeToggle.addEventListener('click', async () => {
-            const newTheme = UI.body.classList.contains('light-theme') ? 'dark' : 'light';
-            applyTheme(newTheme);
-            await safeAsyncOperation(async () => {
-                currentSettings.theme = newTheme;
-                if (typeof chrome !== "undefined" && chrome.storage) {
-                    await chrome.storage.local.set({ theme: newTheme });
+        function closeMoreTimingPanel() {
+            if (UI.moreTimingSettings && UI.moreTimingSettings.classList.contains('visible')) {
+                UI.moreTimingSettings.classList.remove('visible');
+                if (UI.openMoreSettingsBtn) {
+                    UI.openMoreSettingsBtn.classList.remove('open');
+                    UI.openMoreSettingsBtn.setAttribute('aria-expanded', 'false');
                 }
-            }, "Error saving theme");
-        });
+                localStorage.setItem('advancedSettingsOpen', 'false');
+            }
+        }
+        
+        if (UI.openSettingsBtn && UI.mainView && UI.settingsView) {
+            UI.openSettingsBtn.addEventListener('click', () => {
+                UI.mainView.classList.remove('active');
+                UI.settingsView.classList.add('active');
+                closeMoreTimingPanel();
+            });
+        }
+        
+        if (UI.closeSettingsBtn && UI.settingsView && UI.mainView) {
+            UI.closeSettingsBtn.addEventListener('click', () => {
+                UI.settingsView.classList.remove('active');
+                UI.mainView.classList.add('active');
+            });
+        }
+        
+        if (UI.themeToggle && UI.body) {
+            UI.themeToggle.addEventListener('click', async () => {
+                const newTheme = UI.body.classList.contains('light-theme') ? 'dark' : 'light';
+                applyTheme(newTheme);
+                await safeAsyncOperation(async () => {
+                    currentSettings.theme = newTheme;
+                    if (typeof chrome !== "undefined" && chrome.storage) {
+                        await chrome.storage.local.set({ theme: newTheme });
+                    }
+                }, "Error saving theme");
+            });
+        }
 
-        [UI.enableToggle, UI.buttonEnableToggle, UI.keyboardEnableToggle, UI.actionTimingEnabledToggle, UI.ignoreBufferingToggle].forEach(toggle => {
-            toggle.addEventListener('change', handleSettingChange);
+        [UI.enableToggle, UI.buttonEnableToggle, UI.keyboardEnableToggle, UI.ignoreBufferingToggle].forEach(toggle => {
+            if (toggle) toggle.addEventListener('change', handleSettingChange);
         });
         
         document.querySelectorAll('.skip-time-input, .custom-spinner-input').forEach(input => {
@@ -550,114 +594,159 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         
         const handlePosClick = (activeBtn, inactiveBtn) => () => {
+            if (!activeBtn || !inactiveBtn) return;
             if (activeBtn.classList.contains('active')) return;
             activeBtn.classList.add('active');
             inactiveBtn.classList.remove('active');
             saveAndApplySettings(gatherSettingsFromUI(), true, 'Button Position Saved');
         };
-        UI.posLeftBtn.addEventListener('click', handlePosClick(UI.posLeftBtn, UI.posRightBtn));
-        UI.posRightBtn.addEventListener('click', handlePosClick(UI.posRightBtn, UI.posLeftBtn));
+        if (UI.posLeftBtn && UI.posRightBtn) {
+            UI.posLeftBtn.addEventListener('click', handlePosClick(UI.posLeftBtn, UI.posRightBtn));
+            UI.posRightBtn.addEventListener('click', handlePosClick(UI.posRightBtn, UI.posLeftBtn));
+        }
 
-        UI.hotkeyEditButton.addEventListener('click', toggleHotkeyEditMode);
-        UI.keyboardForwardKey.addEventListener('click', () => handleHotkeyListen(UI.keyboardForwardKey, 'keyboardForwardKey'));
-        UI.keyboardBackwardKey.addEventListener('click', () => handleHotkeyListen(UI.keyboardBackwardKey, 'keyboardBackwardKey'));
+        if (UI.hotkeyEditButton) {
+            UI.hotkeyEditButton.addEventListener('click', toggleHotkeyEditMode);
+        }
+        if (UI.keyboardForwardKey) {
+            UI.keyboardForwardKey.addEventListener('click', () => handleHotkeyListen(UI.keyboardForwardKey, 'keyboardForwardKey'));
+        }
+        if (UI.keyboardBackwardKey) {
+            UI.keyboardBackwardKey.addEventListener('click', () => handleHotkeyListen(UI.keyboardBackwardKey, 'keyboardBackwardKey'));
+        }
 
-        UI.editPresetButtons.forEach(button => button.addEventListener('click', (e) => togglePresetEditMode(e.target.closest('.input-row'))));
+        if (UI.editPresetButtons) {
+            UI.editPresetButtons.forEach(button => button.addEventListener('click', (e) => togglePresetEditMode(e.target.closest('.input-row'))));
+        }
         
-        UI.presetButtonContainers.forEach(container => {
-            container.addEventListener('click', async (event) => {
-                if (!event.target.classList.contains('btn-preset')) return;
-                const button = event.target;
-                const targetInput = document.getElementById(container.dataset.target);
-                if (!targetInput) return;
-                const newValue = parseInt(button.dataset.value, 10);
-                if (parseInt(targetInput.value, 10) === newValue) {
-                    showToast('Preset already selected', 'warning');
-                    return;
-                }
-                targetInput.value = newValue;
-                flashElement(targetInput);
-                await saveAndApplySettings(gatherSettingsFromUI(), true, 'Skip Time Saved');
+        if (UI.presetButtonContainers) {
+            UI.presetButtonContainers.forEach(container => {
+                container.addEventListener('click', async (event) => {
+                    if (!event.target.classList.contains('btn-preset')) return;
+                    const button = event.target;
+                    const targetInput = document.getElementById(container.dataset.target);
+                    if (!targetInput) return;
+                    const newValue = parseInt(button.dataset.value, 10);
+                    if (parseInt(targetInput.value, 10) === newValue) {
+                        showToast('Preset already selected', 'warning');
+                        return;
+                    }
+                    targetInput.value = newValue;
+                    flashElement(targetInput);
+                    await saveAndApplySettings(gatherSettingsFromUI(), true, 'Skip Time Saved');
+                });
             });
-        });
+        }
 
-        UI.resetSettings.addEventListener('click', async () => {
-            const defaults = await fetchDefaults();
-            if (!defaults) { return showToast('Could not fetch defaults to reset', 'error'); }
-            const themeToKeep = currentSettings.theme || 'dark';
-            const statsToKeep = Object.fromEntries(Object.entries(currentSettings).filter(([key]) => key.startsWith('stats_')));
-            currentSettings = { ...defaults, theme: themeToKeep, ...statsToKeep };
-            renderUI(currentSettings);
-            await saveAndApplySettings(currentSettings);
-            showToast('All Settings Reset (Excluding Stats)', 'warning');
-        });
-
-        UI.resetStatsBtn.addEventListener('click', async () => {
-            Object.keys(currentSettings).filter(k => k.startsWith('stats_')).forEach(k => { currentSettings[k] = 0; });
-            renderUI(currentSettings);
-            await saveAndApplySettings(currentSettings);
-            showToast('Statistics Reset', 'warning');
-        });
-
-        UI.resetHotkeysBtn.addEventListener('click', async () => {
-            const defaults = await fetchDefaults();
-            if (!defaults) { return showToast('Could not fetch defaults to reset', 'error'); }
-            currentSettings.keyboardForwardKey = defaults.keyboardForwardKey;
-            currentSettings.keyboardBackwardKey = defaults.keyboardBackwardKey;
-            renderUI(currentSettings);
-            await saveAndApplySettings(currentSettings);
-            showToast('Hotkeys Reset', 'warning');
-        });
-
-        UI.resetActionTiming.addEventListener('click', async () => {
-            const defaults = await fetchDefaults();
-            if (!defaults) { return showToast('Could not fetch defaults to reset', 'error'); }
-            ['actionTimingEnabled', 'actionDelay', 'seekThrottle', 'seekInterval', 'controlsVisibleDuration', 'ignoreBufferingProtection', 'progressBarUpdateDelay', 'navigationInitDelay']
-                .forEach(key => { currentSettings[key] = defaults[key]; });
-            renderUI(currentSettings);
-            await saveAndApplySettings(currentSettings);
-            showToast('Action Timing Reset', 'warning');
-        });
-
-        UI.resetPresetButtons.forEach(button => {
-            button.addEventListener('click', async (event) => {
+        if (UI.resetSettings) {
+            UI.resetSettings.addEventListener('click', async () => {
                 const defaults = await fetchDefaults();
                 if (!defaults) { return showToast('Could not fetch defaults to reset', 'error'); }
-                const inputRow = event.target.closest('.input-row');
-                const context = inputRow?.dataset.presetContext;
-                if (!context) return;
-                
-                let settingsChanged = false;
-                for (let i = 1; i <= 4; i++) {
-                    const settingKey = `${context}Preset${i}Value`;
-                    if (currentSettings[settingKey] !== defaults[settingKey]) {
-                        currentSettings[settingKey] = defaults[settingKey];
-                        settingsChanged = true;
-                    }
-                }
-
-                if (settingsChanged) {
-                    renderUI(currentSettings);
-                    await saveAndApplySettings(currentSettings);
-                }
-                showToast('Presets Reset', 'warning');
+                const themeToKeep = currentSettings.theme || 'dark';
+                const statsToKeep = Object.fromEntries(Object.entries(currentSettings).filter(([key]) => key.startsWith('stats_')));
+                currentSettings = { ...defaults, theme: themeToKeep, ...statsToKeep };
+                renderUI(currentSettings);
+                await saveAndApplySettings(currentSettings);
+                showToast('All Settings Reset (Excluding Stats)', 'warning');
             });
-        });
+        }
 
-        UI.openMoreSettingsBtn.addEventListener('click', () => {
-            const isVisible = UI.moreTimingSettings.classList.toggle('visible');
-            UI.openMoreSettingsBtn.classList.toggle('open', isVisible);
-            UI.openMoreSettingsBtn.setAttribute('aria-expanded', isVisible);
-            localStorage.setItem('advancedSettingsOpen', isVisible);
-        });
+        if (UI.resetStatsBtn) {
+            UI.resetStatsBtn.addEventListener('click', async () => {
+                Object.keys(currentSettings).filter(k => k.startsWith('stats_')).forEach(k => { currentSettings[k] = 0; });
+                renderUI(currentSettings);
+                await saveAndApplySettings(currentSettings);
+                showToast('Statistics Reset', 'warning');
+            });
+        }
+
+        if (UI.resetHotkeysBtn) {
+            UI.resetHotkeysBtn.addEventListener('click', async () => {
+                const defaults = await fetchDefaults();
+                if (!defaults) { return showToast('Could not fetch defaults to reset', 'error'); }
+                currentSettings.keyboardForwardKey = defaults.keyboardForwardKey;
+                currentSettings.keyboardBackwardKey = defaults.keyboardBackwardKey;
+                renderUI(currentSettings);
+                await saveAndApplySettings(currentSettings);
+                showToast('Hotkeys Reset', 'warning');
+            });
+        }
+
+        if (UI.resetActionTiming) {
+            UI.resetActionTiming.addEventListener('click', async () => {
+                const defaults = await fetchDefaults();
+                if (!defaults) { return showToast('Could not fetch defaults to reset', 'error'); }
+                ['seekInterval', 'controlsVisibleDuration', 'ignoreBufferingProtection', 'progressBarUpdateDelay', 'navigationInitDelay']
+                    .forEach(key => { currentSettings[key] = defaults[key]; });
+                renderUI(currentSettings);
+                await saveAndApplySettings(currentSettings);
+                showToast('Action Timing Reset', 'warning');
+            });
+        }
+
+        if (UI.resetPresetButtons) {
+            UI.resetPresetButtons.forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const defaults = await fetchDefaults();
+                    if (!defaults) { return showToast('Could not fetch defaults to reset', 'error'); }
+                    const inputRow = event.target.closest('.input-row');
+                    const context = inputRow?.dataset.presetContext;
+                    if (!context) return;
+                    
+                    let settingsChanged = false;
+                    for (let i = 1; i <= 4; i++) {
+                        const settingKey = `${context}Preset${i}Value`;
+                        if (currentSettings[settingKey] !== defaults[settingKey]) {
+                            currentSettings[settingKey] = defaults[settingKey];
+                            settingsChanged = true;
+                        }
+                    }
+
+                    if (settingsChanged) {
+                        renderUI(currentSettings);
+                        await saveAndApplySettings(currentSettings);
+                    }
+                    showToast('Presets Reset', 'warning');
+                });
+            });
+        }
+
+        if (UI.openMoreSettingsBtn && UI.moreTimingSettings) {
+            UI.openMoreSettingsBtn.addEventListener('click', () => {
+                const isVisible = UI.moreTimingSettings.classList.toggle('visible');
+                UI.openMoreSettingsBtn.classList.toggle('open', isVisible);
+                UI.openMoreSettingsBtn.setAttribute('aria-expanded', isVisible);
+                localStorage.setItem('advancedSettingsOpen', isVisible);
+            });
+        }
+
+        document.addEventListener('mousedown', (evt) => {
+            if (!UI.moreTimingSettings || !UI.moreTimingSettings.classList.contains('visible')) return;
+
+            const inPanel = evt.target.closest('#moreTimingSettings');
+            const inButton = evt.target.closest('#openMoreSettingsBtn');
+            const onBackButton = evt.target.closest('#closeSettingsBtn');
+            
+            if (!inPanel && !inButton && !onBackButton && evt.target.closest('.settings-card') !== UI.actionTimingCard) {
+                closeMoreTimingPanel();
+            }
+        }, { passive: true });
     }
     
     function applyTheme(theme) {
         const isLight = theme === 'light';
-        UI.body.classList.toggle('light-theme', isLight);
+        
+        if (UI.html) {
+            UI.html.classList.toggle('light-theme', isLight);
+            UI.html.classList.toggle('light-theme-html-override', isLight);
+        }
+        if (UI.body) {
+            UI.body.classList.toggle('light-theme', isLight);
+        }
+        
         if (UI.themeToggle) {
-            const sunSvg = UI.themeToggle.querySelector('svg use[href="#icon-sun"]').closest('svg');
-            const moonSvg = UI.themeToggle.querySelector('svg use[href="#icon-moon"]').closest('svg');
+            const sunSvg = UI.themeToggle.querySelector('svg use[href="#icon-sun"]')?.closest('svg');
+            const moonSvg = UI.themeToggle.querySelector('svg use[href="#icon-moon"]')?.closest('svg');
             if (sunSvg) sunSvg.style.display = isLight ? 'none' : 'inline-block';
             if (moonSvg) moonSvg.style.display = isLight ? 'inline-block' : 'none';
         }
@@ -679,10 +768,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         const advancedSettingsOpen = localStorage.getItem('advancedSettingsOpen') === 'true';
-        if (advancedSettingsOpen && UI.moreTimingSettings) {
+        if (advancedSettingsOpen && UI.moreTimingSettings && UI.openMoreSettingsBtn) {
             UI.moreTimingSettings.classList.add('visible');
             UI.openMoreSettingsBtn.classList.add('open');
             UI.openMoreSettingsBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        try {
+            const warning = document.querySelector('#moreTimingSettings .card-warning-message');
+            if (warning) {
+                warning.innerHTML = ''
+                  + '<svg class="feather"><use href="#icon-alert-triangle"></use></svg>'
+                  + '<div class="warning-text-content">'
+                  + '<strong>⚠️ Experimental & Advanced Settings</strong>'
+                  + '<p>These options are intended for power users. Changing them can impact player performance, compatibility, or battery life. If the player behaves unexpectedly, tap <em>Reset to Defaults</em>.</p>'
+                  + '</div>';
+            }
+        } catch(e) {
+            console.error('Error updating warning message:', e);
         }
 
         await loadSettings();
@@ -693,61 +796,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 (function(){
-    if (window.__yt_ffrw_popup_patch__) return;
-    window.__yt_ffrw_popup_patch__ = true;
-
-    function ready(fn){ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fn, {once:true}); } else { fn(); } }
-
-    ready(() => {
-        const btnToggle = document.getElementById('openMoreSettingsBtn');
-        const panel = document.getElementById('moreTimingSettings');
-        const toSettings = document.getElementById('openSettingsBtn') || (window.UI && UI.openSettingsBtn);
-        const toMain = document.getElementById('closeSettingsBtn') || (window.UI && UI.closeSettingsBtn);
-
-        function closeMoreTimingPanel() {
-            if (!panel || !btnToggle) return;
-            if (panel.classList.contains('visible')) {
-                panel.classList.remove('visible');          
-                btnToggle.classList.remove('open');
-                btnToggle.setAttribute('aria-expanded', 'false');
-            }
-        }
-
-        if (toSettings) {
-            toSettings.addEventListener('click', () => {
-                closeMoreTimingPanel();
-            }, { capture: true });
-        }
-        if (toMain) {
-            toMain.addEventListener('click', () => {
-                setTimeout(() => {
-                    closeMoreTimingPanel();
-                }, 150);
-            }, { capture: true });
-        }
-        document.addEventListener('mousedown', (evt) => {
-            if (!panel || !btnToggle) return;
-            if (!panel.classList.contains('visible')) return;
-            const inPanel = evt.target.closest('#moreTimingSettings');
-            const inButton = evt.target.closest('#openMoreSettingsBtn');
-            const onBackButton = evt.target.closest('#closeSettingsBtn');
-            if (!inPanel && !inButton && !onBackButton && evt.target.closest('.settings-card') !== UI.actionTimingCard) {
-                closeMoreTimingPanel();
-            }
-        });
-        try {
-            const warning = document.querySelector('#moreTimingSettings .card-warning-message');
-            if (warning) {
-                warning.innerHTML = ''
-                  + '<p><strong>⚠️ Experimental & Advanced Settings</strong></p>'
-                  + '<p>These options are intended for power users. Changing them can impact player performance, compatibility, or battery life. If the player behaves unexpectedly, tap <em>Reset to Defaults</em>.</p>';
-            }
-        } catch(e) { /* no-op */ }
-    });
-})();
-
-(function(){
   function launchConfettiBurst(originEl){
+    if (!originEl) return;
+    
     try {
       const rect = originEl.getBoundingClientRect();
       const originX = rect.left + rect.width/2;
@@ -777,7 +828,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.animate(keyframes, { duration, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
         setTimeout(() => el.remove(), duration + 60);
       }
-    } catch(e) {}
+    } catch(e) {
+      console.error('Confetti error:', e);
+    }
   }
 
   function hookLoveHeart(){
@@ -786,11 +839,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (heart.__confettiBound) return;
     heart.__confettiBound = true;
     heart.style.cursor = heart.style.cursor || 'pointer';
-        heart.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            launchConfettiBurst(heart);
-        });
+    heart.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        launchConfettiBurst(heart);
+    });
   }
 
   if (document.readyState === 'loading') {

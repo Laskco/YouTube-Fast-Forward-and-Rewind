@@ -489,8 +489,6 @@
                                     <svg class="feather"><use href="#icon-help-circle"></use></svg>
                                 </button>
                                 <span class="tooltip-text" id="action-delay-tooltip-desc" role="tooltip" aria-hidden="true">
-                                    A low Action Delay (like 0ms) feels instant, but can cause stuttering on some systems.
-                                    Seek Throttle prevents spamming by setting a minimum time between skips.
                                     The Seek Interval is the speed of continuous hotkey seeking.
                                     Ignore Buffering Protection forces skips even when the video is still loading, which may cause crashes or black screens.
                                 </span>
@@ -518,17 +516,6 @@
                         <div id="moreTimingSettings" class="more-settings-panel">
                             <div class="panel-content-wrapper">
                                 <div class="popup-toggle-row sub-toggle">
-                                     <label for="actionTimingEnabledToggle" class="toggle-label" id="actionTimingStatusLabel" aria-live="polite">
-                                         <svg class="feather"><use href="#icon-toggle-right"></use></svg>
-                                         Action Delay Enabled
-                                     </label>
-                                     <label class="toggle-switch">
-                                         <input type="checkbox" id="actionTimingEnabledToggle" data-toast-message="Action Delay" data-card-to-reset="action-timing-card" checked aria-labelledby="actionTimingStatusLabel">
-                                         <span class="slider"></span>
-                                     </label>
-                                 </div>
-                                <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Master toggle for the action delay feature. Enabling this can help prevent player stuttering on some systems.</p>
-                                <div class="popup-toggle-row sub-toggle">
                                      <label for="ignoreBufferingToggle" class="toggle-label" id="ignoreBufferingStatusLabel" aria-live="polite">
                                          <svg class="feather"><use href="#icon-toggle-left"></use></svg>
                                          Buffering Protection Enabled
@@ -539,28 +526,6 @@
                                      </label>
                                  </div>
                                 <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Prevents seeking while the video buffers to improve stability. Disable this to force seeking at any time, which may cause player errors.</p>
-                                <div class="ff-setting-group">
-                                    <label for="actionDelay">Action Delay (ms):</label>
-                                    <div class="custom-spinner-container wide">
-                                        <input type="number" id="actionDelay" class="custom-spinner-input" value="20" min="0" max="2000">
-                                        <div class="custom-spinner-buttons">
-                                            <button type="button" class="spinner-btn-up">▲</button>
-                                            <button type="button" class="spinner-btn-down">▼</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="description">Delay before skipping is applied. Higher values can reduce stutter by letting the player buffer first. Default: 20ms.</p>
-                                <div class="ff-setting-group">
-                                    <label for="seekThrottle">Seek Throttle (ms):</label>
-                                    <div class="custom-spinner-container wide">
-                                        <input type="number" id="seekThrottle" class="custom-spinner-input" value="100" min="0" max="2000">
-                                        <div class="custom-spinner-buttons">
-                                            <button type="button" class="spinner-btn-up">▲</button>
-                                            <button type="button" class="spinner-btn-down">▼</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="description">Minimum time between skip actions. Prevents spamming during rapid input.</p>
                                 <div class="ff-setting-group">
                                     <label for="seekInterval">Seek Interval (ms):</label>
                                     <div class="custom-spinner-container wide">
@@ -586,7 +551,7 @@
                                 <div class="ff-setting-group">
                                     <label for="progressBarUpdateDelay">Progress Bar Update Delay (ms):</label>
                                     <div class="custom-spinner-container wide">
-                                        <input type="number" id="progressBarUpdateDelay" class="custom-spinner-input" value="10" min="0" max="2000">
+                                        <input type="number" id="progressBarUpdateDelay" class="custom-spinner-input" value="100" min="0" max="2000">
                                         <div class="custom-spinner-buttons">
                                             <button type="button" class="spinner-btn-up">▲</button>
                                             <button type="button" class="spinner-btn-down">▼</button>
@@ -647,7 +612,7 @@
                 <p class="creator-text">
                     Made with <svg class="feather heart-icon"><use href="#icon-heart"></use></svg> by Laskco
                 </p>
-                <span class="version-text">v4.3.0</span>
+                <span class="version-text">v4.3.1</span>
             </footer>
         </div>
     </div>

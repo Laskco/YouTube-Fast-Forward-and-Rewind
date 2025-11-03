@@ -9,15 +9,11 @@ const SETTING_DEFINITIONS = {
     keyboardForwardKey: { type: 'string', default: 'ArrowRight' },
     keyboardBackwardKey: { type: 'string', default: 'ArrowLeft' },
     actionTimingEnabled: { type: 'boolean', default: true },
-    actionDelay: { type: 'number', default: 20, min: 0, max: 2000 },
-    seekThrottle: { type: 'number', default: 100, min: 0, max: 2000 },
     controlsVisibleDuration: { type: 'number', default: 2500, min: 0, max: 10000 },
     seekInterval: { type: 'number', default: 150, min: 0, max: 2000 },
-    progressBarUpdateDelay: { type: 'number', default: 10, min: 0, max: 2000 },
+    progressBarUpdateDelay: { type: 'number', default: 150, min: 0, max: 2000 },
     navigationInitDelay: { type: 'number', default: 250, min: 0, max: 5000 },
     buttonPosition: { type: 'string', default: 'left', enum: ['left', 'right'] },
-    enhancedAdSkipEnabled: { type: 'boolean', default: true },
-    advancedWarningAcknowledged: { type: 'boolean', default: false },
     btnFwdPreset1Value: { type: 'number', default: 5, min: 1, max: 99 },
     btnFwdPreset2Value: { type: 'number', default: 10, min: 1, max: 99 },
     btnFwdPreset3Value: { type: 'number', default: 15, min: 1, max: 99 },
@@ -76,11 +72,22 @@ function validateSettings(settings) {
     return newSettings;
 }
 
-
 async function initializeSettings(details) {
     let storedSettings = {};
     try {
         storedSettings = await chrome.storage.local.get(null);
+
+        if (details.reason === "update") {
+            if (storedSettings.progressBarUpdateDelay === 10) {
+                console.log("Migrating progressBarUpdateDelay from 10ms to the new default of 150ms for performance.");
+                storedSettings.progressBarUpdateDelay = 150;
+            }
+            if (storedSettings.progressBarUpdateDelay === 100) {
+                console.log("Migrating progressBarUpdateDelay from 100ms to the new default of 150ms for performance.");
+                storedSettings.progressBarUpdateDelay = 150;
+            }
+        }
+
         const newSettings = validateSettings(storedSettings);
 
         await chrome.storage.local.set(newSettings);
