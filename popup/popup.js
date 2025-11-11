@@ -726,8 +726,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const inPanel = evt.target.closest('#moreTimingSettings');
             const inButton = evt.target.closest('#openMoreSettingsBtn');
             const onBackButton = evt.target.closest('#closeSettingsBtn');
+            const inActionTimingCard = evt.target.closest('.settings-card') === UI.actionTimingCard;
             
-            if (!inPanel && !inButton && !onBackButton && evt.target.closest('.settings-card') !== UI.actionTimingCard) {
+            // Only close if clicking on another settings card (not action timing card)
+            const clickedCard = evt.target.closest('.settings-card');
+            if (!inPanel && !inButton && !onBackButton && !inActionTimingCard && clickedCard) {
                 closeMoreTimingPanel();
             }
         }, { passive: true });
