@@ -1055,3 +1055,8 @@ body.popup-body.light-theme .toast-container.warning {
   z-index: 2147483000; 
   will-change: transform, opacity;
 }
+
+/* Fullscreen Player Button Adjustment */
+#movie_player.ytp-fullscreen .buttonsContainer {
+  margin-left: -5px !important;
+}
