@@ -508,7 +508,7 @@ function injectButtons() {
 
             const buttonsContainer = document.createElement("div");
             buttonsContainer.classList.add(CONFIG.IDS.CONTAINER_CLASS);
-            buttonsContainer.style.cssText = "display: flex; padding: 0; margin: auto 7px;";
+            buttonsContainer.style.cssText = "display: flex; padding: 0; margin: auto 7px auto -1px;";
             buttonsContainer.appendChild(fastBackwardButton);
             buttonsContainer.appendChild(fastForwardButton);
 
