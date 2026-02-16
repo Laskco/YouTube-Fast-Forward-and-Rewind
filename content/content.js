@@ -30,7 +30,8 @@ const CONFIG = {
     IDS: {
         FORWARD_BUTTON_CLASS: 'ffBtnFfrw',
         REWIND_BUTTON_CLASS: 'rwBtnFfrw',
-        CONTAINER_CLASS: 'buttonsContainer'
+        CONTAINER_CLASS: 'buttonsContainer',
+        STYLE_ID: 'yt-ffrw-autohide-fix'
     },
     TIMING: {
         CONTROLS_REFRESH_INTERVAL: 500,
@@ -181,6 +182,69 @@ class PerformanceOptimizer {
 }
 
 const perfOptimizer = new PerformanceOptimizer();
+
+// Inject CSS immediately to prevent flash of visible buttons
+(function injectAutoHideCSSImmediately() {
+    if (document.getElementById(CONFIG.IDS.STYLE_ID)) {
+        return;
+    }
+
+    const style = document.createElement('style');
+    style.id = CONFIG.IDS.STYLE_ID;
+    style.textContent = `
+        /* Hide custom buttons when YouTube player controls are hidden */
+        #movie_player.ytp-autohide .${CONFIG.IDS.FORWARD_BUTTON_CLASS},
+        #movie_player.ytp-autohide .${CONFIG.IDS.REWIND_BUTTON_CLASS},
+        #movie_player.ytp-autohide .${CONFIG.IDS.CONTAINER_CLASS} {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        
+        /* Ensure buttons transition smoothly */
+        .${CONFIG.IDS.FORWARD_BUTTON_CLASS},
+        .${CONFIG.IDS.REWIND_BUTTON_CLASS},
+        .${CONFIG.IDS.CONTAINER_CLASS} {
+            transition: opacity 0.25s ease-in-out;
+        }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+})();
+
+// Keep this function for re-injection if needed (e.g., after cleanup and re-init)
+function injectAutoHideCSS() {
+    if (document.getElementById(CONFIG.IDS.STYLE_ID)) {
+        return;
+    }
+
+    const style = document.createElement('style');
+    style.id = CONFIG.IDS.STYLE_ID;
+    style.textContent = `
+        /* Hide custom buttons when YouTube player controls are hidden */
+        #movie_player.ytp-autohide .${CONFIG.IDS.FORWARD_BUTTON_CLASS},
+        #movie_player.ytp-autohide .${CONFIG.IDS.REWIND_BUTTON_CLASS},
+        #movie_player.ytp-autohide .${CONFIG.IDS.CONTAINER_CLASS} {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        
+        /* Ensure buttons transition smoothly */
+        .${CONFIG.IDS.FORWARD_BUTTON_CLASS},
+        .${CONFIG.IDS.REWIND_BUTTON_CLASS},
+        .${CONFIG.IDS.CONTAINER_CLASS} {
+            transition: opacity 0.25s ease-in-out;
+        }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+}
+
+// Remove the injected CSS
+function removeAutoHideCSS() {
+    const styleElement = document.getElementById(CONFIG.IDS.STYLE_ID);
+    if (styleElement) {
+        styleElement.remove();
+    }
+}
+
 
 let retryTimeout = null;
 const debouncedTryInjectCheck = perfOptimizer.debounce('inject-check', () => {
@@ -1079,6 +1143,7 @@ function handleFullscreenChange() {
 
 function cleanup() {
     removeButtons();
+    removeAutoHideCSS();
     if (state.lastVideoElement) removeBufferingListeners(state.lastVideoElement);
     state.lastVideoElement = null;
 
@@ -1140,6 +1205,9 @@ async function initializeExtension() {
         if (!state.settings.extensionEnabled) {
             return;
         }
+
+        // Inject CSS to handle autohide behavior
+        injectAutoHideCSS();
 
         state.lastUrl = window.location.href;
         if (state.settings.keyboardShortcutsEnabled) {
