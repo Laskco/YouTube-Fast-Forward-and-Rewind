@@ -52,8 +52,7 @@
         <div class="popup-container">
             <header class="popup-header">
                 <div class="header-title-group">
-                    <img src="../assets/FFRWIcons/icon48.png" alt="Extension Icon" class="popup-header-icon icon-dark-theme">
-                    <img src="../assets/FFRWIcons/icon48black.png" alt="Extension Icon" class="popup-header-icon icon-light-theme">
+                    <img src="../assets/FFRWIcons/icon48.png" alt="Extension Icon" class="popup-header-icon">
                     <h1>YouTube FF/RW</h1>
                 </div>
                 <div class="popup-header-actions">
@@ -64,7 +63,7 @@
                          <svg class="feather"><use href="#icon-coffee"></use></svg>
                      </a>
                      <a href="https://www.paypal.com/donate/?hosted_button_id=R87TNQANCT8KN" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Donate with PayPal">
-                        <svg class="feather" style="fill: currentColor; stroke: none;"><use href="#icon-paypal"></use></svg>
+                        <svg class="feather"><use href="#icon-paypal"></use></svg>
                      </a>
                      <span class="header-divider"></span>
                      <button type="button" id="themeToggle" class="btn btn-link" title="Toggle Light/Dark Theme">
@@ -260,7 +259,7 @@
                  <div class="popup-toggle-row">
                      <label for="buttonEnableToggle" class="toggle-label" id="buttonStatusLabel" aria-live="polite">
                          <svg class="feather"><use href="#icon-toggle-right"></use></svg>
-                         Button Skip Times Enabled
+                         <span> Button Skip Times Enabled</span>
                      </label>
                      <label class="toggle-switch">
                          <input type="checkbox" id="buttonEnableToggle" data-toast-message="Button Skips" data-card-to-reset="button-skip-card" checked aria-labelledby="buttonStatusLabel">
@@ -445,16 +444,16 @@
                     </div>
                     <div class="hotkey-editor">
                         <p class="editor-tip">Tip: You can hold down the keys to seek continuously.</p>
-                        <label>Forward Key:</label>
+                        <label for="keyboardForwardKey">Forward Key:</label>
                         <button type="button" id="keyboardForwardKey" class="btn-hotkey" title="Click to change hotkey"></button>
-                        <label>Backward Key:</label>
+                        <label for="keyboardBackwardKey">Backward Key:</label>
                         <button type="button" id="keyboardBackwardKey" class="btn-hotkey" title="Click to change hotkey"></button>
                     </div>
                 </div>
                  <div class="popup-toggle-row">
                      <label for="keyboardEnableToggle" class="toggle-label" id="keyboardStatusLabel" aria-live="polite">
                          <svg class="feather"><use href="#icon-toggle-right"></use></svg>
-                         Keyboard Shortcuts Enabled
+                         <span> Keyboard Shortcuts Enabled</span>
                      </label>
                      <label class="toggle-switch">
                          <input type="checkbox" id="keyboardEnableToggle" data-toast-message="Keyboard Shortcuts" data-card-to-reset="keyboard-skip-card" checked aria-labelledby="keyboardStatusLabel">
@@ -470,8 +469,8 @@
                 <button type="button" id="closeSettingsBtn" class="btn btn-link back-button" title="Go Back">
                     <svg class="feather"><use href="#icon-arrow-left"></use></svg>
                 </button>
-                <h1 style="flex-grow: 1;">Advanced Settings</h1>
-                <a href="https://laskco.github.io/YouTube-FF-RW-Changelogs/" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="See what's new in this version" style="border-radius: 6px; padding: 4px 8px; font-size: 12px;">
+                <h1 class="settings-view-title">Advanced Settings</h1>
+                <a href="https://laskco.github.io/YouTube-FF-RW-Changelogs/" target="_blank" rel="noopener noreferrer" class="btn btn-link btn-whats-new" title="See what's new in this version">
                     <svg class="feather"><use href="#icon-zap"></use></svg>
                     <span>What's New</span>
                 </a>
@@ -518,14 +517,14 @@
                                 <div class="popup-toggle-row sub-toggle">
                                      <label for="ignoreBufferingToggle" class="toggle-label" id="ignoreBufferingStatusLabel" aria-live="polite">
                                          <svg class="feather"><use href="#icon-toggle-left"></use></svg>
-                                         Buffering Protection Enabled
+                                         <span> Buffering Protection Enabled</span>
                                      </label>
                                      <label class="toggle-switch">
                                          <input type="checkbox" id="ignoreBufferingToggle" data-toast-message="Buffering Protection" data-card-to-reset="action-timing-card" aria-labelledby="ignoreBufferingStatusLabel">
                                          <span class="slider"></span>
                                      </label>
                                  </div>
-                                <p class="description" style="padding-left: 2px; margin-top: -6px; margin-bottom: 4px;">Prevents seeking while the video buffers to improve stability. Disable this to force seeking at any time, which may cause player errors.</p>
+                                <p class="description">Prevents seeking while the video buffers to improve stability. Disable this to force seeking at any time, which may cause player errors.</p>
                                 <div class="ff-setting-group">
                                     <label for="seekInterval">Seek Interval (ms):</label>
                                     <div class="custom-spinner-container wide">
@@ -612,7 +611,7 @@
                 <p class="creator-text">
                     Made with <svg class="feather heart-icon"><use href="#icon-heart"></use></svg> by Laskco
                 </p>
-                <span class="version-text">v4.3.7</span>
+                <span class="version-text">v4.4.0</span>
             </footer>
         </div>
     </div>
