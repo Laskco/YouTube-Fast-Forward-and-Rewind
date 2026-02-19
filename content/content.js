@@ -29,13 +29,13 @@ const cfg = deepFreeze({
         rightControls:  '.ytp-right-controls',
         chromeControls: '.ytp-chrome-controls',
         timeDisplay:    '.ytp-time-display.notranslate',
-        autohideClass:  'ytp-autohide',
     },
     cls: {
-        fwdBtn:    'ffBtnFfrw',
-        rwdBtn:    'rwBtnFfrw',
-        container: 'buttonsContainer',
-        adClass:   'ad-showing',
+        fwdBtn:        'ffBtnFfrw',
+        rwdBtn:        'rwBtnFfrw',
+        container:     'buttonsContainer',
+        adClass:       'ad-showing',
+        autohideClass: 'ytp-autohide',
     },
     styleId:  'yt-ffrw-autohide-fix',
     indicatorId: 'yt-ffrw-skip-indicator',
@@ -86,6 +86,7 @@ const state = {
     // Controls autohide
     preventAutohide: false,
     autohideTimeout: null,
+    autohideNudgeTimeout: null,  // delayed post-release mousemove nudge
     controlsInterval: null,
 
     // Skip indicator
@@ -103,32 +104,37 @@ const state = {
 };
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
-
-async function logError(ctx, err) {
+// logError is intentionally fire-and-forget (never awaited by callers).
+// It logs to console immediately; the async storage write is best-effort.
+function logError(ctx, err) {
     console.error('[FFRW]', ctx, err);
     if (!chrome.runtime?.id) return;
-    try {
-        const entry = {
-            ts:      new Date().toISOString(),
-            context: ctx,
-            message: err instanceof Error ? err.message : String(err),
-            stack:   err instanceof Error ? err.stack : undefined,
-        };
-        const { recentErrors = [] } = await chrome.storage.local.get('recentErrors');
-        recentErrors.push(entry);
-        if (recentErrors.length > cfg.maxErrors) recentErrors.splice(0, recentErrors.length - cfg.maxErrors);
-        await chrome.storage.local.set({ recentErrors });
-    } catch (_) { /* storage unavailable – swallow */ }
+    (async () => {
+        try {
+            const entry = {
+                ts:      new Date().toISOString(),
+                context: ctx,
+                message: err instanceof Error ? err.message : String(err),
+                stack:   err instanceof Error ? err.stack : undefined,
+            };
+            const { recentErrors = [] } = await chrome.storage.local.get('recentErrors');
+            recentErrors.push(entry);
+            if (recentErrors.length > cfg.maxErrors) recentErrors.splice(0, recentErrors.length - cfg.maxErrors);
+            await chrome.storage.local.set({ recentErrors });
+        } catch (_) { /* storage unavailable – swallow */ }
+    })();
 }
 
 // ─── Debounce ─────────────────────────────────────────────────────────────────
 
 function debounce(fn, wait) {
     let t;
-    return (...args) => {
+    const debounced = (...args) => {
         clearTimeout(t);
         t = setTimeout(() => fn(...args), wait);
     };
+    debounced.cancel = () => { clearTimeout(t); t = null; };
+    return debounced;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -159,10 +165,8 @@ async function _flushStats() {
     _statFlushTimer = null;
     if (!chrome.runtime?.id) return;
     const delta = { ..._statQueue };
-    _statQueue.totalSecondsSkipped = 0;
-    _statQueue.totalSkips = 0;
-    _statQueue.buttonSkips = 0;
-    _statQueue.keyboardSkips = 0;
+    // Don't zero the queue yet — only clear after the write succeeds so a
+    // context-invalidation mid-await doesn't silently drop counts.
     try {
         const keys = ['stats_totalSecondsSkipped', 'stats_totalSkips', 'stats_buttonSkips', 'stats_keyboardSkips'];
         const d = await chrome.storage.local.get(keys);
@@ -172,20 +176,25 @@ async function _flushStats() {
             stats_buttonSkips:         (d.stats_buttonSkips         || 0) + delta.buttonSkips,
             stats_keyboardSkips:       (d.stats_keyboardSkips       || 0) + delta.keyboardSkips,
         });
+        // Write confirmed — now safe to clear what we just persisted
+        _statQueue.totalSecondsSkipped -= delta.totalSecondsSkipped;
+        _statQueue.totalSkips          -= delta.totalSkips;
+        _statQueue.buttonSkips         -= delta.buttonSkips;
+        _statQueue.keyboardSkips       -= delta.keyboardSkips;
     } catch (e) {
-        if (!e.message?.includes('context invalidated')) logError('trackSkip', e);
-        else {
-            // Re-queue on failure so counts aren't lost
-            _statQueue.totalSecondsSkipped += delta.totalSecondsSkipped;
-            _statQueue.totalSkips          += delta.totalSkips;
-            _statQueue.buttonSkips         += delta.buttonSkips;
-            _statQueue.keyboardSkips       += delta.keyboardSkips;
+        if (e.message?.includes('context invalidated')) {
+            // Extension is unloading — silently discard, re-queuing would be pointless
+            logError('trackSkip', e);
+        } else {
+            // Transient storage error — queue is untouched so counts are retained
+            logError('trackSkip', e);
         }
     }
 }
 
-function trackSkip(seconds, source) {
-    _statQueue.totalSecondsSkipped += Math.abs(seconds);
+// delta may be positive or negative (rewind); Math.abs normalises for accumulation.
+function trackSkip(delta, source) {
+    _statQueue.totalSecondsSkipped += Math.abs(delta);
     _statQueue.totalSkips          += 1;
     _statQueue.buttonSkips         += source === 'button'   ? 1 : 0;
     _statQueue.keyboardSkips       += source === 'keyboard' ? 1 : 0;
@@ -196,14 +205,16 @@ function trackSkip(seconds, source) {
 // ─── VideoWatcher ─────────────────────────────────────────────────────────────
 
 const VideoWatcher = {
+    _ref: null, // WeakRef<HTMLVideoElement>
+
     get() {
-        // validate cached element
-        if (state.videoEl) {
-            const v = state.videoEl;
-            const ok = v.isConnected && typeof v.currentTime === 'number'
-                    && v.videoWidth > 0 && v.videoHeight > 0 && !v.ended;
-            if (ok) return v;
-            this._detach(v);
+        // validate cached element via WeakRef
+        const cached = this._ref?.deref();
+        if (cached) {
+            const ok = cached.isConnected && typeof cached.currentTime === 'number'
+                    && cached.videoWidth > 0 && cached.videoHeight > 0 && !cached.ended;
+            if (ok) return cached;
+            this._detach(cached);
         }
 
         // scan for a valid element, prefer one not inside an ad
@@ -222,7 +233,7 @@ const VideoWatcher = {
     },
 
     _attach(v) {
-        this._detach(state.videoEl);
+        this._detach(this._ref?.deref());
         const listeners = {
             waiting:   () => { state.isBuffering = true; },
             stalled:   () => { state.isBuffering = true; },
@@ -232,7 +243,8 @@ const VideoWatcher = {
             error:     (e) => logError('video error', e),
         };
         for (const [ev, fn] of Object.entries(listeners)) v.addEventListener(ev, fn);
-        state.videoEl = v;
+        this._ref = new WeakRef(v);
+        state.videoEl = v; // keep for compatibility with existing state references
         state.videoListeners = listeners;
         state.isBuffering = v.readyState < HTMLMediaElement.HAVE_FUTURE_DATA;
     },
@@ -242,25 +254,38 @@ const VideoWatcher = {
         for (const [ev, fn] of Object.entries(state.videoListeners)) {
             try { v.removeEventListener(ev, fn); } catch (_) {}
         }
+        this._ref = null;
         state.videoEl = null;
         state.videoListeners = null;
     },
 
-    release() { this._detach(state.videoEl); },
+    release() { this._detach(this._ref?.deref()); },
 };
 
 // ─── Seek ─────────────────────────────────────────────────────────────────────
 
-function seek(delta) {
+function seek(delta, { source, amount, direction } = {}) {
     const v = VideoWatcher.get();
-    if (!v) return;
-    if (!state.settings.ignoreBufferingProtection && (v.seeking || state.isBuffering)) return;
+    if (!v) return false;
+    if (!state.settings.ignoreBufferingProtection && (v.seeking || state.isBuffering)) {
+        // Only flash the blocked indicator when not already in a continuous hold —
+        // the pulsing hold animation already communicates "waiting"; flashing on top
+        // of it causes the indicator to flicker between two states every interval tick.
+        // Also suppress during the pre-hold window (seekInterval active but isHolding
+        // not yet set) so the single-tap animation isn't wiped before hold mode starts.
+        const inContinuousSeek = state.isHolding || state.btnIsHolding || !!state.seekInterval || !!state.btnHoldInterval;
+        if (amount && direction && !inContinuousSeek) {
+            SkipIndicator.showBlocked(amount, direction);
+        }
+        return false;
+    }
 
     const clamped = Math.max(0, Math.min(isFinite(v.duration) ? v.duration : Infinity, v.currentTime + delta));
-    try { v.currentTime = clamped; } catch (e) { logError('seek', e); return; }
+    try { v.currentTime = clamped; } catch (e) { logError('seek', e); return false; }
 
     // Throttled progress-bar nudge
     nudgeProgressBar();
+    return true;
 }
 
 let _lastPBUpdate = 0;
@@ -309,7 +334,7 @@ function keepControlsVisible() {
     const mp = getMoviePlayer();
     if (!mp) return;
 
-    mp.classList.remove(cfg.sel.autohideClass);
+    mp.classList.remove(cfg.cls.autohideClass);
     const nudge = () => {
         mp.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true,
             clientX: mp.offsetWidth / 2, clientY: mp.offsetHeight / 2 }));
@@ -337,11 +362,14 @@ function keepControlsVisible() {
 function releaseControlsGuard() {
     state.preventAutohide = false;
     clearTimeout(state.autohideTimeout);
+    clearTimeout(state.autohideNudgeTimeout);
     clearInterval(state.controlsInterval);
-    state.autohideTimeout = null;
-    state.controlsInterval = null;
+    state.autohideTimeout     = null;
+    state.autohideNudgeTimeout = null;
+    state.controlsInterval    = null;
 
-    setTimeout(() => {
+    state.autohideNudgeTimeout = setTimeout(() => {
+        state.autohideNudgeTimeout = null;
         const mp = getMoviePlayer();
         if (mp) mp.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true,
             clientX: mp.offsetWidth / 2, clientY: mp.offsetHeight / 2 }));
@@ -379,7 +407,7 @@ const SkipIndicator = {
 
         el.querySelector('#yt-ffrw-skip-indicator-text').textContent = `${seconds}s`;
 
-        el.classList.remove('position-left', 'position-right', 'holding', 'anim-forward', 'anim-backward');
+        el.classList.remove('position-left', 'position-right', 'holding', 'anim-forward', 'anim-backward', 'buffering-blocked');
         el.classList.add(direction === 'forward' ? 'position-right' : 'position-left');
 
         if (holding) {
@@ -392,6 +420,24 @@ const SkipIndicator = {
 
         el.classList.add('visible');
         clearTimeout(state.indicatorTimeout);
+    },
+
+    showBlocked(amount, direction) {
+        const el = this.el;
+        if (!el) return;
+
+        el.querySelector('#yt-ffrw-skip-indicator-text').textContent = `${amount}s`;
+        el.classList.remove('position-left', 'position-right', 'anim-forward', 'anim-backward', 'holding', 'buffering-blocked');
+        el.classList.add(direction === 'forward' ? 'position-right' : 'position-left');
+
+        // Force animation restart so repeated blocked flashes always re-trigger
+        void el.offsetWidth;
+        el.classList.add('buffering-blocked', 'visible');
+
+        clearTimeout(state.indicatorTimeout);
+        state.indicatorTimeout = setTimeout(() => {
+            el.classList.remove('visible', 'buffering-blocked');
+        }, 600);
     },
 
     scheduleHide() {
@@ -411,23 +457,38 @@ const SkipIndicator = {
 // ─── PlayerUI (button injection) ─────────────────────────────────────────────
 
 const PlayerUI = {
-    /** Build an SVG icon for the skip button */
+    _holdListeners: [], // tracks document-level mouseup/contextmenu listeners for cleanup
+    /** Build an SVG icon for the skip button.
+     *
+     * The entire SVG is rotated 180° so the arrow shape points the right way
+     * without needing a mirrored path. As a side-effect that rotation also flips
+     * the embedded text, so the text element itself counter-rotates 180° around
+     * its own centre to stay readable. This means:
+     *   - fwd button: text sits on the right half of the unrotated coordinate space
+     *                 but appears on the left after the outer 180° flip — which is
+     *                 correct for a forward-skip icon.
+     *   - rwd button: mirror image of the above.
+     *
+     * @param {number} seconds  - The skip amount shown inside the icon.
+     * @param {'fwd'|'rwd'} type
+     */
     _buildSVG(seconds, type) {
-        // type: 'fwd' | 'rwd'
-        // NOTE: The SVG is rotated 180deg, so the text x/anchor are intentionally swapped
-        // relative to what you'd expect. The fwd button renders with backward-looking coords
-        // and vice versa — this is correct and matches the original.
         const isFwd = type === 'fwd';
-        // fwd SVG uses "backward" x coords with anchor "end" (crossed due to double 180deg rotation)
-        // rwd SVG uses "forward" x coords with anchor "start"
+
+        // Text horizontal position in the pre-rotation coordinate space.
+        // After the outer 180° flip these land visually where expected.
         const textX      = isFwd ? (seconds < 10 ? '58%' : '68%') : (seconds < 10 ? '38%' : '28%');
         const textAnchor = isFwd ? 'end' : 'start';
+
         const pathD  = isFwd
             ? 'M21.43,7.61V0L0,10.72,21.43,21.43v-7.6H74.19V51.56H66.55V58H80.87V7.61Z'
             : 'M60.88.72,59.44,0V7.61H0V58H14.32V51.56H6.68V13.83H59.44v7.6L80.87,10.72Z';
+
+        // Chevron arrow points for the hold-seek animation overlay
         const seekPts = isFwd
             ? ['59,26.5 47,39 59,51.5', '44,26.5 32,39 44,51.5', '29,26.5 17,39 29,51.5']
             : ['22,26.5 34,39 22,51.5', '37,26.5 49,39 37,51.5', '52,26.5 64,39 52,51.5'];
+
         const textClass = isFwd ? 'f-icon-text' : 'b-icon-text';
         const seekClass = isFwd ? 'f-seek'      : 'b-seek';
 
@@ -460,8 +521,10 @@ const PlayerUI = {
                     text?.classList.add('hidden');
                 });
 
-                state.btnHoldInterval = setInterval(() => seek(delta),
-                    state.settings.seekInterval ?? 150);
+                state.btnHoldInterval = setInterval(() => {
+                    const seeked = seek(delta, { source: 'button', amount: Math.abs(delta), direction: delta > 0 ? 'forward' : 'backward' });
+                    if (seeked) trackSkip(delta, 'button');
+                }, state.settings.seekInterval ?? 150);
             }, cfg.timing.holdThreshold);
         };
 
@@ -485,6 +548,18 @@ const PlayerUI = {
         btn.addEventListener('mousedown', startHold);
         document.addEventListener('mouseup',     stopHold);
         document.addEventListener('contextmenu', stopHold);
+
+        // Register for cleanup so these don't accumulate across re-injections
+        this._holdListeners.push({ stopHold });
+    },
+
+    // Called by remove() to detach all accumulated document-level hold listeners
+    _removeHoldListeners() {
+        for (const { stopHold } of this._holdListeners) {
+            document.removeEventListener('mouseup',     stopHold);
+            document.removeEventListener('contextmenu', stopHold);
+        }
+        this._holdListeners = [];
     },
 
     _isPlaced(position) {
@@ -526,8 +601,8 @@ const PlayerUI = {
             const rwdBtn = this._makeBtn([cfg.cls.rwdBtn], bwd, 'rwd');
 
             // Click handlers (single tap) — suppressed if hold already fired seeks
-            fwdBtn.addEventListener('click', () => { if (state.btnHoldDidSeek) { state.btnHoldDidSeek = false; return; } seek(fwd);  trackSkip(fwd,  'button'); keepControlsVisible(); });
-            rwdBtn.addEventListener('click', () => { if (state.btnHoldDidSeek) { state.btnHoldDidSeek = false; return; } seek(-bwd); trackSkip(bwd,  'button'); keepControlsVisible(); });
+            fwdBtn.addEventListener('click', () => { if (state.btnHoldDidSeek) { state.btnHoldDidSeek = false; return; } if (seek(fwd, { source: 'button', amount: fwd, direction: 'forward' }))  { trackSkip(fwd,  'button'); keepControlsVisible(); } });
+            rwdBtn.addEventListener('click', () => { if (state.btnHoldDidSeek) { state.btnHoldDidSeek = false; return; } if (seek(-bwd, { source: 'button', amount: bwd, direction: 'backward' })) { trackSkip(bwd,  'button'); keepControlsVisible(); } });
 
             // Hold handlers
             this._attachHoldSeek(fwdBtn,  fwd, '.f-seek', '.f-icon-text');
@@ -576,6 +651,7 @@ const PlayerUI = {
     },
 
     remove() {
+        this._removeHoldListeners();
         document.querySelector(`.${cfg.cls.container}`)?.remove();
         document.querySelectorAll(`.${cfg.cls.fwdBtn},.${cfg.cls.rwdBtn}`)
                 .forEach(el => el.remove());
@@ -605,11 +681,13 @@ function tryInject(attempt = 0) {
 
 // ─── Keyboard Handler ─────────────────────────────────────────────────────────
 
-const KeyHandler = {
-    _onKeyDown(e) {
+const KeyHandler = (() => {
+    // All handler functions are stable bound references so add/removeEventListener
+    // pairs always match — even if the object is restructured in future.
+    const _onKeyDown = (e) => {
         if (!state.settings.extensionEnabled || !state.settings.keyboardShortcutsEnabled) return;
         if (isEditable(document.activeElement) || e.target?.closest?.('[contenteditable="true"]')) {
-            KeyHandler._stop();
+            _stop();
             return;
         }
         if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
@@ -626,23 +704,39 @@ const KeyHandler = {
                              : (state.settings.keyboardBackward ?? 5);
         const delta  = isFwd ? amount : -amount;
 
-        KeyHandler._start(e.key, delta, amount, dir);
-    },
+        _start(e.key, delta, amount, dir);
+    };
 
-    _onKeyUp(e) {
-        if (e.key === state.activeSeekKey) KeyHandler._stop();
-    },
+    const _onKeyUp = (e) => {
+        if (e.key === state.activeSeekKey) _stop();
+    };
 
-    _start(key, delta, amount, dir) {
+    const _onVisibility = () => { if (document.hidden) _stop(); };
+
+    const _stop = () => {
+        if (!state.activeSeekKey) return;
+
+        clearTimeout(state.holdTimeout);
+        clearInterval(state.seekInterval);
+        state.holdTimeout   = null;
+        state.seekInterval  = null;
+        state.activeSeekKey = null;
+        state.isHolding     = false;
+
+        SkipIndicator.scheduleHide();
+        releaseControlsGuard();
+    };
+
+    const _start = (key, delta, amount, dir) => {
         if (state.activeSeekKey === key) return;   // already running
-        KeyHandler._stop();
+        _stop();
         state.activeSeekKey = key;
 
         keepControlsVisible();
 
         // immediate single skip
-        seek(delta);
-        trackSkip(delta, 'keyboard');
+        const seeked = seek(delta, { source: 'keyboard', amount, direction: dir });
+        if (seeked) trackSkip(delta, 'keyboard');
         SkipIndicator.show(amount, dir, false);
 
         // transition to hold mode after threshold
@@ -651,49 +745,35 @@ const KeyHandler = {
             SkipIndicator.show(amount, dir, true);
         }, cfg.timing.holdThreshold);
 
-        // continuous seek
+        // continuous seek — seek() returns true only if the seek actually fired
         state.seekInterval = setInterval(() => {
-            seek(delta);
-            trackSkip(delta, 'keyboard');
+            const seeked = seek(delta, { source: 'keyboard', amount, direction: dir });
+            if (seeked) trackSkip(delta, 'keyboard');
             keepControlsVisible();
         }, state.settings.seekInterval ?? 150);
-    },
+    };
 
-    _stop() {
-        if (!state.activeSeekKey) return;
-
-        clearTimeout(state.holdTimeout);
-        clearInterval(state.seekInterval);
-        state.holdTimeout  = null;
-        state.seekInterval = null;
-        state.activeSeekKey = null;
-        state.isHolding = false;
-
-        SkipIndicator.scheduleHide();
-        releaseControlsGuard();
-    },
-
-    _onVisibility() { if (document.hidden) KeyHandler._stop(); },
-
-    attach() {
-        if (state.keysAttached) return;
-        document.addEventListener('keydown',          this._onKeyDown,    true);
-        document.addEventListener('keyup',            this._onKeyUp,      true);
-        window.addEventListener('blur',               this._stop);
-        document.addEventListener('visibilitychange', this._onVisibility);
-        state.keysAttached = true;
-    },
-
-    detach() {
-        if (!state.keysAttached) return;
-        document.removeEventListener('keydown',          this._onKeyDown,    true);
-        document.removeEventListener('keyup',            this._onKeyUp,      true);
-        window.removeEventListener('blur',               this._stop);
-        document.removeEventListener('visibilitychange', this._onVisibility);
-        this._stop();
-        state.keysAttached = false;
-    },
-};
+    return {
+        _stop, // exposed for cleanup() and window blur handler
+        attach() {
+            if (state.keysAttached) return;
+            document.addEventListener('keydown',          _onKeyDown,    true);
+            document.addEventListener('keyup',            _onKeyUp,      true);
+            window.addEventListener('blur',               _stop);
+            document.addEventListener('visibilitychange', _onVisibility);
+            state.keysAttached = true;
+        },
+        detach() {
+            if (!state.keysAttached) return;
+            document.removeEventListener('keydown',          _onKeyDown,    true);
+            document.removeEventListener('keyup',            _onKeyUp,      true);
+            window.removeEventListener('blur',               _stop);
+            document.removeEventListener('visibilitychange', _onVisibility);
+            _stop();
+            state.keysAttached = false;
+        },
+    };
+})();
 
 // ─── Player MutationObserver ──────────────────────────────────────────────────
 
@@ -710,13 +790,20 @@ function playerMutationCb(mutations) {
         if (state.preventAutohide
             && m.type === 'attributes' && m.attributeName === 'class'
             && m.target === mp
-            && mp.classList.contains(cfg.sel.autohideClass)) {
-            mp.classList.remove(cfg.sel.autohideClass);
+            && mp.classList.contains(cfg.cls.autohideClass)) {
+            mp.classList.remove(cfg.cls.autohideClass);
         }
 
         if (!needsReinject) {
-            if (m.type === 'attributes' && m.attributeName === 'class') needsReinject = true;
-            else if (m.type === 'childList') {
+            if (m.type === 'attributes' && m.attributeName === 'class') {
+                // Only reinject on class changes to the player root or its direct controls —
+                // not every hover/progress/ad state change in the subtree.
+                const t = m.target;
+                needsReinject = t === mp
+                    || t.matches?.(cfg.sel.leftControls)
+                    || t.matches?.(cfg.sel.rightControls)
+                    || t.matches?.(cfg.sel.chromeControls);
+            } else if (m.type === 'childList') {
                 const changed = [...m.addedNodes, ...m.removedNodes];
                 needsReinject = changed.some(n =>
                     n.nodeType === 1 && (n.matches(cfg.sel.chromeControls) || n.querySelector?.(cfg.sel.chromeControls))
@@ -755,11 +842,14 @@ const debouncedNav = debounce(onNavigation, cfg.debounce.navigation);
 
 function onNavigation() {
     const url = window.location.href;
-    if (url === state.lastUrl && (state.buttonsInjected || !state.settings.buttonSkipEnabled)) return;
+    const urlChanged = url !== state.lastUrl;
 
-    const changed = url !== state.lastUrl;
+    // On non-watch pages, only re-run if the URL actually changed.
+    // On watch pages, also re-run if buttons are missing (e.g. settings toggled on).
+    if (!urlChanged && (!isWatchPage() || state.buttonsInjected)) return;
+
     state.lastUrl = url;
-    if (changed || !state.buttonsInjected) handleNavigation();
+    handleNavigation();
 }
 
 function handleNavigation() {
@@ -810,6 +900,7 @@ function cleanup() {
 
     clearTimeout(state.retryTimeout);
     clearTimeout(state.autohideTimeout);
+    clearTimeout(state.autohideNudgeTimeout);
     clearTimeout(state.indicatorTimeout);
     clearTimeout(state.holdTimeout);
     clearTimeout(state.btnHoldTimeout);
@@ -819,6 +910,13 @@ function cleanup() {
 
     document.removeEventListener('fullscreenchange', onFullscreen);
     window.removeEventListener('resize', debouncedResize);
+    window.removeEventListener('yt-navigate-finish', debouncedNav);
+    window.removeEventListener('popstate',           debouncedNav);
+
+    debouncedNav.cancel();
+    debouncedTryInject.cancel();
+    debouncedFullscreen.cancel();
+    debouncedResize.cancel();
 
     state.navObserver?.disconnect();
     state.playerObserver?.disconnect();
@@ -828,7 +926,8 @@ function cleanup() {
     state.buttonsInjected  = false;
     state.retryAttempts    = 0;
     state.isBuffering      = false;
-    state.preventAutohide  = false;
+    state.preventAutohide     = false;
+    state.autohideNudgeTimeout = null;
     state.isHolding        = false;
     state.btnIsHolding     = false;
     state.btnHoldActiveBtn = null;
@@ -837,9 +936,12 @@ function cleanup() {
     state.lastUrl          = '';
     _lastPBUpdate          = 0;
 
-    // Flush any pending stat writes and reset queue
+    // Flush any pending stat writes before clearing the queue
     clearTimeout(_statFlushTimer);
     _statFlushTimer = null;
+    if (_statQueue.totalSkips > 0) {
+        _flushStats(); // fire-and-forget; best-effort before unload
+    }
     _statQueue.totalSecondsSkipped = 0;
     _statQueue.totalSkips          = 0;
     _statQueue.buttonSkips         = 0;
@@ -873,8 +975,16 @@ async function init() {
         document.addEventListener('fullscreenchange', onFullscreen);
         window.addEventListener('resize', debouncedResize);
 
+        // YouTube fires 'yt-navigate-finish' on SPA navigation; popstate covers
+        // back/forward. A narrow MutationObserver on <title> acts as a fallback
+        // for any navigation path that doesn't fire those events.
+        window.addEventListener('yt-navigate-finish', debouncedNav);
+        window.addEventListener('popstate',           debouncedNav);
+
         state.navObserver = new MutationObserver(debouncedNav);
-        state.navObserver.observe(document.documentElement, { childList: true, subtree: true });
+        state.navObserver.observe(document.querySelector('title') ?? document.head, {
+            childList: true, characterData: true, subtree: true,
+        });
 
         handleNavigation();
     } catch (e) {

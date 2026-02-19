@@ -52,6 +52,9 @@ const SETTINGS_SCHEMA = {
     stats_totalSkips:          { type: 'number', default: 0 },
     stats_buttonSkips:         { type: 'number', default: 0 },
     stats_keyboardSkips:       { type: 'number', default: 0 },
+
+    // Internal UI state (not user-facing settings; preserved across reset-all)
+    _uiAdvancedOpen: { type: 'boolean', default: false },
 };
 
 const DEFAULTS = Object.fromEntries(
@@ -87,9 +90,25 @@ function coerce(value, schema) {
     }
 }
 
+// Stats keys that should never be reset to defaults by validate() —
+// only missing keys get their default; existing non-negative numbers are kept.
+const STAT_KEYS = new Set([
+    'stats_totalSecondsSkipped',
+    'stats_totalSkips',
+    'stats_buttonSkips',
+    'stats_keyboardSkips',
+]);
+
 function validate(raw) {
     return Object.fromEntries(
-        Object.entries(SETTINGS_SCHEMA).map(([k, schema]) => [k, coerce(raw[k], schema)])
+        Object.entries(SETTINGS_SCHEMA).map(([k, schema]) => {
+            // Preserve accumulated stat values — only fill in the default if absent
+            if (STAT_KEYS.has(k)) {
+                const n = Number(raw[k]);
+                return [k, (raw[k] !== undefined && raw[k] !== null && !isNaN(n) && n >= 0) ? n : schema.default];
+            }
+            return [k, coerce(raw[k], schema)];
+        })
     );
 }
 

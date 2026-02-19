@@ -14,6 +14,7 @@ const DEMO_SETTINGS = {
     kbdBwdPreset1Value: 5, kbdBwdPreset2Value: 10, kbdBwdPreset3Value: 15, kbdBwdPreset4Value: 30,
     theme: 'dark',
     stats_totalSecondsSkipped: 0, stats_totalSkips: 0, stats_buttonSkips: 0, stats_keyboardSkips: 0,
+    _uiAdvancedOpen: false,
 };
 
 const IS_EXTENSION = typeof chrome !== 'undefined' && !!chrome?.storage;
@@ -35,7 +36,7 @@ const Storage = {
 async function broadcastToYouTube(settings) {
     if (!IS_EXTENSION || !chrome.tabs) return;
     try {
-        const tabs = await chrome.tabs.query({ url: '*://*.youtube.com/*', audible: true });
+        const tabs = await chrome.tabs.query({ url: '*://*.youtube.com/*' });
         for (const tab of tabs) {
             if (tab.id) {
                 chrome.tabs.sendMessage(tab.id, { action: 'updateSettings', settings })
@@ -134,8 +135,8 @@ function initSpinner(container) {
     up.addEventListener('mousedown',  () => startRepeat('up'));
     down.addEventListener('mousedown', () => startRepeat('down'));
     ['mouseup', 'mouseleave'].forEach(evt => {
-        up.addEventListener(evt,   () => stopRepeat(evt === 'mouseup'));
-        down.addEventListener(evt, () => stopRepeat(evt === 'mouseup'));
+        up.addEventListener(evt,   () => stopRepeat(true));
+        down.addEventListener(evt, () => stopRepeat(true));
     });
 }
 
@@ -396,13 +397,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // If this button was already listening, cancel it (toggle off)
+        if (button.classList.contains('is-listening')) {
+            button.classList.remove('is-listening');
+            button.textContent = original;
+            return;
+        }
+
         button.classList.add('is-listening');
         button.textContent = 'Press key...';
 
+        let cleaned = false;
         const cleanup = (revert) => {
-            window.removeEventListener('keydown', onKey, true);
-            document.removeEventListener('click', onClickAway, true);
-            window.removeEventListener('blur', onBlur);
+            if (cleaned) return;
+            cleaned = true;
+            window.removeEventListener('keydown',  onKey,        true);
+            document.removeEventListener('mousedown', onMouseDown, true);
+            window.removeEventListener('blur',     onBlur);
             button.classList.remove('is-listening');
             if (revert) button.textContent = original;
         };
@@ -420,12 +431,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             cleanup(false);
         };
 
-        const onClickAway = (e) => { if (e.target !== button) cleanup(true); };
-        const onBlur      = ()  => cleanup(true);
+        // Any mousedown outside (or on) the button cancels listening
+        const onMouseDown = () => cleanup(true);
+        const onBlur = () => cleanup(true);
 
-        window.addEventListener('keydown',  onKey,        { once: true, capture: true });
-        document.addEventListener('click',  onClickAway,  { once: true, capture: true });
-        window.addEventListener('blur',     onBlur,       { once: true });
+        window.addEventListener('keydown',     onKey,        { capture: true });
+        document.addEventListener('mousedown', onMouseDown,  { capture: true });
+        window.addEventListener('blur',        onBlur,       { once: true });
     }
 
     // ── Event wiring ──────────────────────────────────────────────────────────
@@ -555,7 +567,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!defs) return Toast.show('Could not fetch defaults', 'error');
             const theme  = settings.theme || 'dark';
             const stats  = Object.fromEntries(Object.entries(settings).filter(([k]) => k.startsWith('stats_')));
-            settings = { ...defs, theme, ...stats };
+            const uiState = { _uiAdvancedOpen: settings._uiAdvancedOpen ?? false };
+            settings = { ...defs, theme, ...stats, ...uiState };
             render(settings);
             await save({}, 'All Settings Reset', 'warning');
         });
@@ -579,19 +592,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // More timing panel
-        function closeMoreTiming() {
+        async function closeMoreTiming() {
             if (!el.moreTimingPanel?.classList.contains('visible')) return;
             el.moreTimingPanel.classList.remove('visible');
             el.moreTimingBtn?.classList.remove('open');
             el.moreTimingBtn?.setAttribute('aria-expanded', 'false');
-            localStorage.setItem('advancedOpen', 'false');
+            if (IS_EXTENSION) await chrome.storage.local.set({ _uiAdvancedOpen: false });
         }
 
-        el.moreTimingBtn?.addEventListener('click', () => {
+        el.moreTimingBtn?.addEventListener('click', async () => {
             const open = el.moreTimingPanel.classList.toggle('visible');
             el.moreTimingBtn.classList.toggle('open', open);
             el.moreTimingBtn.setAttribute('aria-expanded', String(open));
-            localStorage.setItem('advancedOpen', String(open));
+            if (IS_EXTENSION) await chrome.storage.local.set({ _uiAdvancedOpen: open });
         });
 
         // Close more-timing panel when clicking a different card
@@ -606,10 +619,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, { passive: true });
 
         // Restore advanced panel state
-        if (localStorage.getItem('advancedOpen') === 'true') {
-            el.moreTimingPanel?.classList.add('visible');
-            el.moreTimingBtn?.classList.add('open');
-            el.moreTimingBtn?.setAttribute('aria-expanded', 'true');
+        if (IS_EXTENSION) {
+            (async () => {
+                try {
+                    const { _uiAdvancedOpen } = await chrome.storage.local.get('_uiAdvancedOpen');
+                    if (_uiAdvancedOpen === true) {
+                        el.moreTimingPanel?.classList.add('visible');
+                        el.moreTimingBtn?.classList.add('open');
+                        el.moreTimingBtn?.setAttribute('aria-expanded', 'true');
+                    }
+                } catch (_) { /* non-critical UI state — ignore */ }
+            })();
         }
     }
 
