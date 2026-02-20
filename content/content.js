@@ -35,16 +35,12 @@ const cfg = deepFreeze({
         rwdBtn:        'rwBtnFfrw',
         container:     'buttonsContainer',
         adClass:       'ad-showing',
-        autohideClass: 'ytp-autohide',
     },
-    styleId:  'yt-ffrw-autohide-fix',
     indicatorId: 'yt-ffrw-skip-indicator',
     retry: { interval: 150, maxAttempts: 25 },
     timing: {
         holdThreshold:       400,   // ms before a held key becomes "continuous"
         indicatorHideDelay:  500,
-        autohideResetDelay:  1000,
-        controlsRefresh:     500,
         observerInitDelay:   250,
     },
     debounce: {
@@ -83,12 +79,6 @@ const state = {
     holdTimeout: null,
     isHolding: false,
 
-    // Controls autohide
-    preventAutohide: false,
-    autohideTimeout: null,
-    autohideNudgeTimeout: null,  // delayed post-release mousemove nudge
-    controlsInterval: null,
-
     // Skip indicator
     indicatorTimeout: null,
 
@@ -104,8 +94,7 @@ const state = {
 };
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
-// logError is intentionally fire-and-forget (never awaited by callers).
-// It logs to console immediately; the async storage write is best-effort.
+
 function logError(ctx, err) {
     console.error('[FFRW]', ctx, err);
     if (!chrome.runtime?.id) return;
@@ -165,8 +154,6 @@ async function _flushStats() {
     _statFlushTimer = null;
     if (!chrome.runtime?.id) return;
     const delta = { ..._statQueue };
-    // Don't zero the queue yet — only clear after the write succeeds so a
-    // context-invalidation mid-await doesn't silently drop counts.
     try {
         const keys = ['stats_totalSecondsSkipped', 'stats_totalSkips', 'stats_buttonSkips', 'stats_keyboardSkips'];
         const d = await chrome.storage.local.get(keys);
@@ -176,23 +163,15 @@ async function _flushStats() {
             stats_buttonSkips:         (d.stats_buttonSkips         || 0) + delta.buttonSkips,
             stats_keyboardSkips:       (d.stats_keyboardSkips       || 0) + delta.keyboardSkips,
         });
-        // Write confirmed — now safe to clear what we just persisted
         _statQueue.totalSecondsSkipped -= delta.totalSecondsSkipped;
         _statQueue.totalSkips          -= delta.totalSkips;
         _statQueue.buttonSkips         -= delta.buttonSkips;
         _statQueue.keyboardSkips       -= delta.keyboardSkips;
     } catch (e) {
-        if (e.message?.includes('context invalidated')) {
-            // Extension is unloading — silently discard, re-queuing would be pointless
-            logError('trackSkip', e);
-        } else {
-            // Transient storage error — queue is untouched so counts are retained
-            logError('trackSkip', e);
-        }
+        logError('trackSkip', e);
     }
 }
 
-// delta may be positive or negative (rewind); Math.abs normalises for accumulation.
 function trackSkip(delta, source) {
     _statQueue.totalSecondsSkipped += Math.abs(delta);
     _statQueue.totalSkips          += 1;
@@ -268,22 +247,12 @@ function seek(delta, { source, amount, direction } = {}) {
     const v = VideoWatcher.get();
     if (!v) return false;
     if (!state.settings.ignoreBufferingProtection && (v.seeking || state.isBuffering)) {
-        // Only flash the blocked indicator when not already in a continuous hold —
-        // the pulsing hold animation already communicates "waiting"; flashing on top
-        // of it causes the indicator to flicker between two states every interval tick.
-        // Also suppress during the pre-hold window (seekInterval active but isHolding
-        // not yet set) so the single-tap animation isn't wiped before hold mode starts.
-        const inContinuousSeek = state.isHolding || state.btnIsHolding || !!state.seekInterval || !!state.btnHoldInterval;
-        if (amount && direction && !inContinuousSeek) {
-            SkipIndicator.showBlocked(amount, direction);
-        }
         return false;
     }
 
     const clamped = Math.max(0, Math.min(isFinite(v.duration) ? v.duration : Infinity, v.currentTime + delta));
     try { v.currentTime = clamped; } catch (e) { logError('seek', e); return false; }
 
-    // Throttled progress-bar nudge
     nudgeProgressBar();
     return true;
 }
@@ -303,77 +272,12 @@ function nudgeProgressBar() {
     }
 }
 
-// ─── AutoHide CSS ─────────────────────────────────────────────────────────────
-
-// Injected immediately (IIFE) so buttons never flash during first paint.
-(function injectAutohideCSS() {
-    if (document.getElementById(cfg.styleId)) return;
-    const s = document.createElement('style');
-    s.id = cfg.styleId;
-    s.textContent = `
-        #movie_player.ytp-autohide .${cfg.cls.fwdBtn},
-        #movie_player.ytp-autohide .${cfg.cls.rwdBtn},
-        #movie_player.ytp-autohide .${cfg.cls.container} {
-            opacity: 0 !important;
-            pointer-events: none !important;
-        }
-        .${cfg.cls.fwdBtn}, .${cfg.cls.rwdBtn}, .${cfg.cls.container} {
-            transition: opacity 0.25s ease-in-out;
-        }
-    `;
-    (document.head || document.documentElement).appendChild(s);
-})();
-
-function removeAutohideCSS() {
-    document.getElementById(cfg.styleId)?.remove();
-}
-
-// ─── Controls Visibility ──────────────────────────────────────────────────────
-
-function keepControlsVisible() {
+function nudgePlayer() {
     const mp = getMoviePlayer();
     if (!mp) return;
-
-    mp.classList.remove(cfg.cls.autohideClass);
-    const nudge = () => {
-        mp.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true,
-            clientX: mp.offsetWidth / 2, clientY: mp.offsetHeight / 2 }));
-        nudgeProgressBar();
-    };
-    nudge();
-
-    state.preventAutohide = true;
-    clearTimeout(state.autohideTimeout);
-    clearInterval(state.controlsInterval);
-
-    state.controlsInterval = setInterval(() => {
-        if (state.isHolding || state.activeSeekKey || state.btnIsHolding) { nudge(); }
-        else { clearInterval(state.controlsInterval); state.controlsInterval = null; }
-    }, cfg.timing.controlsRefresh);
-
-    state.autohideTimeout = setTimeout(() => {
-        state.preventAutohide = false;
-        clearInterval(state.controlsInterval);
-        state.controlsInterval = null;
-        nudge();
-    }, state.settings.controlsVisibleDuration ?? 2500);
-}
-
-function releaseControlsGuard() {
-    state.preventAutohide = false;
-    clearTimeout(state.autohideTimeout);
-    clearTimeout(state.autohideNudgeTimeout);
-    clearInterval(state.controlsInterval);
-    state.autohideTimeout     = null;
-    state.autohideNudgeTimeout = null;
-    state.controlsInterval    = null;
-
-    state.autohideNudgeTimeout = setTimeout(() => {
-        state.autohideNudgeTimeout = null;
-        const mp = getMoviePlayer();
-        if (mp) mp.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true,
-            clientX: mp.offsetWidth / 2, clientY: mp.offsetHeight / 2 }));
-    }, cfg.timing.autohideResetDelay);
+    mp.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true,
+        clientX: mp.offsetWidth / 2, clientY: mp.offsetHeight / 2 }));
+    nudgeProgressBar();
 }
 
 // ─── Skip Indicator ───────────────────────────────────────────────────────────
@@ -497,7 +401,7 @@ const PlayerUI = {
 
     _makeBtn(classes, seconds, type, extraCss = '') {
         const btn = document.createElement('div');
-        btn.classList.add('ytp-button', ...classes);
+        btn.classList.add('ytp-button', 'ytp-autohide-fade-transition', ...classes);
         btn.style.cssText = `display:flex;width:auto;padding:0 7px;${extraCss}`;
         btn.innerHTML = this._buildSVG(seconds, type);
         return btn;
@@ -524,6 +428,7 @@ const PlayerUI = {
                 state.btnHoldInterval = setInterval(() => {
                     const seeked = seek(delta, { source: 'button', amount: Math.abs(delta), direction: delta > 0 ? 'forward' : 'backward' });
                     if (seeked) trackSkip(delta, 'button');
+                    nudgePlayer();
                 }, state.settings.seekInterval ?? 150);
             }, cfg.timing.holdThreshold);
         };
@@ -546,8 +451,10 @@ const PlayerUI = {
         };
 
         btn.addEventListener('mousedown', startHold);
-        document.addEventListener('mouseup',     stopHold);
-        document.addEventListener('contextmenu', stopHold);
+        document.addEventListener('mouseup',       stopHold);
+        document.addEventListener('contextmenu',   stopHold);
+        document.addEventListener('pointerup',     stopHold);
+        document.addEventListener('pointercancel', stopHold);
 
         // Register for cleanup so these don't accumulate across re-injections
         this._holdListeners.push({ stopHold });
@@ -556,8 +463,10 @@ const PlayerUI = {
     // Called by remove() to detach all accumulated document-level hold listeners
     _removeHoldListeners() {
         for (const { stopHold } of this._holdListeners) {
-            document.removeEventListener('mouseup',     stopHold);
-            document.removeEventListener('contextmenu', stopHold);
+            document.removeEventListener('mouseup',       stopHold);
+            document.removeEventListener('contextmenu',   stopHold);
+            document.removeEventListener('pointerup',     stopHold);
+            document.removeEventListener('pointercancel', stopHold);
         }
         this._holdListeners = [];
     },
@@ -601,8 +510,8 @@ const PlayerUI = {
             const rwdBtn = this._makeBtn([cfg.cls.rwdBtn], bwd, 'rwd');
 
             // Click handlers (single tap) — suppressed if hold already fired seeks
-            fwdBtn.addEventListener('click', () => { if (state.btnHoldDidSeek) { state.btnHoldDidSeek = false; return; } if (seek(fwd, { source: 'button', amount: fwd, direction: 'forward' }))  { trackSkip(fwd,  'button'); keepControlsVisible(); } });
-            rwdBtn.addEventListener('click', () => { if (state.btnHoldDidSeek) { state.btnHoldDidSeek = false; return; } if (seek(-bwd, { source: 'button', amount: bwd, direction: 'backward' })) { trackSkip(bwd,  'button'); keepControlsVisible(); } });
+            fwdBtn.addEventListener('click', () => { if (state.btnHoldDidSeek) { state.btnHoldDidSeek = false; return; } if (seek(fwd, { source: 'button', amount: fwd, direction: 'forward' }))  { trackSkip(fwd,  'button'); nudgePlayer(); } });
+            rwdBtn.addEventListener('click', () => { if (state.btnHoldDidSeek) { state.btnHoldDidSeek = false; return; } if (seek(-bwd, { source: 'button', amount: bwd, direction: 'backward' })) { trackSkip(bwd,  'button'); nudgePlayer(); } });
 
             // Hold handlers
             this._attachHoldSeek(fwdBtn,  fwd, '.f-seek', '.f-icon-text');
@@ -682,8 +591,6 @@ function tryInject(attempt = 0) {
 // ─── Keyboard Handler ─────────────────────────────────────────────────────────
 
 const KeyHandler = (() => {
-    // All handler functions are stable bound references so add/removeEventListener
-    // pairs always match — even if the object is restructured in future.
     const _onKeyDown = (e) => {
         if (!state.settings.extensionEnabled || !state.settings.keyboardShortcutsEnabled) return;
         if (isEditable(document.activeElement) || e.target?.closest?.('[contenteditable="true"]')) {
@@ -724,15 +631,12 @@ const KeyHandler = (() => {
         state.isHolding     = false;
 
         SkipIndicator.scheduleHide();
-        releaseControlsGuard();
     };
 
     const _start = (key, delta, amount, dir) => {
         if (state.activeSeekKey === key) return;   // already running
         _stop();
         state.activeSeekKey = key;
-
-        keepControlsVisible();
 
         // immediate single skip
         const seeked = seek(delta, { source: 'keyboard', amount, direction: dir });
@@ -749,7 +653,7 @@ const KeyHandler = (() => {
         state.seekInterval = setInterval(() => {
             const seeked = seek(delta, { source: 'keyboard', amount, direction: dir });
             if (seeked) trackSkip(delta, 'keyboard');
-            keepControlsVisible();
+            nudgePlayer();
         }, state.settings.seekInterval ?? 150);
     };
 
@@ -786,18 +690,8 @@ function playerMutationCb(mutations) {
     let needsReinject = false;
 
     for (const m of mutations) {
-        // Intercept autohide while continuously seeking
-        if (state.preventAutohide
-            && m.type === 'attributes' && m.attributeName === 'class'
-            && m.target === mp
-            && mp.classList.contains(cfg.cls.autohideClass)) {
-            mp.classList.remove(cfg.cls.autohideClass);
-        }
-
         if (!needsReinject) {
             if (m.type === 'attributes' && m.attributeName === 'class') {
-                // Only reinject on class changes to the player root or its direct controls —
-                // not every hover/progress/ad state change in the subtree.
                 const t = m.target;
                 needsReinject = t === mp
                     || t.matches?.(cfg.sel.leftControls)
@@ -893,18 +787,14 @@ function handleNavigation() {
 
 function cleanup() {
     PlayerUI.remove();
-    removeAutohideCSS();
     VideoWatcher.release();
     KeyHandler.detach();
     SkipIndicator.remove();
 
     clearTimeout(state.retryTimeout);
-    clearTimeout(state.autohideTimeout);
-    clearTimeout(state.autohideNudgeTimeout);
     clearTimeout(state.indicatorTimeout);
     clearTimeout(state.holdTimeout);
     clearTimeout(state.btnHoldTimeout);
-    clearInterval(state.controlsInterval);
     clearInterval(state.seekInterval);
     clearInterval(state.btnHoldInterval);
 
@@ -926,8 +816,6 @@ function cleanup() {
     state.buttonsInjected  = false;
     state.retryAttempts    = 0;
     state.isBuffering      = false;
-    state.preventAutohide     = false;
-    state.autohideNudgeTimeout = null;
     state.isHolding        = false;
     state.btnIsHolding     = false;
     state.btnHoldActiveBtn = null;
@@ -975,9 +863,6 @@ async function init() {
         document.addEventListener('fullscreenchange', onFullscreen);
         window.addEventListener('resize', debouncedResize);
 
-        // YouTube fires 'yt-navigate-finish' on SPA navigation; popstate covers
-        // back/forward. A narrow MutationObserver on <title> acts as a fallback
-        // for any navigation path that doesn't fire those events.
         window.addEventListener('yt-navigate-finish', debouncedNav);
         window.addEventListener('popstate',           debouncedNav);
 
