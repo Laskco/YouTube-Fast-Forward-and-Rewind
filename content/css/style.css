@@ -58,22 +58,6 @@ use[href="#icon-paypal"] {
     stroke-width: 0;
 }
 
-.icon-dark-theme {
-    display: inline-block;
-}
-
-.icon-light-theme {
-    display: none;
-}
-
-body.popup-body.light-theme .icon-dark-theme {
-    display: none;
-}
-
-body.popup-body.light-theme .icon-light-theme {
-    display: inline-block;
-}
-
 /* ─── Base / Body ────────────────────────────────────────────────────────── */
 
 body.popup-body {
@@ -411,11 +395,6 @@ body.popup-body::-webkit-scrollbar-thumb {
     margin-top: 12px;
     text-align: left;
     max-width: 260px;
-}
-
-#action-timing-card .tooltip-trigger-button:hover + .tooltip-text {
-    visibility: visible;
-    opacity: 1;
 }
 
 /* ─── Card: Statistics ───────────────────────────────────────────────────── */
@@ -914,15 +893,6 @@ body.popup-body::-webkit-scrollbar-thumb {
     stroke-width: 2;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, var(--success-color), var(--success-color-dark));
-    color: var(--success-text-on-blue);
-}
-
-.btn-primary:hover {
-    filter: brightness(1.15);
-}
-
 .btn-secondary {
     background: var(--surface-color);
     color: var(--text-secondary);
@@ -1243,10 +1213,14 @@ body.popup-body::-webkit-scrollbar-thumb {
     color: var(--success-text-on-blue);
 }
 
-.toast-container.error,
-.toast-container.warning {
+.toast-container.error {
     background-color: var(--error-color);
     color: #FFFFFF;
+}
+
+.toast-container.warning {
+    background-color: var(--warning-color);
+    color: #202124;
 }
 
 /* ─── Footer ─────────────────────────────────────────────────────────────── */
@@ -1283,17 +1257,6 @@ body.popup-body::-webkit-scrollbar-thumb {
     stroke-width: 0;
     vertical-align: -2px;
     margin: 0 3px;
-}
-
-.footer-links {
-    margin: 0 auto;
-    display: flex;
-    gap: 12px;
-}
-
-.footer-links .btn-link .feather {
-    width: 18px;
-    height: 18px;
 }
 
 /* ─── Settings View ─────────────────────────────────────────────────────── */
@@ -1386,13 +1349,6 @@ body.popup-body.light-theme .custom-spinner-container:focus-within {
 
 body.popup-body.light-theme .input-divider {
     background-color: var(--border-color);
-}
-
-body.popup-body.light-theme .preset-editor,
-body.popup-body.light-theme .hotkey-editor {
-    border-color: var(--border-color);
-    border-top-color: var(--border-color);
-    background-color: var(--editor-bg-color);
 }
 
 body.popup-body.light-theme .tooltip-trigger-button:hover {

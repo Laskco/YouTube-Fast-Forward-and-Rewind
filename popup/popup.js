@@ -1,5 +1,24 @@
 'use strict';
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+// Media / headset keys — shared with content.js for hotkey capture
+const MEDIA_KEYS = new Set([
+    'MediaPlayPause', 'MediaPlay', 'MediaPause', 'MediaStop',
+    'MediaTrackNext', 'MediaTrackPrevious', 'MediaFastForward', 'MediaRewind',
+]);
+
+// Modifier-only and control keys that cannot be bound as hotkeys
+const HOTKEY_BLOCKED = new Set(['Control', 'Alt', 'Shift', 'Meta', 'CapsLock', 'Tab', 'Escape']);
+
+// ─── Storage key classification ──────────────────────────────────────────────
+// Mirrors the split in background.js: settings → sync, stats → local.
+
+const STAT_KEYS = new Set([
+    'stats_totalSecondsSkipped', 'stats_totalSkips',
+    'stats_buttonSkips', 'stats_keyboardSkips',
+]);
+
 // ─── Demo / fallback data ─────────────────────────────────────────────────────
 
 const DEMO_SETTINGS = {
@@ -22,8 +41,27 @@ const IS_EXTENSION = typeof chrome !== 'undefined' && !!chrome?.storage;
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 
 const Storage = {
-    async get()   { return IS_EXTENSION ? chrome.storage.local.get(null) : { ...DEMO_SETTINGS }; },
-    async set(s)  { if (IS_EXTENSION) await chrome.storage.local.set(s); },
+    async get() {
+        if (!IS_EXTENSION) return { ...DEMO_SETTINGS };
+        // Settings in sync, stats in local — merge into one flat object.
+        const [synced, local] = await Promise.all([
+            chrome.storage.sync.get(null),
+            chrome.storage.local.get(null),
+        ]);
+        return { ...local, ...synced };
+    },
+
+    async set(s) {
+        if (!IS_EXTENSION) return;
+        // Split the object: sync-eligible keys → sync, stat keys → local.
+        const syncData  = Object.fromEntries(Object.entries(s).filter(([k]) => !STAT_KEYS.has(k)));
+        const localData = Object.fromEntries(Object.entries(s).filter(([k]) =>  STAT_KEYS.has(k)));
+        const ops = [];
+        if (Object.keys(syncData).length)  ops.push(chrome.storage.sync.set(syncData));
+        if (Object.keys(localData).length) ops.push(chrome.storage.local.set(localData));
+        await Promise.all(ops);
+    },
+
     async defaults() {
         if (!IS_EXTENSION) return { ...DEMO_SETTINGS };
         const r = await chrome.runtime.sendMessage({ action: 'getDefaultSettings' });
@@ -31,7 +69,7 @@ const Storage = {
     },
 };
 
-// ─── Chrome tab broadcasting ──────────────────────────────────────────────────
+// ─── Tab broadcasting ─────────────────────────────────────────────────────────
 
 async function broadcastToYouTube(settings) {
     if (!IS_EXTENSION || !chrome.tabs) return;
@@ -40,7 +78,7 @@ async function broadcastToYouTube(settings) {
         for (const tab of tabs) {
             if (tab.id) {
                 chrome.tabs.sendMessage(tab.id, { action: 'updateSettings', settings })
-                    .catch(() => {}); // tab may not have the content script
+                    .catch(() => {}); // tab may not have the content script loaded
             }
         }
     } catch (_) {}
@@ -51,7 +89,11 @@ async function broadcastToYouTube(settings) {
 const Toast = (() => {
     let timer = null;
     const el  = () => document.getElementById('toast-notification');
-    const ICONS = { success: 'icon-check-circle', error: 'icon-x-circle', warning: 'icon-alert-triangle' };
+    const ICONS = {
+        success: 'icon-check-circle',
+        error:   'icon-x-circle',
+        warning: 'icon-alert-triangle',
+    };
 
     return {
         show(message, type = 'success', duration = 2500) {
@@ -59,10 +101,8 @@ const Toast = (() => {
             if (!root) return;
             clearTimeout(timer);
             root.classList.remove('show', 'success', 'error', 'warning');
-
             root.querySelector('.toast-message').textContent = String(message).substring(0, 200);
             root.querySelector('.toast-icon use').setAttribute('href', `#${ICONS[type] ?? ICONS.success}`);
-
             requestAnimationFrame(() => root.classList.add(type, 'show'));
             timer = setTimeout(() => root.classList.remove('show'), duration);
         },
@@ -76,7 +116,6 @@ function clamp(value, min = 1, max = 99) {
     return isNaN(n) ? min : Math.max(min, Math.min(max, n));
 }
 
-/** Read + enforce an <input type=number> min/max. Returns the clamped value. */
 function enforceInput(input, min = 1, max = 99) {
     const val = clamp(input.value, min, max);
     input.value = val;
@@ -85,7 +124,7 @@ function enforceInput(input, min = 1, max = 99) {
 
 function formatTime(secs) {
     if (!secs || secs <= 0) return '0s';
-    secs = Math.round(secs);
+    secs = Math.floor(secs);
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = secs % 60;
@@ -94,8 +133,18 @@ function formatTime(secs) {
 
 function formatKey(key) {
     if (!key) return '';
-    return { ArrowRight: '→', ArrowLeft: '←', ArrowUp: '↑', ArrowDown: '↓', ' ': 'Space' }[key]
-        ?? (key.length === 1 ? key.toUpperCase() : key);
+    const map = {
+        ArrowRight: '→', ArrowLeft: '←', ArrowUp: '↑', ArrowDown: '↓', ' ': 'Space',
+        MediaPlayPause:     '⏯ Play/Pause',
+        MediaPlay:          '▶ Play',
+        MediaPause:         '⏸ Pause',
+        MediaStop:          '⏹ Stop',
+        MediaTrackNext:     '⏭ Next',
+        MediaTrackPrevious: '⏮ Prev',
+        MediaFastForward:   '⏩ Fast Fwd',
+        MediaRewind:        '⏪ Rewind',
+    };
+    return map[key] ?? (key.length === 1 ? key.toUpperCase() : key);
 }
 
 function flashSpinner(input) {
@@ -132,7 +181,7 @@ function initSpinner(container) {
         if (fire) input.dispatchEvent(new Event('change', { bubbles: true }));
     };
 
-    up.addEventListener('mousedown',  () => startRepeat('up'));
+    up.addEventListener('mousedown',   () => startRepeat('up'));
     down.addEventListener('mousedown', () => startRepeat('down'));
     ['mouseup', 'mouseleave'].forEach(evt => {
         up.addEventListener(evt,   () => stopRepeat(true));
@@ -159,14 +208,14 @@ function applyTheme(theme) {
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
-    const $ = (id) => document.getElementById(id);
+    const $  = (id)  => document.getElementById(id);
     const $$ = (sel) => document.querySelectorAll(sel);
 
     const el = {
         // Views
-        mainView:     $('main-view'),
-        settingsView: $('settings-view'),
-        openSettings: $('openSettingsBtn'),
+        mainView:      $('main-view'),
+        settingsView:  $('settings-view'),
+        openSettings:  $('openSettingsBtn'),
         closeSettings: $('closeSettingsBtn'),
 
         // Header actions
@@ -174,10 +223,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         resetSettings: $('resetSettings'),
 
         // Core toggles
-        enableToggle:   $('enableToggle'),
-        btnToggle:      $('buttonEnableToggle'),
-        kbdToggle:      $('keyboardEnableToggle'),
-        bufToggle:      $('ignoreBufferingToggle'),
+        enableToggle: $('enableToggle'),
+        btnToggle:    $('buttonEnableToggle'),
+        kbdToggle:    $('keyboardEnableToggle'),
+        bufToggle:    $('ignoreBufferingToggle'),
 
         // Status labels
         statusText:     $('extensionStatusText'),
@@ -185,9 +234,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         kbdStatusLabel: $('keyboardStatusLabel'),
         bufStatusLabel: $('ignoreBufferingStatusLabel'),
 
-        // Cards (used for disabled state)
-        btnCard: $('button-skip-card'),
-        kbdCard: $('keyboard-skip-card'),
+        // Cards (for disabled-state styling)
+        btnCard:    $('button-skip-card'),
+        kbdCard:    $('keyboard-skip-card'),
         timingCard: $('action-timing-card'),
 
         // Skip time inputs
@@ -197,45 +246,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         kbdBwd:  $('keyboardBackward'),
 
         // Hotkeys
-        fwdKey: $('keyboardForwardKey'),
-        bwdKey: $('keyboardBackwardKey'),
+        fwdKey:        $('keyboardForwardKey'),
+        bwdKey:        $('keyboardBackwardKey'),
         hotkeyEditBtn: $('hotkeyEditButton'),
         resetHotkeys:  $('resetHotkeysBtn'),
 
         // Advanced timing
-        seekInterval:        $('seekInterval'),
-        controlsDuration:    $('controlsVisibleDuration'),
-        progressDelay:       $('progressBarUpdateDelay'),
-        navDelay:            $('navigationInitDelay'),
-        resetTiming:         $('resetActionTiming'),
-        moreTimingBtn:       $('openMoreSettingsBtn'),
-        moreTimingPanel:     $('moreTimingSettings'),
+        seekInterval:    $('seekInterval'),
+        controlsDuration: $('controlsVisibleDuration'),
+        progressDelay:   $('progressBarUpdateDelay'),
+        navDelay:        $('navigationInitDelay'),
+        resetTiming:     $('resetActionTiming'),
+        moreTimingBtn:   $('openMoreSettingsBtn'),
+        moreTimingPanel: $('moreTimingSettings'),
 
         // Position
         posLeft:  $('pos-left-btn'),
         posRight: $('pos-right-btn'),
 
         // Stats
-        statsTotalTime: $('statsTotalTime'),
-        statsFormatted: $('statsFormattedTime'),
+        statsTotalTime:  $('statsTotalTime'),
+        statsFormatted:  $('statsFormattedTime'),
         statsTotalSkips: $('statsTotalSkips'),
-        statsBtnSkips: $('statsButtonSkips'),
-        statsKbdSkips: $('statsKeyboardSkips'),
-        resetStats: $('resetStatsBtn'),
+        statsBtnSkips:   $('statsButtonSkips'),
+        statsKbdSkips:   $('statsKeyboardSkips'),
+        resetStats:      $('resetStatsBtn'),
 
-        // Preset groups
+        // Preset rows
         allInputRows: $$('.input-row'),
     };
 
     let settings = {};
 
+    // ── More-timing panel ─────────────────────────────────────────────────────
+    // Defined early so it can be called from the openSettings click handler below.
+
+    async function closeMoreTiming() {
+        if (!el.moreTimingPanel?.classList.contains('visible')) return;
+        el.moreTimingPanel.classList.remove('visible');
+        el.moreTimingBtn?.classList.remove('open');
+        el.moreTimingBtn?.setAttribute('aria-expanded', 'false');
+        if (IS_EXTENSION) await chrome.storage.sync.set({ _uiAdvancedOpen: false });
+    }
+
     // ── Gather settings from UI ───────────────────────────────────────────────
+
     function gather() {
         const s = { ...settings };
 
-        s.extensionEnabled         = el.enableToggle.checked;
-        s.buttonSkipEnabled        = el.btnToggle.checked;
-        s.keyboardShortcutsEnabled = el.kbdToggle.checked;
+        s.extensionEnabled          = el.enableToggle.checked;
+        s.buttonSkipEnabled         = el.btnToggle.checked;
+        s.keyboardShortcutsEnabled  = el.kbdToggle.checked;
         s.ignoreBufferingProtection = el.bufToggle ? !el.bufToggle.checked : false;
 
         s.forwardSkipTime  = enforceInput(el.fwdTime);
@@ -243,10 +304,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         s.keyboardForward  = enforceInput(el.kbdFwd);
         s.keyboardBackward = enforceInput(el.kbdBwd);
 
-        s.seekInterval             = enforceInput(el.seekInterval, 0, 2000);
-        s.controlsVisibleDuration  = enforceInput(el.controlsDuration, 0, 10000);
-        s.progressBarUpdateDelay   = enforceInput(el.progressDelay, 0, 2000);
-        s.navigationInitDelay      = enforceInput(el.navDelay, 0, 5000);
+        s.seekInterval            = enforceInput(el.seekInterval,    0, 2000);
+        s.controlsVisibleDuration = enforceInput(el.controlsDuration, 0, 10000);
+        s.progressBarUpdateDelay  = enforceInput(el.progressDelay,   0, 2000);
+        s.navigationInitDelay     = enforceInput(el.navDelay,        0, 5000);
 
         s.buttonPosition = el.posRight.classList.contains('active') ? 'right' : 'left';
 
@@ -263,6 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ── Save + broadcast ──────────────────────────────────────────────────────
+
     async function save(overrides = {}, toastMsg = '', toastType = 'success') {
         Object.assign(settings, gather(), overrides);
         await Storage.set(settings);
@@ -270,7 +332,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         await broadcastToYouTube(settings);
     }
 
-    // ── Render UI from settings object ────────────────────────────────────────
+    // ── Render UI from settings ───────────────────────────────────────────────
+
     function render(s) {
         el.enableToggle.checked = s.extensionEnabled;
         el.btnToggle.checked    = s.buttonSkipEnabled;
@@ -282,17 +345,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.kbdFwd.value  = clamp(s.keyboardForward);
         el.kbdBwd.value  = clamp(s.keyboardBackward);
 
-        el.seekInterval.value     = clamp(s.seekInterval, 0, 2000);
+        el.seekInterval.value     = clamp(s.seekInterval,            0, 2000);
         el.controlsDuration.value = clamp(s.controlsVisibleDuration, 0, 10000);
-        el.progressDelay.value    = clamp(s.progressBarUpdateDelay, 0, 2000);
-        el.navDelay.value         = clamp(s.navigationInitDelay, 0, 5000);
+        el.progressDelay.value    = clamp(s.progressBarUpdateDelay,  0, 2000);
+        el.navDelay.value         = clamp(s.navigationInitDelay,     0, 5000);
 
         el.fwdKey.textContent = formatKey(s.keyboardForwardKey);
         el.bwdKey.textContent = formatKey(s.keyboardBackwardKey);
 
         const right = s.buttonPosition === 'right';
-        el.posRight.classList.toggle('active', right);
-        el.posLeft.classList.toggle('active', !right);
+        el.posRight.classList.toggle('active',  right);
+        el.posLeft.classList.toggle('active',  !right);
 
         renderPresets(s);
         renderStatus();
@@ -310,8 +373,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.statusText.classList.toggle('enabled',  enabled);
         el.statusText.classList.toggle('disabled', !enabled);
 
-        updateToggleLabel(el.btnStatusLabel, el.btnToggle?.checked, 'Button Skip Times');
-        updateToggleLabel(el.kbdStatusLabel, el.kbdToggle?.checked, 'Keyboard Shortcuts');
+        updateToggleLabel(el.btnStatusLabel, el.btnToggle?.checked,  'Button Skip Times');
+        updateToggleLabel(el.kbdStatusLabel, el.kbdToggle?.checked,  'Keyboard Shortcuts');
         if (el.bufToggle) updateToggleLabel(el.bufStatusLabel, !el.bufToggle.checked, 'Buffering Protection');
     }
 
@@ -328,15 +391,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const ctx = row.dataset.presetContext;
             if (!ctx) return;
 
-            // Preset buttons
-            row.querySelectorAll(`.preset-buttons .btn-preset`).forEach(btn => {
+            row.querySelectorAll('.preset-buttons .btn-preset').forEach(btn => {
                 const key = `${ctx}Preset${parseInt(btn.dataset.presetIndex) + 1}Value`;
                 const val = clamp(s[key] ?? 10);
-                btn.textContent  = `${val}s`;
+                btn.textContent   = `${val}s`;
                 btn.dataset.value = val;
             });
 
-            // Editor spinners
             row.querySelectorAll('.preset-editor .custom-spinner-input').forEach(input => {
                 const key = `${ctx}Preset${parseInt(input.dataset.presetIndex) + 1}Value`;
                 input.value = clamp(s[key] ?? 10);
@@ -346,16 +407,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderStats(s) {
         const secs = s.stats_totalSecondsSkipped || 0;
-        if (el.statsTotalTime) el.statsTotalTime.textContent  = `${Math.round(secs)}s`;
-        if (el.statsFormatted) el.statsFormatted.textContent  = formatTime(secs);
-        if (el.statsTotalSkips) el.statsTotalSkips.textContent = s.stats_totalSkips || 0;
-        if (el.statsBtnSkips) el.statsBtnSkips.textContent    = s.stats_buttonSkips || 0;
-        if (el.statsKbdSkips) el.statsKbdSkips.textContent    = s.stats_keyboardSkips || 0;
+        if (el.statsTotalTime)  el.statsTotalTime.textContent  = `${Math.floor(secs)}s`;
+        if (el.statsFormatted)  el.statsFormatted.textContent  = formatTime(secs);
+        if (el.statsTotalSkips) el.statsTotalSkips.textContent = s.stats_totalSkips    || 0;
+        if (el.statsBtnSkips)   el.statsBtnSkips.textContent   = s.stats_buttonSkips   || 0;
+        if (el.statsKbdSkips)   el.statsKbdSkips.textContent   = s.stats_keyboardSkips || 0;
     }
 
     // ── Preset edit mode ──────────────────────────────────────────────────────
+
     function togglePresetEdit(row) {
-        const btn      = row.querySelector('.btn-edit-presets');
+        const btn = row.querySelector('.btn-edit-presets');
         if (!btn) return;
         const editing  = row.classList.toggle('is-editing-presets');
         const iconEdit = btn.querySelector('.icon-edit');
@@ -363,9 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.setAttribute('aria-label', editing ? 'Save Presets' : 'Edit Presets');
         if (iconEdit) iconEdit.style.display = editing ? 'none' : '';
         if (iconSave) iconSave.style.display = editing ? '' : 'none';
-        if (!editing) {
-            save({}, 'Presets Saved').then(() => renderPresets(settings));
-        }
+        if (!editing) save({}, 'Presets Saved').then(() => renderPresets(settings)).catch(() => {});
     }
 
     function closeAllPresetEditors(card) {
@@ -373,6 +433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ── Hotkey edit mode ──────────────────────────────────────────────────────
+
     function toggleHotkeyEdit() {
         if (!el.kbdCard || !el.hotkeyEditBtn) return;
         const editing  = el.kbdCard.classList.toggle('is-editing-hotkeys');
@@ -384,20 +445,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function listenForHotkey(button, settingKey) {
-        const otherKey  = settingKey === 'keyboardForwardKey' ? 'keyboardBackwardKey' : 'keyboardForwardKey';
-        const original  = formatKey(settings[settingKey]);
-        const BLOCKED   = new Set(['Control', 'Alt', 'Shift', 'Meta', 'CapsLock', 'Tab', 'Escape']);
-
-        // Cancel any other active listener
+        const otherKey = settingKey === 'keyboardForwardKey' ? 'keyboardBackwardKey' : 'keyboardForwardKey';
+        const original = formatKey(settings[settingKey]);
+        // Cancel any other button that is currently listening
         $$('.btn-hotkey.is-listening').forEach(b => {
-            if (b !== button) {
-                b.classList.remove('is-listening');
-                const k = b.id === 'keyboardForwardKey' ? settings.keyboardForwardKey : settings.keyboardBackwardKey;
-                b.textContent = formatKey(k);
-            }
+            if (b === button) return;
+            b.classList.remove('is-listening');
+            const k = b.id === 'keyboardForwardKey' ? settings.keyboardForwardKey : settings.keyboardBackwardKey;
+            b.textContent = formatKey(k);
         });
 
-        // If this button was already listening, cancel it (toggle off)
+        // Toggle off if this button was already listening
         if (button.classList.contains('is-listening')) {
             button.classList.remove('is-listening');
             button.textContent = original;
@@ -411,36 +469,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cleanup = (revert) => {
             if (cleaned) return;
             cleaned = true;
-            window.removeEventListener('keydown',  onKey,        true);
+            window.removeEventListener('keydown',  onKeyDown,   true);
+            window.removeEventListener('keyup',    onKeyUp,     true);
             document.removeEventListener('mousedown', onMouseDown, true);
             window.removeEventListener('blur',     onBlur);
             button.classList.remove('is-listening');
             if (revert) button.textContent = original;
         };
 
-        const onKey = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const k = e.key;
-
-            if (k === settings[otherKey])   { Toast.show('Key already in use', 'error');    cleanup(true);  return; }
-            if (BLOCKED.has(k))             { Toast.show('Key is reserved', 'error');        cleanup(true);  return; }
-
+        const assignKey = (k) => {
+            if (k === settings[otherKey]) { Toast.show('Key already in use', 'error');  cleanup(true); return; }
+            if (HOTKEY_BLOCKED.has(k))    { Toast.show('Key is reserved',    'error');  cleanup(true); return; }
             button.textContent = formatKey(k);
             save({ [settingKey]: k }, 'Hotkey Saved');
             cleanup(false);
         };
 
-        // Any mousedown outside (or on) the button cancels listening
-        const onMouseDown = () => cleanup(true);
-        const onBlur = () => cleanup(true);
+        // Regular keys: capture on keydown
+        const onKeyDown = (e) => {
+            if (MEDIA_KEYS.has(e.key)) return; // handled by keyup
+            e.preventDefault();
+            e.stopPropagation();
+            assignKey(e.key);
+        };
 
-        window.addEventListener('keydown',     onKey,        { capture: true });
-        document.addEventListener('mousedown', onMouseDown,  { capture: true });
-        window.addEventListener('blur',        onBlur,       { once: true });
+        // Media / headset keys: capture on keyup (browsers may not fire keydown for these)
+        const onKeyUp = (e) => {
+            if (!MEDIA_KEYS.has(e.key)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            assignKey(e.key);
+        };
+
+        // Mousedown outside the active button cancels listening
+        const onMouseDown = (e) => { if (!button.contains(e.target)) cleanup(true); };
+        const onBlur      = ()    => cleanup(true);
+
+        window.addEventListener('keydown',     onKeyDown,   { capture: true });
+        window.addEventListener('keyup',       onKeyUp,     { capture: true });
+        document.addEventListener('mousedown', onMouseDown, { capture: true });
+        window.addEventListener('blur',        onBlur,      { once: true });
     }
 
     // ── Event wiring ──────────────────────────────────────────────────────────
+
     function setupListeners() {
         // View navigation
         el.openSettings?.addEventListener('click', () => {
@@ -459,6 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             applyTheme(newTheme);
             settings.theme = newTheme;
             await Storage.set({ theme: newTheme });
+            await broadcastToYouTube(settings);
         });
 
         // Core toggles
@@ -467,8 +540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderStatus();
                 const label = e.target.dataset.toastMessage;
                 if (label) {
-                    const on = e.target.checked;
-                    // bufToggle: checked = protection ON = "Buffering Protection Enabled"
+                    const on  = e.target.checked;
                     const msg = t === el.bufToggle
                         ? `Buffering Protection ${on ? 'Enabled' : 'Disabled'}`
                         : `${label} ${on ? 'Enabled' : 'Disabled'}`;
@@ -476,7 +548,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     save();
                 }
-                // Close editors when a card gets disabled
+                // Close open editors when their card becomes disabled
                 const cardId = e.target.dataset.cardToReset;
                 if (cardId && !e.target.checked) {
                     closeAllPresetEditors($(cardId));
@@ -487,10 +559,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
-        // Skip time change
-        $$('.skip-time-input').forEach(input => {
-            input.addEventListener('change', () => save());
-        });
+        // Skip time inputs
+        $$('.skip-time-input').forEach(input => input.addEventListener('change', () => save()));
 
         // Advanced timing inputs
         [el.seekInterval, el.controlsDuration, el.progressDelay, el.navDelay].forEach(input => {
@@ -551,13 +621,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!defs) return Toast.show('Could not fetch defaults', 'error');
                 const ctx = btn.closest('.input-row')?.dataset.presetContext;
                 if (!ctx) return;
-                let changed = false;
                 for (let i = 1; i <= 4; i++) {
                     const key = `${ctx}Preset${i}Value`;
-                    if (settings[key] !== defs[key]) { settings[key] = defs[key]; changed = true; }
+                    settings[key] = defs[key];
                 }
-                if (changed) { render(settings); await save({}, 'Presets Reset', 'warning'); }
-                else Toast.show('Presets Reset', 'warning');
+                render(settings);
+                await save({}, 'Presets Reset', 'warning');
             });
         });
 
@@ -565,8 +634,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.resetSettings?.addEventListener('click', async () => {
             const defs = await Storage.defaults();
             if (!defs) return Toast.show('Could not fetch defaults', 'error');
-            const theme  = settings.theme || 'dark';
-            const stats  = Object.fromEntries(Object.entries(settings).filter(([k]) => k.startsWith('stats_')));
+            const theme   = settings.theme || 'dark';
+            const stats   = Object.fromEntries(Object.entries(settings).filter(([k]) => k.startsWith('stats_')));
             const uiState = { _uiAdvancedOpen: settings._uiAdvancedOpen ?? false };
             settings = { ...defs, theme, ...stats, ...uiState };
             render(settings);
@@ -575,7 +644,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Reset stats
         el.resetStats?.addEventListener('click', async () => {
-            ['stats_totalSecondsSkipped','stats_totalSkips','stats_buttonSkips','stats_keyboardSkips']
+            ['stats_totalSecondsSkipped', 'stats_totalSkips', 'stats_buttonSkips', 'stats_keyboardSkips']
                 .forEach(k => { settings[k] = 0; });
             render(settings);
             await save({}, 'Statistics Reset', 'warning');
@@ -585,44 +654,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.resetTiming?.addEventListener('click', async () => {
             const defs = await Storage.defaults();
             if (!defs) return Toast.show('Could not fetch defaults', 'error');
-            ['seekInterval','controlsVisibleDuration','ignoreBufferingProtection','progressBarUpdateDelay','navigationInitDelay']
+            ['seekInterval', 'controlsVisibleDuration', 'ignoreBufferingProtection', 'progressBarUpdateDelay', 'navigationInitDelay']
                 .forEach(k => { settings[k] = defs[k]; });
             render(settings);
             await save({}, 'Action Timing Reset', 'warning');
         });
 
-        // More timing panel
-        async function closeMoreTiming() {
-            if (!el.moreTimingPanel?.classList.contains('visible')) return;
-            el.moreTimingPanel.classList.remove('visible');
-            el.moreTimingBtn?.classList.remove('open');
-            el.moreTimingBtn?.setAttribute('aria-expanded', 'false');
-            if (IS_EXTENSION) await chrome.storage.local.set({ _uiAdvancedOpen: false });
-        }
-
+        // More-timing panel toggle
         el.moreTimingBtn?.addEventListener('click', async () => {
             const open = el.moreTimingPanel.classList.toggle('visible');
             el.moreTimingBtn.classList.toggle('open', open);
             el.moreTimingBtn.setAttribute('aria-expanded', String(open));
-            if (IS_EXTENSION) await chrome.storage.local.set({ _uiAdvancedOpen: open });
+            if (IS_EXTENSION) await chrome.storage.sync.set({ _uiAdvancedOpen: open });
         });
 
-        // Close more-timing panel when clicking a different card
+        // Close more-timing panel when clicking into a different card
         document.addEventListener('mousedown', (e) => {
             if (!el.moreTimingPanel?.classList.contains('visible')) return;
-            const inPanel   = e.target.closest('#moreTimingSettings');
-            const inButton  = e.target.closest('#openMoreSettingsBtn');
-            const inBack    = e.target.closest('#closeSettingsBtn');
-            const thisCard  = e.target.closest('.settings-card') === el.timingCard;
-            const otherCard = e.target.closest('.settings-card');
-            if (!inPanel && !inButton && !inBack && !thisCard && otherCard) closeMoreTiming();
+            const inPanel  = e.target.closest('#moreTimingSettings');
+            const inButton = e.target.closest('#openMoreSettingsBtn');
+            const inBack   = e.target.closest('#closeSettingsBtn');
+            const thisCard = e.target.closest('.settings-card') === el.timingCard;
+            const anyCard  = e.target.closest('.settings-card');
+            if (!inPanel && !inButton && !inBack && !thisCard && anyCard) closeMoreTiming();
         }, { passive: true });
 
-        // Restore advanced panel state
+        // Restore advanced panel open state across popup re-opens
         if (IS_EXTENSION) {
             (async () => {
                 try {
-                    const { _uiAdvancedOpen } = await chrome.storage.local.get('_uiAdvancedOpen');
+                    const { _uiAdvancedOpen } = await chrome.storage.sync.get('_uiAdvancedOpen');
                     if (_uiAdvancedOpen === true) {
                         el.moreTimingPanel?.classList.add('visible');
                         el.moreTimingBtn?.classList.add('open');
@@ -634,10 +695,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ── Bootstrap ─────────────────────────────────────────────────────────────
+
     $$('.custom-spinner-container').forEach(initSpinner);
 
     try {
-        const { theme = 'dark' } = IS_EXTENSION ? await chrome.storage.local.get('theme') : {};
+        const { theme = 'dark' } = IS_EXTENSION ? await chrome.storage.sync.get('theme') : {};
         applyTheme(theme);
     } catch (_) { applyTheme('dark'); }
 
@@ -650,16 +712,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 (function attachConfetti() {
     function burst(origin) {
-        const rect = origin.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top  + rect.height / 2;
+        const rect  = origin.getBoundingClientRect();
+        const cx    = rect.left + rect.width  / 2;
+        const cy    = rect.top  + rect.height / 2;
 
         for (let i = 0; i < 24; i++) {
-            const el  = document.createElement('div');
-            el.className = 'confetti-piece';
-            const sz  = 4 + Math.random() * 6;
-            el.style.cssText = `width:${sz}px;height:${sz}px;background:hsl(${Math.random()*360|0},80%,60%);transform:translate(${cx}px,${cy}px);`;
-            document.body.appendChild(el);
+            const piece = document.createElement('div');
+            piece.className  = 'confetti-piece';
+            const sz = 4 + Math.random() * 6;
+            piece.style.cssText = `width:${sz}px;height:${sz}px;background:hsl(${Math.random() * 360 | 0},80%,60%);transform:translate(${cx}px,${cy}px);`;
+            document.body.appendChild(piece);
 
             const angle = Math.random() * Math.PI * 2;
             const speed = 120 + Math.random() * 180;
@@ -667,12 +729,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dy    = Math.sin(angle) * speed;
             const dur   = 900 + Math.random() * 700;
 
-            el.animate([
-                { transform: `translate(${cx}px,${cy}px) scale(1)`,   opacity: 1 },
-                { transform: `translate(${cx+dx}px,${cy+dy}px) scale(0.8)`, opacity: 0 },
+            piece.animate([
+                { transform: `translate(${cx}px,${cy}px) scale(1)`,          opacity: 1 },
+                { transform: `translate(${cx + dx}px,${cy + dy}px) scale(0.8)`, opacity: 0 },
             ], { duration: dur, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
 
-            setTimeout(() => el.remove(), dur + 60);
+            setTimeout(() => piece.remove(), dur + 60);
         }
     }
 

@@ -53,7 +53,7 @@ const SETTINGS_SCHEMA = {
     stats_buttonSkips:         { type: 'number', default: 0 },
     stats_keyboardSkips:       { type: 'number', default: 0 },
 
-    // Internal UI state (not user-facing settings; preserved across reset-all)
+    // Internal UI state (not user-facing; preserved across reset-all)
     _uiAdvancedOpen: { type: 'boolean', default: false },
 };
 
@@ -90,8 +90,8 @@ function coerce(value, schema) {
     }
 }
 
-// Stats keys that should never be reset to defaults by validate() —
-// only missing keys get their default; existing non-negative numbers are kept.
+// Stats keys are never clamped to defaults by validate() — accumulated values
+// are preserved; only missing/invalid entries fall back to their default.
 const STAT_KEYS = new Set([
     'stats_totalSecondsSkipped',
     'stats_totalSkips',
@@ -99,13 +99,18 @@ const STAT_KEYS = new Set([
     'stats_keyboardSkips',
 ]);
 
+// Keys stored in chrome.storage.sync (all user-facing settings + UI state).
+// Everything else (stats, recentErrors) stays in chrome.storage.local.
+const SYNC_KEYS = new Set(
+    Object.keys(SETTINGS_SCHEMA).filter(k => !STAT_KEYS.has(k))
+);
+
 function validate(raw) {
     return Object.fromEntries(
         Object.entries(SETTINGS_SCHEMA).map(([k, schema]) => {
-            // Preserve accumulated stat values — only fill in the default if absent
             if (STAT_KEYS.has(k)) {
                 const n = Number(raw[k]);
-                return [k, (raw[k] !== undefined && raw[k] !== null && !isNaN(n) && n >= 0) ? n : schema.default];
+                return [k, (raw[k] != null && !isNaN(n) && n >= 0) ? n : schema.default];
             }
             return [k, coerce(raw[k], schema)];
         })
@@ -115,7 +120,7 @@ function validate(raw) {
 // ─── Migrations ───────────────────────────────────────────────────────────────
 
 const MIGRATIONS = [
-    // Fix progressBarUpdateDelay values that were saved with old defaults
+    // Fix progressBarUpdateDelay values saved with old defaults
     (s) => {
         if (s.progressBarUpdateDelay === 10 || s.progressBarUpdateDelay === 100) {
             s.progressBarUpdateDelay = 150;
@@ -132,19 +137,34 @@ function applyMigrations(stored) {
 
 async function initSettings(reason) {
     try {
-        let stored = await chrome.storage.local.get(null);
-
-        if (reason === 'update') {
-            stored = applyMigrations(stored);
-        }
-
+        // Read from both stores and merge — sync holds settings, local holds stats.
+        // On first run after migration, local may still hold the old flat layout;
+        // sync takes precedence for any key present in both.
+        const [synced, local] = await Promise.all([
+            chrome.storage.sync.get(null),
+            chrome.storage.local.get(null),
+        ]);
+        let stored = { ...local, ...synced };
+        if (reason === 'update') stored = applyMigrations(stored);
         const validated = validate(stored);
-        await chrome.storage.local.set(validated);
+
+        // Write settings to sync, stats to local.
+        const syncData  = Object.fromEntries(Object.entries(validated).filter(([k]) =>  SYNC_KEYS.has(k)));
+        const localData = Object.fromEntries(Object.entries(validated).filter(([k]) => !SYNC_KEYS.has(k)));
+        await Promise.all([
+            chrome.storage.sync.set(syncData),
+            chrome.storage.local.set(localData),
+        ]);
         console.log(`[FFRW] Settings initialized (${reason})`);
     } catch (err) {
         console.error('[FFRW] Failed to initialize settings, writing defaults:', err);
         try {
-            await chrome.storage.local.set(DEFAULTS);
+            const syncDefaults  = Object.fromEntries(Object.entries(DEFAULTS).filter(([k]) =>  SYNC_KEYS.has(k)));
+            const localDefaults = Object.fromEntries(Object.entries(DEFAULTS).filter(([k]) => !SYNC_KEYS.has(k)));
+            await Promise.all([
+                chrome.storage.sync.set(syncDefaults),
+                chrome.storage.local.set(localDefaults),
+            ]);
         } catch (e) {
             console.error('[FFRW] Critical: could not write defaults:', e);
         }
@@ -167,13 +187,40 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 // ─── Message Router ───────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
-    switch (msg.action) {
-        case 'getDefaultSettings':
-            respond({ ok: true, settings: DEFAULTS });
-            return false;
+    if (msg.action === 'getDefaultSettings') {
+        respond({ ok: true, settings: DEFAULTS });
+        return false;
+    }
+    respond({ ok: false, error: `Unknown action: ${msg.action}` });
+    return false;
+});
 
-        default:
-            respond({ ok: false, error: `Unknown action: ${msg.action}` });
+// ─── Sync → tab broadcast ────────────────────────────────────────────────────
+// When storage.sync fires on this device (cross-device sync or another tab's write),
+// read the full merged settings and push them to all open YouTube tabs.
+
+chrome.storage.onChanged.addListener(async (changes, area) => {
+    if (area !== 'sync') return;
+
+    // Only act if at least one settings key changed
+    const hasSettingChange = Object.keys(changes).some(k => SYNC_KEYS.has(k));
+    if (!hasSettingChange) return;
+
+    try {
+        const [synced, local] = await Promise.all([
+            chrome.storage.sync.get(null),
+            chrome.storage.local.get(null),
+        ]);
+        const settings = { ...local, ...synced };
+        const tabs = await chrome.tabs.query({ url: '*://*.youtube.com/*' });
+        for (const tab of tabs) {
+            if (tab.id) {
+                chrome.tabs.sendMessage(tab.id, { action: 'updateSettings', settings })
+                    .catch(() => {}); // tab may not have the content script loaded
+            }
+        }
+    } catch (e) {
+        console.error('[FFRW] Failed to broadcast sync change:', e);
     }
 });
 
