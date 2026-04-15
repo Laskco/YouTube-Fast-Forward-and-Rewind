@@ -566,6 +566,13 @@
                                     </div>
                                 </div>
                                 <p class="description">How long to wait after a page navigation before initializing the script.</p>
+                                <div class="ff-setting-group" style="margin-top:4px;">
+                                    <label>Re-inject Buttons:</label>
+                                    <button type="button" id="reinjectBtn" class="btn-link" title="Force re-inject skip buttons">
+                                        <svg class="feather" style="width:15px;height:15px;"><use href="#icon-rotate-ccw"></use></svg>
+                                    </button>
+                                </div>
+                                <p class="description">Force re-inject the skip buttons. Use if they disappear after a YouTube layout update.</p>
                             </div>
                         </div>
                     </div>
@@ -576,9 +583,20 @@
                             <svg class="feather"><use href="#icon-bar-chart-2"></use></svg>
                             Statistics
                         </h2>
-                        <button type="button" id="resetStatsBtn" class="btn-link btn-reset-card" title="Reset Statistics">
-                            <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
-                        </button>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <button type="button" id="errorIndicatorBtn" title="View recent errors"
+                                style="display:none;align-items:center;gap:4px;background:none;border:none;
+                                       cursor:pointer;padding:2px 6px;border-radius:4px;
+                                       color:var(--color-error,#e74c3c);font-size:11px;font-weight:600;">
+                                <svg class="feather" style="width:13px;height:13px;stroke:currentColor;">
+                                    <use href="#icon-alert-triangle"></use>
+                                </svg>
+                                <span id="errorCount">0</span>
+                            </button>
+                            <button type="button" id="resetStatsBtn" class="btn-link btn-reset-card" title="Reset Statistics">
+                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-content-wrapper">
                         <div class="stat-row">
@@ -608,7 +626,7 @@
                 <p class="creator-text">
                     Made with <svg class="feather heart-icon"><use href="#icon-heart"></use></svg> by Laskco
                 </p>
-                <span class="version-text">v4.4.3</span>
+                <span class="version-text">v4.4.4</span>
             </footer>
         </div>
     </div>

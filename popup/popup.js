@@ -11,6 +11,28 @@ const MEDIA_KEYS = new Set([
 // Modifier-only and control keys that cannot be bound as hotkeys
 const HOTKEY_BLOCKED = new Set(['Control', 'Alt', 'Shift', 'Meta', 'CapsLock', 'Tab', 'Escape']);
 
+// YouTube-native shortcuts that would conflict if bound to FF skip keys.
+// Shown as a warning rather than a hard block — the user may intentionally
+// want to override them. Mirrors SponsorBlock's KeybindDialogComponent check.
+const HOTKEY_YT_CONFLICT = new Set([
+    'k', 'K',           // play / pause
+    ' ',                // play / pause (spacebar)
+    'j', 'J',           // rewind 10s (YouTube native)
+    'l', 'L',           // fast forward 10s (YouTube native)
+    'f', 'F',           // fullscreen
+    'm', 'M',           // mute
+    'c', 'C',           // captions
+    'i', 'I',           // miniplayer
+    't', 'T',           // theatre mode
+    'ArrowUp',          // volume up
+    'ArrowDown',        // volume down
+    'ArrowLeft',        // seek back 5s  (YouTube default — warn if overriding)
+    'ArrowRight',       // seek forward 5s
+    '0','1','2','3','4','5','6','7','8','9', // seek to 0-90%
+    'Home', 'End',      // seek to start / end
+    'PageUp', 'PageDown', // seek ±10%
+]);
+
 // ─── Storage key classification ──────────────────────────────────────────────
 // Mirrors the split in background.js: settings → sync, stats → local.
 
@@ -68,21 +90,6 @@ const Storage = {
         return r?.ok ? r.settings : null;
     },
 };
-
-// ─── Tab broadcasting ─────────────────────────────────────────────────────────
-
-async function broadcastToYouTube(settings) {
-    if (!IS_EXTENSION || !chrome.tabs) return;
-    try {
-        const tabs = await chrome.tabs.query({ url: '*://*.youtube.com/*' });
-        for (const tab of tabs) {
-            if (tab.id) {
-                chrome.tabs.sendMessage(tab.id, { action: 'updateSettings', settings })
-                    .catch(() => {}); // tab may not have the content script loaded
-            }
-        }
-    } catch (_) {}
-}
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -259,6 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         resetTiming:     $('resetActionTiming'),
         moreTimingBtn:   $('openMoreSettingsBtn'),
         moreTimingPanel: $('moreTimingSettings'),
+        reinjectBtn:     $('reinjectBtn'),
 
         // Position
         posLeft:  $('pos-left-btn'),
@@ -271,6 +279,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         statsBtnSkips:   $('statsButtonSkips'),
         statsKbdSkips:   $('statsKeyboardSkips'),
         resetStats:      $('resetStatsBtn'),
+
+        // Error indicator
+        errorIndicatorBtn: $('errorIndicatorBtn'),
+        errorCount:        $('errorCount'),
 
         // Preset rows
         allInputRows: $$('.input-row'),
@@ -329,7 +341,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.assign(settings, gather(), overrides);
         await Storage.set(settings);
         if (toastMsg) Toast.show(toastMsg, toastType);
-        await broadcastToYouTube(settings);
     }
 
     // ── Render UI from settings ───────────────────────────────────────────────
@@ -480,8 +491,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const assignKey = (k) => {
             if (k === settings[otherKey]) { Toast.show('Key already in use', 'error');  cleanup(true); return; }
             if (HOTKEY_BLOCKED.has(k))    { Toast.show('Key is reserved',    'error');  cleanup(true); return; }
+            // Warn (but allow) if the key conflicts with a YouTube native shortcut.
+            // Mirrors SponsorBlock's KeybindDialogComponent.isKeybindAvailable() approach.
+            if (HOTKEY_YT_CONFLICT.has(k)) {
+                Toast.show(`⚠ "${k === ' ' ? 'Space' : k}" is a YouTube shortcut — it will be overridden`, 'warning');
+            }
             button.textContent = formatKey(k);
-            save({ [settingKey]: k }, 'Hotkey Saved');
+            save({ [settingKey]: k }, HOTKEY_YT_CONFLICT.has(k) ? '' : 'Hotkey Saved');
             cleanup(false);
         };
 
@@ -531,7 +547,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             applyTheme(newTheme);
             settings.theme = newTheme;
             await Storage.set({ theme: newTheme });
-            await broadcastToYouTube(settings);
         });
 
         // Core toggles
@@ -660,6 +675,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             await save({}, 'Action Timing Reset', 'warning');
         });
 
+        // Re-inject button — sends 'injectButtons' to the active YouTube tab's
+        // content script, which calls tryInject(0) to force a fresh injection.
+        // Mirrors the competitor extension's manual refresh approach, surfaced
+        // here in Advanced Settings as a safety net for edge cases.
+        el.reinjectBtn?.addEventListener('click', async () => {
+            if (!IS_EXTENSION) { Toast.show('Not available in preview', 'warning'); return; }
+            try {
+                const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+                const tab  = tabs[0];
+                if (!tab?.id || !tab.url?.includes('youtube.com')) {
+                    Toast.show('No active YouTube tab found', 'warning');
+                    return;
+                }
+                await chrome.tabs.sendMessage(tab.id, { action: 'injectButtons' });
+                Toast.show('Buttons re-injected', 'success');
+            } catch (e) {
+                // Content script not loaded on this page, or tab was closed
+                Toast.show('Could not reach the page — try reloading it', 'error');
+            }
+        });
+
         // More-timing panel toggle
         el.moreTimingBtn?.addEventListener('click', async () => {
             const open = el.moreTimingPanel.classList.toggle('visible');
@@ -706,6 +742,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     settings = await Storage.get();
     render(settings);
     setupListeners();
+
+    // ── Live stats via port ───────────────────────────────────────────────
+    // Open a persistent port to the background so stats update in real-time as
+    // seeks happen, without polling. Mirrors SponsorBlock's popup port pattern.
+    // Falls back gracefully if the extension context is unavailable (e.g. dev reload).
+    if (IS_EXTENSION) {
+        try {
+            const port = chrome.runtime.connect({ name: 'ffrw-popup' });
+
+            port.onMessage.addListener((msg) => {
+                if (msg.action === 'statsSnapshot' || msg.action === 'statsUpdated') {
+                    const s = msg.stats;
+                    // Merge into settings so renderStats has the full picture
+                    settings.stats_totalSecondsSkipped = s.totalSecondsSkipped;
+                    settings.stats_totalSkips          = s.totalSkips;
+                    settings.stats_buttonSkips         = s.buttonSkips;
+                    settings.stats_keyboardSkips       = s.keyboardSkips;
+                    renderStats(settings);
+                }
+
+                // Error indicator update from statsSnapshot
+                if (msg.action === 'statsSnapshot' && typeof msg.errorCount === 'number') {
+                    updateErrorIndicator(msg.errorCount);
+                }
+            });
+
+            port.onDisconnect.addListener(() => {
+                // Background worker went to sleep — silently ignore
+            });
+        } catch (_) { /* extension context invalidated during dev reload */ }
+
+        // ── Error indicator ─────────────────────────────────────────────
+        // Ask background for the recentErrors log on open. Show a subtle warning
+        // badge if errors exist so users can report them.
+        function updateErrorIndicator(count) {
+            if (!el.errorIndicatorBtn) return;
+            if (count > 0) {
+                el.errorIndicatorBtn.style.display = 'flex';
+                if (el.errorCount) el.errorCount.textContent = count;
+            } else {
+                el.errorIndicatorBtn.style.display = 'none';
+            }
+        }
+
+        try {
+            chrome.runtime.sendMessage({ action: 'getRecentErrors' }, (res) => {
+                if (chrome.runtime.lastError) return; // background not awake yet
+                updateErrorIndicator((res?.errors ?? []).length);
+            });
+        } catch (_) {}
+
+        // Clicking the error indicator copies the log to clipboard for easy bug reporting
+        el.errorIndicatorBtn?.addEventListener('click', async () => {
+            try {
+                const res = await new Promise(resolve =>
+                    chrome.runtime.sendMessage({ action: 'getRecentErrors' }, resolve)
+                );
+                const errors = res?.errors ?? [];
+                if (!errors.length) { Toast.show('No errors logged', 'success'); return; }
+                await navigator.clipboard.writeText(JSON.stringify(errors, null, 2));
+                Toast.show(`Copied ${errors.length} error(s) to clipboard`, 'success');
+            } catch (e) {
+                Toast.show('Could not copy error log', 'error');
+            }
+        });
+    }
 });
 
 // ─── Confetti easter egg ──────────────────────────────────────────────────────

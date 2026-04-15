@@ -1303,6 +1303,13 @@ body.popup-body::-webkit-scrollbar-thumb {
     margin-left: -1px;
 }
 
+/* When the player auto-hides its controls, disable pointer events on our
+   buttons so the cursor doesn't stay as a pointer over invisible buttons. */
+#movie_player.ytp-autohide .ffBtnFfrw,
+#movie_player.ytp-autohide .rwBtnFfrw {
+    pointer-events: none;
+}
+
 /* ─── Light Theme ────────────────────────────────────────────────────────── */
 
 body.popup-body.light-theme {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Fast Forward & Rewind",
-  "version": "4.4.3",
+  "version": "4.4.4",
   "description": "Fast Forward and Rewind YouTube videos by a customizable amount of seconds!",
   "icons": {
     "16": "assets/FFRWIcons/icon16.png",
@@ -18,17 +18,31 @@
       "128": "assets/FFRWIcons/icon128.png"
     }
   },
-  "permissions": ["storage", "tabs"],
-  "host_permissions": ["*://*.youtube.com/*"],
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*"
+  ],
   "background": {
-    "scripts": ["background/background.js"]
+    "scripts": [
+      "background/background.js"
+    ]
   },
   "content_scripts": [
     {
-      "matches": ["*://*.youtube.com/*"],
-      "js": ["content/content.js"],
-      "css": ["content/css/style.css", "content/css/indicator.css"],
-      "run_at": "document_end",
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "css": [
+        "content/css/style.css",
+        "content/css/indicator.css"
+      ],
+      "run_at": "document_start",
       "all_frames": false
     }
   ],
@@ -37,7 +51,9 @@
       "resources": [
         "assets/FFRWIcons/icon48.png"
       ],
-      "matches": ["*://*.youtube.com/*"]
+      "matches": [
+        "*://*.youtube.com/*"
+      ]
     }
   ],
   "browser_specific_settings": {
