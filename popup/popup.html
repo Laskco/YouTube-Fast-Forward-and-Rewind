@@ -3,18 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>YouTube FF/RW Settings</title>
-    <style>
-        html {
-            background-color: #0a0a0a;
-        }
-        html.light-theme-html-override {
-            background-color: #E0E0E0;
-        }
-    </style>
-    <link rel="stylesheet" href="../content/css/style.css">
+    <link rel="stylesheet" href="popup.css">
 </head>
 <body class="popup-body">
-    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon-sprite" aria-hidden="true">
         <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></symbol>
         <symbol id="icon-fast-forward" viewBox="0 0 24 24"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></symbol>
         <symbol id="icon-rewind" viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon></symbol>
@@ -45,32 +37,32 @@
         <symbol id="icon-chevrons-down" viewBox="0 0 24 24"><polyline points="7 13 12 18 17 13"></polyline><polyline points="7 6 12 11 17 6"></polyline></symbol>
         <symbol id="icon-chevrons-up" viewBox="0 0 24 24"><polyline points="17 11 12 6 7 11"></polyline><polyline points="17 18 12 13 7 18"></polyline></symbol>
     </svg>
-    <div id="main-view" class="popup-view active">
+    <div id="main-view" class="popup-view active" aria-hidden="false">
         <div class="popup-container">
-            <header class="popup-header">
+            <header class="popup-header" aria-label="Extension controls">
                 <div class="header-title-group">
                     <img src="../assets/FFRWIcons/icon48.png" alt="Extension Icon" class="popup-header-icon">
                     <h1>YouTube FF/RW</h1>
                 </div>
                 <div class="popup-header-actions">
-                     <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="View on GitHub">
+                     <a href="https://github.com/Laskco/YouTube-Fast-Forward-and-Rewind" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="View on GitHub" aria-label="View on GitHub">
                          <svg class="feather"><use href="#icon-github"></use></svg>
                      </a>
-                     <a href="https://buymeacoffee.com/laskco" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Buy Me a Coffee">
+                     <a href="https://buymeacoffee.com/laskco" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Buy Me a Coffee" aria-label="Buy me a coffee">
                          <svg class="feather"><use href="#icon-coffee"></use></svg>
                      </a>
-                     <a href="https://www.paypal.com/donate/?hosted_button_id=R87TNQANCT8KN" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Donate with PayPal">
+                     <a href="https://www.paypal.com/donate/?hosted_button_id=R87TNQANCT8KN" target="_blank" rel="noopener noreferrer" class="btn btn-link" title="Donate with PayPal" aria-label="Donate with PayPal">
                         <svg class="feather"><use href="#icon-paypal"></use></svg>
                      </a>
                      <span class="header-divider"></span>
-                     <button type="button" id="themeToggle" class="btn btn-link" title="Toggle Light/Dark Theme">
+                     <button type="button" id="themeToggle" class="btn btn-link" title="Use light theme" aria-label="Use light theme">
                          <svg class="feather icon-sun"><use href="#icon-sun"></use></svg>
-                         <svg class="feather icon-moon" style="display: none;"><use href="#icon-moon"></use></svg>
+                         <svg class="feather icon-moon is-hidden"><use href="#icon-moon"></use></svg>
                      </button>
-                     <button type="button" id="resetSettings" class="btn btn-link" title="Reset all settings to default">
+                     <button type="button" id="resetSettings" class="btn btn-link" title="Reset all settings to default" aria-label="Reset all settings to default">
                          <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                      </button>
-                     <button type="button" id="openSettingsBtn" class="btn btn-link" title="Advanced Settings">
+                     <button type="button" id="openSettingsBtn" class="btn btn-link" title="Advanced Settings" aria-label="Open advanced settings">
                          <svg class="feather"><use href="#icon-settings"></use></svg>
                      </button>
                 </div>
@@ -93,14 +85,14 @@
                     </h2>
                     <div class="header-spacer"></div>
                     <div class="position-toggle-group">
-                        <button type="button" id="pos-left-btn" class="btn-pos active" title="Position Left">L</button>
-                        <button type="button" id="pos-right-btn" class="btn-pos" title="Position Right">R</button>
+                        <button type="button" id="pos-left-btn" class="btn-pos active" title="Position Left" aria-label="Place buttons on the left" aria-pressed="true">L</button>
+                        <button type="button" id="pos-right-btn" class="btn-pos" title="Position Right" aria-label="Place buttons on the right" aria-pressed="false">R</button>
                     </div>
                     <div class="tooltip-wrapper">
                         <button type="button" class="btn-link tooltip-trigger-button" aria-label="Preset Info" aria-describedby="button-preset-tooltip-desc">
                             <svg class="feather"><use href="#icon-help-circle"></use></svg>
                         </button>
-                        <span class="tooltip-text" id="button-preset-tooltip-desc" role="tooltip" aria-hidden="true">Customize the preset buttons by clicking the pencil edit icon.</span>
+                        <span class="tooltip-text" id="button-preset-tooltip-desc" role="tooltip">Customize the preset buttons by clicking the pencil edit icon.</span>
                     </div>
                  </div>
                  <div class="card-content-wrapper">
@@ -120,20 +112,20 @@
                                     </div>
                                     <span class="input-divider"></span>
                                     <div class="preset-buttons" data-target="forwardSkipTime" data-preset-context="btnFwd">
-                                        <button type="button" class="btn-preset" data-preset-index="0"></button>
-                                        <button type="button" class="btn-preset" data-preset-index="1"></button>
-                                        <button type="button" class="btn-preset" data-preset-index="2"></button>
-                                        <button type="button" class="btn-preset" data-preset-index="3"></button>
+                                        <button type="button" class="btn-preset" data-preset-index="0" aria-label="Preset 1">5s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="1" aria-label="Preset 2">10s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="2" aria-label="Preset 3">15s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="3" aria-label="Preset 4">30s</button>
                                     </div>
                                     <button type="button" class="btn-edit-presets" aria-label="Edit Forward Button Presets">
                                         <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                                        <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                                        <svg class="feather icon-save is-hidden"><use href="#icon-check"></use></svg>
                                     </button>
                                 </div>
                             </div>
                         </div>
                         <div class="preset-editor">
-                           <button type="button" class="btn-reset-presets" title="Reset Forward Button presets to default">
+                           <button type="button" class="btn-reset-presets" title="Reset Forward Button presets to default" aria-label="Reset forward button presets">
                                 <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                            </button>
                            <div class="preset-editor-item">
@@ -194,20 +186,20 @@
                                     </div>
                                      <span class="input-divider"></span>
                                      <div class="preset-buttons" data-target="backwardSkipTime" data-preset-context="btnBwd">
-                                         <button type="button" class="btn-preset" data-preset-index="0"></button>
-                                         <button type="button" class="btn-preset" data-preset-index="1"></button>
-                                         <button type="button" class="btn-preset" data-preset-index="2"></button>
-                                         <button type="button" class="btn-preset" data-preset-index="3"></button>
+                                         <button type="button" class="btn-preset" data-preset-index="0" aria-label="Preset 1">5s</button>
+                                         <button type="button" class="btn-preset" data-preset-index="1" aria-label="Preset 2">10s</button>
+                                         <button type="button" class="btn-preset" data-preset-index="2" aria-label="Preset 3">15s</button>
+                                         <button type="button" class="btn-preset" data-preset-index="3" aria-label="Preset 4">30s</button>
                                      </div>
                                      <button type="button" class="btn-edit-presets" aria-label="Edit Backward Button Presets">
                                         <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                                        <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                                        <svg class="feather icon-save is-hidden"><use href="#icon-check"></use></svg>
                                      </button>
                                 </div>
                             </div>
                         </div>
                           <div class="preset-editor">
-                            <button type="button" class="btn-reset-presets" title="Reset Backward Button presets to default">
+                            <button type="button" class="btn-reset-presets" title="Reset Backward Button presets to default" aria-label="Reset backward button presets">
                                 <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                             </button>
                            <div class="preset-editor-item">
@@ -275,7 +267,7 @@
                         <button type="button" class="btn-link tooltip-trigger-button" aria-label="Preset Info" aria-describedby="keyboard-preset-tooltip-desc">
                             <svg class="feather"><use href="#icon-help-circle"></use></svg>
                         </button>
-                        <span class="tooltip-text" id="keyboard-preset-tooltip-desc" role="tooltip" aria-hidden="true">Customize the preset buttons by clicking the pencil edit icon.</span>
+                        <span class="tooltip-text" id="keyboard-preset-tooltip-desc" role="tooltip">Customize the preset buttons by clicking the pencil edit icon.</span>
                     </div>
                 </div>
                 <div class="card-content-wrapper">
@@ -295,20 +287,20 @@
                                      </div>
                                      <span class="input-divider"></span>
                                      <div class="preset-buttons" data-target="keyboardForward" data-preset-context="kbdFwd">
-                                          <button type="button" class="btn-preset" data-preset-index="0"></button>
-                                          <button type="button" class="btn-preset" data-preset-index="1"></button>
-                                          <button type="button" class="btn-preset" data-preset-index="2"></button>
-                                          <button type="button" class="btn-preset" data-preset-index="3"></button>
+                                        <button type="button" class="btn-preset" data-preset-index="0" aria-label="Preset 1">5s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="1" aria-label="Preset 2">10s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="2" aria-label="Preset 3">15s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="3" aria-label="Preset 4">30s</button>
                                      </div>
                                      <button type="button" class="btn-edit-presets" aria-label="Edit Forward Keyboard Presets">
                                         <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                                        <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                                        <svg class="feather icon-save is-hidden"><use href="#icon-check"></use></svg>
                                      </button>
                                 </div>
                             </div>
                         </div>
                          <div class="preset-editor">
-                            <button type="button" class="btn-reset-presets" title="Reset Forward Keyboard presets to default">
+                            <button type="button" class="btn-reset-presets" title="Reset Forward Keyboard presets to default" aria-label="Reset forward keyboard presets">
                                 <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                             </button>
                            <div class="preset-editor-item">
@@ -369,20 +361,20 @@
                                      </div>
                                      <span class="input-divider"></span>
                                       <div class="preset-buttons" data-target="keyboardBackward" data-preset-context="kbdBwd">
-                                          <button type="button" class="btn-preset" data-preset-index="0"></button>
-                                          <button type="button" class="btn-preset" data-preset-index="1"></button>
-                                          <button type="button" class="btn-preset" data-preset-index="2"></button>
-                                          <button type="button" class="btn-preset" data-preset-index="3"></button>
+                                        <button type="button" class="btn-preset" data-preset-index="0" aria-label="Preset 1">5s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="1" aria-label="Preset 2">10s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="2" aria-label="Preset 3">15s</button>
+                                        <button type="button" class="btn-preset" data-preset-index="3" aria-label="Preset 4">30s</button>
                                       </div>
                                       <button type="button" class="btn-edit-presets" aria-label="Edit Backward Keyboard Presets">
                                         <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                                        <svg class="feather icon-save" style="display: none;"><use href="#icon-check"></use></svg>
+                                        <svg class="feather icon-save is-hidden"><use href="#icon-check"></use></svg>
                                      </button>
                                 </div>
                             </div>
                         </div>
                           <div class="preset-editor">
-                            <button type="button" class="btn-reset-presets" title="Reset Backward Keyboard presets to default">
+                            <button type="button" class="btn-reset-presets" title="Reset Backward Keyboard presets to default" aria-label="Reset backward keyboard presets">
                                 <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                             </button>
                            <div class="preset-editor-item">
@@ -428,23 +420,23 @@
                         </div>
                     </div>
                     <div class="popup-toggle-row sub-toggle">
-                        <label class="toggle-label">Hotkeys (← / →)</label>
+                        <span id="hotkeySummary" class="toggle-label" aria-live="polite">Hotkeys (← / →)</span>
                         <div class="hotkey-actions">
-                           <button type="button" id="resetHotkeysBtn" class="btn-link btn-reset-hotkeys" title="Reset hotkeys to default">
+                           <button type="button" id="resetHotkeysBtn" class="btn-link btn-reset-hotkeys" title="Reset hotkeys to default" aria-label="Reset hotkeys to default">
                                <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                            </button>
                            <button type="button" id="hotkeyEditButton" class="btn-link" aria-label="Edit Hotkeys">
                                <svg class="feather icon-edit"><use href="#icon-edit-3"></use></svg>
-                               <svg class="feather icon-check" style="display: none;"><use href="#icon-check"></use></svg>
+                               <svg class="feather icon-check is-hidden"><use href="#icon-check"></use></svg>
                            </button>
                         </div>
                     </div>
                     <div class="hotkey-editor">
                         <p class="editor-tip">Tip: Regular keys support hold-to-seek continuously. Media keys (headset buttons, keyboard media controls) trigger a single skip per press.</p>
                         <label for="keyboardForwardKey">Forward Key:</label>
-                        <button type="button" id="keyboardForwardKey" class="btn-hotkey" title="Click to change hotkey"></button>
+                        <button type="button" id="keyboardForwardKey" class="btn-hotkey" title="Click to change hotkey">Right Arrow</button>
                         <label for="keyboardBackwardKey">Backward Key:</label>
-                        <button type="button" id="keyboardBackwardKey" class="btn-hotkey" title="Click to change hotkey"></button>
+                        <button type="button" id="keyboardBackwardKey" class="btn-hotkey" title="Click to change hotkey">Left Arrow</button>
                     </div>
                 </div>
                  <div class="popup-toggle-row">
@@ -460,10 +452,10 @@
              </section>
         </div>
     </div>
-    <div id="settings-view" class="popup-view">
+    <div id="settings-view" class="popup-view" aria-hidden="true" inert>
         <div class="popup-container">
-            <header class="popup-header">
-                <button type="button" id="closeSettingsBtn" class="btn btn-link back-button" title="Go Back">
+            <header class="popup-header" aria-label="Advanced settings controls">
+                <button type="button" id="closeSettingsBtn" class="btn btn-link back-button" title="Go Back" aria-label="Return to main settings">
                     <svg class="feather"><use href="#icon-arrow-left"></use></svg>
                 </button>
                 <h1 class="settings-view-title">Advanced Settings</h1>
@@ -477,19 +469,19 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             <svg class="feather"><use href="#icon-activity"></use></svg>
-                            Action & Player Timing
+                            Action &amp; Player Timing
                         </h2>
                         <div class="card-header-actions">
                             <div class="tooltip-wrapper">
-                                <button type="button" class="btn-link tooltip-trigger-button" aria-label="Action Delay Info" aria-describedby="action-delay-tooltip-desc">
+                                <button type="button" class="btn-link tooltip-trigger-button" aria-label="Action and player timing info" aria-describedby="action-timing-tooltip-desc">
                                     <svg class="feather"><use href="#icon-help-circle"></use></svg>
                                 </button>
-                                <span class="tooltip-text" id="action-delay-tooltip-desc" role="tooltip" aria-hidden="true">
+                                <span class="tooltip-text" id="action-timing-tooltip-desc" role="tooltip">
                                     The Seek Interval is the speed of continuous hotkey seeking.
                                     Ignore Buffering Protection forces skips even when the video is still loading, which may cause crashes or black screens.
                                 </span>
                             </div>
-                            <button type="button" id="resetActionTiming" class="btn-link btn-reset-card" title="Reset Action Timing Settings">
+                            <button type="button" id="resetActionTiming" class="btn-link btn-reset-card" title="Reset Action Timing Settings" aria-label="Reset action timing settings">
                                 <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                             </button>
                         </div>
@@ -498,7 +490,7 @@
                         <div class="card-warning-message">
                             <svg class="feather"><use href="#icon-alert-triangle"></use></svg>
                             <div class="warning-text-content">
-                                <strong>Advanced & Experimental Settings</strong>
+                                <strong>Advanced &amp; Experimental Settings</strong>
                                 <p>These options are intended for power users and may affect player stability or performance. Use with caution, and reset to defaults if playback becomes inconsistent.</p>
                             </div>
                         </div>
@@ -509,7 +501,7 @@
                                 <svg class="feather icon-less"><use href="#icon-chevrons-up"></use></svg>
                             </button>
                         </div>
-                        <div id="moreTimingSettings" class="more-settings-panel">
+                        <div id="moreTimingSettings" class="more-settings-panel" aria-hidden="true" inert>
                             <div class="panel-content-wrapper">
                                 <div class="popup-toggle-row sub-toggle">
                                      <label for="ignoreBufferingToggle" class="toggle-label" id="ignoreBufferingStatusLabel" aria-live="polite">
@@ -525,7 +517,7 @@
                                 <div class="ff-setting-group">
                                     <label for="seekInterval">Seek Interval (ms):</label>
                                     <div class="custom-spinner-container wide">
-                                        <input type="number" id="seekInterval" class="custom-spinner-input" value="150" min="0" max="2000">
+                                        <input type="number" id="seekInterval" class="custom-spinner-input" value="150" min="50" max="2000">
                                         <div class="custom-spinner-buttons">
                                             <button type="button" class="spinner-btn-up">▲</button>
                                             <button type="button" class="spinner-btn-down">▼</button>
@@ -533,17 +525,6 @@
                                     </div>
                                 </div>
                                 <p class="description">How often a repeated skip triggers while holding a key. Lower = faster stepping.</p>
-                                <div class="ff-setting-group">
-                                    <label for="controlsVisibleDuration">Controls Visible Duration (ms):</label>
-                                    <div class="custom-spinner-container wide">
-                                        <input type="number" id="controlsVisibleDuration" class="custom-spinner-input" value="2500" min="0" max="10000">
-                                        <div class="custom-spinner-buttons">
-                                            <button type="button" class="spinner-btn-up">▲</button>
-                                            <button type="button" class="spinner-btn-down">▼</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="description">How long YouTube’s player controls stay visible after a skip/hold.</p>
                                 <div class="ff-setting-group">
                                     <label for="progressBarUpdateDelay">Progress Bar Update Delay (ms):</label>
                                     <div class="custom-spinner-container wide">
@@ -554,7 +535,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <p class="description">Delay before forcing a UI update of the progress bar after a seek.</p>
+                                <p class="description">Minimum time between progress-bar refreshes while seeking. Higher values reduce UI work.</p>
                                 <div class="ff-setting-group">
                                     <label for="navigationInitDelay">Navigation Init Delay (ms):</label>
                                     <div class="custom-spinner-container wide">
@@ -566,10 +547,10 @@
                                     </div>
                                 </div>
                                 <p class="description">How long to wait after a page navigation before initializing the script.</p>
-                                <div class="ff-setting-group" style="margin-top:4px;">
-                                    <label>Re-inject Buttons:</label>
-                                    <button type="button" id="reinjectBtn" class="btn-link" title="Force re-inject skip buttons">
-                                        <svg class="feather" style="width:15px;height:15px;"><use href="#icon-rotate-ccw"></use></svg>
+                                <div class="ff-setting-group reinject-setting-row">
+                                    <span class="setting-label">Re-inject Buttons:</span>
+                                    <button type="button" id="reinjectBtn" class="btn-link" title="Force re-inject skip buttons" aria-label="Re-inject skip buttons">
+                                        <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                                     </button>
                                 </div>
                                 <p class="description">Force re-inject the skip buttons. Use if they disappear after a YouTube layout update.</p>
@@ -583,17 +564,14 @@
                             <svg class="feather"><use href="#icon-bar-chart-2"></use></svg>
                             Statistics
                         </h2>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <button type="button" id="errorIndicatorBtn" title="View recent errors"
-                                style="display:none;align-items:center;gap:4px;background:none;border:none;
-                                       cursor:pointer;padding:2px 6px;border-radius:4px;
-                                       color:var(--color-error,#e74c3c);font-size:11px;font-weight:600;">
-                                <svg class="feather" style="width:13px;height:13px;stroke:currentColor;">
+                        <div class="statistics-header-actions">
+                            <button type="button" id="errorIndicatorBtn" class="error-indicator" title="Copy recent errors" aria-label="Copy recent error log">
+                                <svg class="feather">
                                     <use href="#icon-alert-triangle"></use>
                                 </svg>
                                 <span id="errorCount">0</span>
                             </button>
-                            <button type="button" id="resetStatsBtn" class="btn-link btn-reset-card" title="Reset Statistics">
+                            <button type="button" id="resetStatsBtn" class="btn-link btn-reset-card" title="Reset Statistics" aria-label="Reset statistics">
                                 <svg class="feather"><use href="#icon-rotate-ccw"></use></svg>
                             </button>
                         </div>
@@ -624,13 +602,13 @@
             </div>
             <footer class="popup-footer">
                 <p class="creator-text">
-                    Made with <svg class="feather heart-icon"><use href="#icon-heart"></use></svg> by Laskco
+                    Made with <button type="button" id="love-heart" class="heart-button" aria-label="Celebrate"><svg class="feather heart-icon" aria-hidden="true"><use href="#icon-heart"></use></svg></button> by Laskco
                 </p>
-                <span class="version-text">v4.4.4</span>
+                <span class="version-text" id="versionText">v5.0.0</span>
             </footer>
         </div>
     </div>
-    <div id="toast-notification" class="toast-container" aria-live="polite">
+    <div id="toast-notification" class="toast-container" role="status" aria-live="polite" aria-atomic="true">
         <svg class="feather toast-icon"><use href=""></use></svg>
         <span class="toast-message"></span>
     </div>

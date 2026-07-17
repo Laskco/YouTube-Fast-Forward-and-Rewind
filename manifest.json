@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "YouTube Fast Forward & Rewind",
-  "version": "4.4.4",
-  "description": "Fast Forward and Rewind YouTube videos by a customizable amount of seconds!",
+  "version": "5.0.0",
+  "description": "Add customizable skip buttons and keyboard shortcuts to YouTube videos.",
+  "minimum_chrome_version": "111",
   "icons": {
     "16": "assets/FFRWIcons/icon16.png",
     "32": "assets/FFRWIcons/icon32.png",
@@ -11,6 +12,7 @@
     "128": "assets/FFRWIcons/icon128.png"
   },
   "action": {
+    "default_title": "YouTube Fast Forward & Rewind",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "assets/FFRWIcons/icon16.png",
@@ -19,47 +21,48 @@
     }
   },
   "permissions": [
-    "storage",
-    "tabs"
+    "storage"
   ],
   "host_permissions": [
-    "*://*.youtube.com/*"
+    "https://*.youtube.com/*"
   ],
   "background": {
     "scripts": [
       "background/background.js"
-    ]
+    ],
+    "service_worker": "background/background.js"
   },
   "content_scripts": [
     {
       "matches": [
-        "*://*.youtube.com/*"
+        "https://*.youtube.com/*"
       ],
       "js": [
         "content/content.js"
       ],
       "css": [
-        "content/css/style.css",
+        "content/css/player.css",
         "content/css/indicator.css"
       ],
       "run_at": "document_start",
       "all_frames": false
     }
   ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "assets/FFRWIcons/icon48.png"
-      ],
-      "matches": [
-        "*://*.youtube.com/*"
-      ]
-    }
-  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "fastforwardandrewind@me",
-      "strict_min_version": "109.0"
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   }
 }

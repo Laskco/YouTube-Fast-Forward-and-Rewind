@@ -1,0 +1,15 @@
+#movie_player.ytp-fullscreen .buttonsContainer {
+    margin-left: -1px;
+}
+
+/* Match YouTube's native controls while they are visually hidden. */
+#movie_player.ytp-autohide .ffBtnFfrw,
+#movie_player.ytp-autohide .rwBtnFfrw {
+    pointer-events: none;
+}
+
+.ffBtnFfrw:focus-visible,
+.rwBtnFfrw:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -4px;
+}

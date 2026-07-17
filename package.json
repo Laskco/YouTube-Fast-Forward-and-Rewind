@@ -1,0 +1,31 @@
+{
+  "name": "youtube-fast-forward-and-rewind",
+  "version": "5.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Quality tooling and browser-specific builds for the YouTube Fast Forward & Rewind extension.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "lint": "npm run lint:js && npm run lint:html && npm run lint:css && npm run lint:dead-code && npm run lint:dupes && npm run lint:security && npm run lint:webext",
+    "lint:js": "node ./node_modules/eslint/bin/eslint.js background/background.js content/content.js popup/popup.js scripts tests",
+    "lint:html": "node ./node_modules/html-validate/bin/html-validate.mjs popup/popup.html",
+    "lint:css": "node ./node_modules/stylelint/bin/stylelint.mjs \"content/css/*.css\" \"popup/*.css\"",
+    "lint:dead-code": "node ./node_modules/fallow/bin/fallow dead-code",
+    "lint:dupes": "node ./node_modules/fallow/bin/fallow dupes",
+    "lint:security": "node ./node_modules/fallow/bin/fallow security",
+    "lint:webext": "node scripts/build.mjs && node ./node_modules/addons-linter/bin/addons-linter dist/firefox --warnings-as-errors",
+    "test": "npm run build --silent && npm run test:unit",
+    "test:unit": "node --test",
+    "check": "npm run lint && npm run test:unit"
+  },
+  "devDependencies": {
+    "addons-linter": "10.9.0",
+    "eslint": "10.7.0",
+    "fallow": "3.6.0",
+    "html-validate": "11.5.6",
+    "stylelint": "17.14.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

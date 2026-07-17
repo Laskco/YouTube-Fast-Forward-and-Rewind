@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "background/background.js",
+    "content/content.js",
+    "content/css/player.css",
+    "content/css/indicator.css",
+    "popup/popup.html",
+    "popup/popup.css",
+    "popup/popup.js",
+    "tests/extension.test.mjs"
+  ],
+  "ignoreDependencies": [
+    "addons-linter",
+    "html-validate"
+  ]
+}

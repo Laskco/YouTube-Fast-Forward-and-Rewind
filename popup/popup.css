@@ -1,6 +1,7 @@
 /* ─── CSS Custom Properties ──────────────────────────────────────────────── */
 
 :root {
+    color-scheme: dark;
     --bg-color: rgba(18, 18, 18, 0.97);
     --surface-color: rgba(33, 33, 33, 0.95);
     --editor-bg-color: rgba(0, 0, 0, 0.15);
@@ -10,7 +11,9 @@
     --input-bg-color: rgba(28, 28, 28, 0.9);
     --success-color: #4A90E2;
     --success-color-dark: #357ABD;
+    --success-fill-color: #3477B8;
     --error-color: #EF5350;
+    --error-fill-color: #C62828;
     --warning-color: #FFC107;
     --info-color: #6c849a;
     --success-text-on-blue: #FFFFFF;
@@ -25,6 +28,19 @@
     --switch-bg-on: linear-gradient(135deg, var(--success-color), var(--success-color-dark));
     --switch-thumb-color: #FFFFFF;
     --button-hover-bg: rgba(255, 255, 255, 0.08);
+}
+
+html {
+    background-color: #0a0a0a;
+}
+
+html.light-theme-html-override {
+    background-color: #e0e0e0;
+}
+
+.icon-sprite,
+.is-hidden {
+    display: none;
 }
 
 /* ─── Animations ─────────────────────────────────────────────────────────── */
@@ -89,14 +105,16 @@ body.popup-body {
     box-sizing: border-box;
 }
 
+.popup-body :focus-visible {
+    outline: 2px solid var(--input-focus-border);
+    outline-offset: 2px;
+}
+
 .popup-body h1,
 .popup-body h2,
-.popup-body h3,
 .popup-body p,
 .popup-body section,
-.popup-body header,
-.popup-body ul,
-.popup-body ol {
+.popup-body header {
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -425,7 +443,15 @@ body.popup-body::-webkit-scrollbar-thumb {
 }
 
 .toggle-switch input {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .toggle-switch .slider {
@@ -455,6 +481,11 @@ body.popup-body::-webkit-scrollbar-thumb {
 
 .toggle-switch input:checked + .slider:before {
     transform: translateX(22px);
+}
+
+.toggle-switch input:focus-visible + .slider {
+    outline: 2px solid var(--input-focus-border);
+    outline-offset: 2px;
 }
 
 /* ─── Position Toggle ────────────────────────────────────────────────────── */
@@ -493,9 +524,9 @@ body.popup-body::-webkit-scrollbar-thumb {
 }
 
 .btn-pos.active {
-    background-color: var(--success-color);
+    background-color: var(--success-fill-color);
     color: var(--success-text-on-blue);
-    border-color: var(--success-color);
+    border-color: var(--success-fill-color);
 }
 
 /* ─── Input Rows ─────────────────────────────────────────────────────────── */
@@ -673,9 +704,9 @@ body.popup-body::-webkit-scrollbar-thumb {
 }
 
 .btn-preset:hover {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-    color: var(--text-primary);
+    background-color: var(--success-fill-color);
+    border-color: var(--success-fill-color);
+    color: var(--success-text-on-blue);
 }
 
 .btn-preset:active {
@@ -742,11 +773,6 @@ body.popup-body::-webkit-scrollbar-thumb {
 
 .hotkey-editor .editor-tip {
     grid-column: 1 / -1;
-    font-size: 11px;
-    color: var(--text-secondary);
-    opacity: 0.7;
-    text-align: center;
-    margin-bottom: 4px;
 }
 
 .hotkey-actions {
@@ -828,7 +854,8 @@ body.popup-body::-webkit-scrollbar-thumb {
     transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
 }
 
-.tooltip-wrapper:hover .tooltip-text {
+.tooltip-wrapper:hover .tooltip-text,
+.tooltip-wrapper:focus-within .tooltip-text {
     visibility: visible;
     opacity: 1;
 }
@@ -1030,7 +1057,8 @@ body.popup-body::-webkit-scrollbar-thumb {
     padding: 2px 0;
 }
 
-.settings-card label {
+.settings-card label,
+.settings-card .setting-label {
     font-size: 13px;
     font-weight: 500;
     color: var(--text-secondary);
@@ -1209,12 +1237,12 @@ body.popup-body::-webkit-scrollbar-thumb {
 }
 
 .toast-container.success {
-    background-color: var(--success-color);
+    background-color: var(--success-fill-color);
     color: var(--success-text-on-blue);
 }
 
 .toast-container.error {
-    background-color: var(--error-color);
+    background-color: var(--error-fill-color);
     color: #FFFFFF;
 }
 
@@ -1250,13 +1278,29 @@ body.popup-body::-webkit-scrollbar-thumb {
 }
 
 .popup-footer .heart-icon {
-    color: var(--error-color);
     fill: currentColor;
     width: 13px;
     height: 13px;
     stroke-width: 0;
-    vertical-align: -2px;
+}
+
+.popup-footer .heart-button {
+    appearance: none;
+    display: inline-flex;
+    padding: 0;
     margin: 0 3px;
+    border: 0;
+    background: transparent;
+    color: var(--error-color);
+    line-height: 0;
+    vertical-align: -2px;
+    cursor: pointer;
+}
+
+.popup-footer .heart-button:focus-visible {
+    outline: 2px solid var(--input-focus-border);
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
 /* ─── Settings View ─────────────────────────────────────────────────────── */
@@ -1289,25 +1333,49 @@ body.popup-body::-webkit-scrollbar-thumb {
     position: fixed;
     top: 0;
     left: 0;
-    width: 8px;
-    height: 8px;
     border-radius: 50%;
     pointer-events: none;
     z-index: 2147483000;
     will-change: transform, opacity;
 }
 
-/* ─── Fullscreen Adjustment ──────────────────────────────────────────────── */
-
-#movie_player.ytp-fullscreen .buttonsContainer {
-    margin-left: -1px;
+.reinject-setting-row {
+    margin-top: 4px;
 }
 
-/* When the player auto-hides its controls, disable pointer events on our
-   buttons so the cursor doesn't stay as a pointer over invisible buttons. */
-#movie_player.ytp-autohide .ffBtnFfrw,
-#movie_player.ytp-autohide .rwBtnFfrw {
-    pointer-events: none;
+.reinject-setting-row .feather {
+    width: 15px;
+    height: 15px;
+}
+
+.statistics-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.error-indicator {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    color: var(--error-color);
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.error-indicator.visible {
+    display: flex;
+}
+
+.error-indicator .feather {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
 }
 
 /* ─── Light Theme ────────────────────────────────────────────────────────── */
@@ -1320,15 +1388,17 @@ body.popup-body.light-theme {
     --text-secondary: #5f6368;
     --border-color: #D1D5DB;
     --input-bg-color: #FFFFFF;
-    --input-focus-border: #1E88E5;
-    --success-color: #1E88E5;
-    --success-color-dark: #1565C0;
-    --error-color: #D93025;
+    --input-focus-border: #1565C0;
+    --success-color: #1565C0;
+    --success-color-dark: #0D47A1;
+    --success-fill-color: #1565C0;
+    --error-color: #C5221F;
+    --error-fill-color: #C5221F;
     --warning-color: #F9A825;
     --success-text-on-blue: #FFFFFF;
     --tooltip-bg: #FFFFFF;
     --tooltip-shadow: rgba(0, 0, 0, 0.15);
-    --switch-bg-off: #bdc1c6;
+    --switch-bg-off: #767676;
     --button-hover-bg: rgba(0, 0, 0, 0.04);
     scrollbar-color: #B0B0B0 var(--border-color);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -1372,4 +1442,19 @@ body.popup-body.light-theme .tooltip-text {
 body.popup-body.light-theme .toast-container {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popup-body *,
+    .popup-body *::before,
+    .popup-body *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .confetti-piece {
+        display: none;
+    }
 }

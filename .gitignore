@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Generated builds and release packages
+dist/
+artifacts/
+web-ext-artifacts/
+*.zip
+*.xpi
+*.crx
+
+# Test and tool output
+coverage/
+.nyc_output/
+.fallow/
+.eslintcache
+.stylelintcache
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Package-manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
