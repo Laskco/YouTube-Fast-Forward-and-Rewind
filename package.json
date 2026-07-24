@@ -1,6 +1,6 @@
 {
   "name": "youtube-fast-forward-and-rewind",
-  "version": "5.0.0",
+  "version": "5.0.3",
   "private": true,
   "type": "module",
   "description": "Quality tooling and browser-specific builds for the YouTube Fast Forward & Rewind extension.",

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Fast Forward & Rewind",
-  "version": "5.0.0",
+  "version": "5.0.3",
   "description": "Add customizable skip buttons and keyboard shortcuts to YouTube videos.",
   "minimum_chrome_version": "111",
   "icons": {

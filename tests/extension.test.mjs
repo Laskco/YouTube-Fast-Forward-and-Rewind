@@ -69,14 +69,22 @@ async function backgroundContext({ sync = {}, local = {}, delay = 0 } = {}) {
     return { context, syncArea, localArea };
 }
 
-function contentContext() {
+function contentContext({ sync = {}, readyState = 'loading' } = {}) {
+    const documentListeners = new Map();
     const document = {
         URL: 'https://www.youtube.com/watch?v=test',
-        readyState: 'loading',
+        readyState,
         activeElement: null,
         hidden: false,
-        addEventListener() {},
-        removeEventListener() {},
+        addEventListener(type, listener) {
+            const listeners = documentListeners.get(type) ?? [];
+            listeners.push(listener);
+            documentListeners.set(type, listeners);
+        },
+        removeEventListener(type, listener) {
+            const listeners = documentListeners.get(type) ?? [];
+            documentListeners.set(type, listeners.filter(candidate => candidate !== listener));
+        },
         querySelector() { return null; },
         querySelectorAll() { return []; },
     };
@@ -84,7 +92,7 @@ function contentContext() {
     return vm.createContext({
         chrome: {
             runtime: { id: 'test', onMessage: eventTarget(), sendMessage: async () => ({ ok: true }) },
-            storage: { sync: storageArea(), onChanged: eventTarget() },
+            storage: { sync: storageArea(sync), onChanged: eventTarget() },
         },
         console: { error() {} },
         document,
@@ -102,6 +110,7 @@ function contentContext() {
         clearTimeout,
         setInterval,
         setTimeout,
+        documentListeners,
     });
 }
 
@@ -312,12 +321,13 @@ test('keyboard shortcuts never consume keys outside a video watch page', async (
     vm.runInContext('state.settings = { ...CONTENT_DEFAULTS }; state.keysAttached = true; handleKey(keyEvent); syncKeyboardAttachment()', context);
     assert.equal(context.keyEvent.prevented, false);
     assert.equal(context.keyEvent.stopped, false);
-    assert.equal(vm.runInContext('state.keysAttached', context), false);
+    assert.equal(vm.runInContext('state.keysAttached', context), true);
 });
 
-test('keyboard shortcuts do not override focused interactive controls', async () => {
+test('keyboard shortcuts do not override focused editable controls', async () => {
     const context = contentContext();
     vm.runInContext(await source('content/content.js'), context);
+    context.document.activeElement = { tagName: 'INPUT', isContentEditable: false };
     context.keyEvent = {
         key: ' ',
         ctrlKey: false,
@@ -336,6 +346,144 @@ test('keyboard shortcuts do not override focused interactive controls', async ()
     `, context);
     assert.equal(context.keyEvent.prevented, false);
     assert.equal(context.keyEvent.stopped, false);
+});
+
+test('clicked YouTube player buttons do not disable custom keyboard skips', async () => {
+    const context = contentContext();
+    vm.runInContext(await source('content/content.js'), context);
+    context.playerButton = {
+        tagName: 'DIV',
+        isContentEditable: false,
+        closest(selector) { return selector.startsWith('button,') ? this : null; },
+    };
+    context.document.activeElement = context.playerButton;
+    context.keyEvent = {
+        key: 'ArrowRight',
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        shiftKey: false,
+        target: context.playerButton,
+        prevented: false,
+        stopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.stopped = true; },
+    };
+    context.intent = null;
+    vm.runInContext(`
+        state.settings = { ...CONTENT_DEFAULTS, keyboardForward: 17 };
+        runKeyIntent = (_event, value) => { intent = value; };
+        handleKey(keyEvent);
+    `, context);
+    assert.equal(context.keyEvent.prevented, true);
+    assert.equal(context.keyEvent.stopped, true);
+    assert.deepEqual(json(context.intent), {
+        key: 'ArrowRight',
+        direction: 'forward',
+        amount: 17,
+        delta: 17,
+    });
+
+    context.document.activeElement = {
+        tagName: 'INPUT',
+        isContentEditable: false,
+        closest() { return {}; },
+    };
+    context.editableEvent = {
+        ...context.keyEvent,
+        prevented: false,
+        stopped: false,
+    };
+    vm.runInContext('handleKey(editableEvent)', context);
+    assert.equal(context.editableEvent.prevented, false);
+    assert.equal(context.editableEvent.stopped, false);
+});
+
+test('focused player sliders cannot strand custom keyboard shortcuts', async () => {
+    const context = contentContext();
+    vm.runInContext(await source('content/content.js'), context);
+    context.slider = {
+        tagName: 'DIV',
+        isContentEditable: false,
+        closest(selector) { return selector.includes('[role="slider"]') ? this : null; },
+    };
+    context.document.activeElement = context.slider;
+    context.keyEvent = {
+        key: 'ArrowRight',
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        shiftKey: false,
+        target: context.slider,
+        prevented: false,
+        stopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.stopped = true; },
+    };
+    context.intent = null;
+    vm.runInContext(`
+        state.settings = { ...CONTENT_DEFAULTS, keyboardForward: 17 };
+        runKeyIntent = (_event, value) => { intent = value; };
+        handleKey(keyEvent);
+    `, context);
+    assert.equal(context.keyEvent.prevented, true);
+    assert.equal(context.keyEvent.stopped, true);
+    assert.equal(context.intent.amount, 17);
+});
+
+test('startup attaches configured shortcuts without requiring a settings toggle', async () => {
+    const context = contentContext({
+        readyState: 'complete',
+        sync: {
+            extensionEnabled: true,
+            keyboardShortcutsEnabled: true,
+            keyboardForward: 17,
+            keyboardForwardKey: 'ArrowRight',
+            navigationInitDelay: 0,
+        },
+    });
+    context.document.activeElement = { tagName: 'BODY', isContentEditable: false };
+    context.keyEvent = {
+        key: 'ArrowRight',
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        shiftKey: false,
+        target: { closest() { return null; } },
+        prevented: false,
+        stopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.stopped = true; },
+    };
+    context.intent = null;
+    vm.runInContext(await source('content/content.js'), context);
+    vm.runInContext('runKeyIntent = (_event, value) => { intent = value; }', context);
+    await nextTask();
+    const keydownListeners = context.documentListeners.get('keydown') ?? [];
+    assert.equal(keydownListeners.length, 1);
+    keydownListeners[0](context.keyEvent);
+    assert.equal(context.keyEvent.prevented, true);
+    assert.equal(context.keyEvent.stopped, true);
+    assert.equal(context.intent.amount, 17);
+    vm.runInContext('cleanup()', context);
+});
+
+test('mouse activation of player buttons preserves page keyboard focus', async () => {
+    const context = contentContext();
+    vm.runInContext(await source('content/content.js'), context);
+    context.mouseEvent = {
+        button: 0,
+        prevented: false,
+        preventDefault() { this.prevented = true; },
+    };
+    context.keyboardEvent = {
+        button: -1,
+        prevented: false,
+        preventDefault() { this.prevented = true; },
+    };
+    vm.runInContext('preservePageKeyboardFocus(mouseEvent); preservePageKeyboardFocus(keyboardEvent)', context);
+    assert.equal(context.mouseEvent.prevented, true);
+    assert.equal(context.keyboardEvent.prevented, false);
 });
 
 test('same-URL navigation is stable when player buttons are intentionally disabled', async () => {
@@ -562,6 +710,7 @@ test('player buttons retain the exact pre-refactor YouTube layout contract', asy
     assert.match(contentScript, /'display:flex;width:auto;padding:0 7px;'/);
     assert.match(contentScript, /btn\.setAttribute\('role', 'button'\)/);
     assert.match(contentScript, /btn\.tabIndex = 0/);
+    assert.match(contentScript, /this\._addBtnListener\(btn, 'mousedown', preservePageKeyboardFocus\)/);
     assert.match(contentScript, /this\._addBtnListener\(btn, 'keydown'/);
     assert.match(contentScript, /height:\s*36,\s*\n\s*width:\s*36,/);
     assert.match(contentScript, /'margin:auto;padding:0;transform:rotate\(180deg\);'/);

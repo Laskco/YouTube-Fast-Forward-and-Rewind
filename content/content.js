@@ -239,19 +239,10 @@ function isWatchPage() {
 }
 
 const EDITABLE_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
-const INTERACTIVE_SELECTOR = [
-    'button', 'a[href]', '[role="button"]', '[role="link"]', '[role="slider"]',
-    '[role="spinbutton"]', '[role="textbox"]', '[role="menuitem"]',
-    '[contenteditable]:not([contenteditable="false"])',
-].join(', ');
 
 function isEditable(el) {
     const tag = el?.tagName?.toUpperCase();
     return [Boolean(el?.isContentEditable), EDITABLE_TAGS.has(tag)].includes(true);
-}
-
-function isInteractive(el) {
-    return isEditable(el) || Boolean(el?.closest?.(INTERACTIVE_SELECTOR));
 }
 
 const isFirefox = (() => { const r = navigator.userAgent.includes('Firefox'); return () => r; })();
@@ -700,6 +691,10 @@ function runButtonSeek(delta) {
     return actualDelta;
 }
 
+function preservePageKeyboardFocus(event) {
+    if (event.button === 0) event.preventDefault();
+}
+
 function canInjectButtons() {
     return [state.settings.extensionEnabled, state.settings.buttonSkipEnabled, isWatchPage(), Boolean(VideoWatcher.get())].every(Boolean);
 }
@@ -754,6 +749,10 @@ const PlayerUI = {
         btn.setAttribute('role', 'button');
         btn.tabIndex = 0;
         btn.setAttribute('aria-label', `${direction} ${seconds} seconds`);
+        // Before v5 these controls were not focusable, so mouse clicks never
+        // moved keyboard focus into YouTube's player. Preserve that behavior
+        // for pointer users without removing keyboard accessibility.
+        this._addBtnListener(btn, 'mousedown', preservePageKeyboardFocus);
         btn.appendChild(this._buildSVG(seconds, type));
         return btn;
     },
@@ -1046,7 +1045,11 @@ function hasBlockedModifier(e) {
 }
 
 function isInteractiveEventTarget(e) {
-    return isInteractive(document.activeElement) || isInteractive(e.target);
+    // This is the focus guard used by the final pre-v5 release. Player buttons,
+    // links, and sliders must not disable configured shortcuts; only genuine
+    // editing contexts retain their native keyboard input.
+    return isEditable(document.activeElement)
+        || Boolean(e.target?.closest?.('[contenteditable="true"]'));
 }
 
 function consumeKeyboardEvent(e) {
@@ -1242,7 +1245,11 @@ function resetNavigationState() {
 }
 
 function syncKeyboardAttachment() {
-    if (state.settings.extensionEnabled && state.settings.keyboardShortcutsEnabled && isWatchPage()) KeyHandler.attach();
+    // Keep the listener attached while shortcuts are enabled, as v4.4.4 did.
+    // handleKey already restricts consumption to watch pages. Avoiding
+    // navigation-time detach/reattach gaps also prevents a toggle from being
+    // required to recover the shortcut listener.
+    if (state.settings.extensionEnabled && state.settings.keyboardShortcutsEnabled) KeyHandler.attach();
     else KeyHandler.detach();
 }
 
