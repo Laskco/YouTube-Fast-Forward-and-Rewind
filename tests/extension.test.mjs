@@ -643,7 +643,7 @@ test('browser builds contain only supported background declarations', async () =
     assert.equal(sourceManifest.version, packageJson.version);
     assert.equal(sourceManifest.minimum_chrome_version, '111');
     assert.equal(sourceManifest.browser_specific_settings.gecko.strict_min_version, '140.0');
-    assert.equal(sourceManifest.browser_specific_settings.gecko_android.strict_min_version, '142.0');
+    assert.equal('gecko_android' in sourceManifest.browser_specific_settings, false);
     assert.equal(chromeManifest.background.service_worker, 'background/background.js');
     assert.equal('scripts' in chromeManifest.background, false);
     assert.equal('browser_specific_settings' in chromeManifest, false);

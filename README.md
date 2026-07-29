@@ -116,7 +116,7 @@ npm run test
 
 Reload an already-open YouTube tab after installing or rebuilding the extension.
 
-The supported baseline is Chrome 111+, Firefox Desktop 140+, and Firefox for Android 142+.
+The supported baseline is Chrome 111+ and Firefox Desktop 140+. Firefox for Android is not supported.
 
 ---
 
